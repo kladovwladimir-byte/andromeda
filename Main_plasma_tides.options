@@ -1,0 +1,111 @@
+
+################################################################
+[C#]
+Main_plasma_tides.al4
+
+/src .
+/src %AL4%\AL4\Library
+/src %AL4%\AL4\Library\Math
+/src %AL4%\AL4\Library\_CSharp
+/src %AL4%\AL4\Library\Visual\Long_operation
+
+/src %AL4%\AL4\Library\Visual
+/src %AL4%\AL4\Library\Visual\Controls
+/src %AL4%\AL4\Library\Visual\Drawing
+/src %AL4%\AL4\Library\Visual\Print
+/src %AL4%\AL4\Library\Visual\_CSharp
+/$Visual
+#/noconsole
+
+/ext cs
+#/v
+/dst .\_Compiled_C#
+/run
+#/$REPORT_LEAKS=
+#/$PAUSE
+
+/$ICON=Icon32x32-plasma-tidesl.ico
+
+################################################################
+[Delphi_vcl]
+Main_plasma_tides.al4
+
+/src .
+/src %AL4%\AL4\Library
+/src %AL4%\AL4\Library\Math
+/src %AL4%\AL4\Library\_Delphi
+/src %AL4%\AL4\Library\_Delphi\VCL
+/src %AL4%\AL4\Library\Visual\Long_operation
+
+/src %AL4%\AL4\Library\Visual
+/src %AL4%\AL4\Library\Visual\Controls
+/src %AL4%\AL4\Library\Visual\Drawing
+/src %AL4%\AL4\Library\Visual\Print
+/src %AL4%\AL4\Library\Visual\_Delphi\VCL
+/src %AL4%\AL4\Library\Visual\_Delphi\VCL\TrayIcon
+#/noconsole
+
+/ext pas
+/ext2 cs
+#/v
+/dst .\_Compiled_Delphi_vcl
+/run
+#/$REPORT_LEAKS=
+#/$PAUSE
+
+################################################################
+[FPC]
+Main_plasma_tides.al4
+
+/src .
+/src %AL4%\AL4\Library
+/src %AL4%\AL4\Library\Math
+/src %AL4%\AL4\Library\_Delphi
+/src %AL4%\AL4\Library\_Delphi\VCL
+/src %AL4%\AL4\Library\Visual\Long_operation
+
+/src %AL4%\AL4\Library\Visual
+/src %AL4%\AL4\Library\Visual\Controls
+/src %AL4%\AL4\Library\Visual\Drawing
+/src %AL4%\AL4\Library\Visual\Print
+/src %AL4%\AL4\Library\Visual\_Delphi\VCL
+/src %AL4%\AL4\Library\Visual\_Delphi\FPC
+#/noconsole
+
+/ext pas
+/ext2 cs
+/$FPC
+#/v
+/dst .\_Compiled_FPC
+/run
+#/$REPORT_LEAKS=
+#/$PAUSE
+
+################################################################
+[FPC_linux]
+Main_plasma_tides.al4
+
+/src .
+/src $AL4/AL4/Library
+/src $AL4/AL4/Library/Math
+/src $AL4/AL4/Library/_Delphi
+/src $AL4/AL4/Library/_Delphi/VCL
+/src $AL4/AL4/Library/Visual/Long_operation
+
+/src $AL4/AL4/Library/Visual
+/src $AL4/AL4/Library/Visual/Controls
+/src $AL4/AL4/Library/Visual/Drawing
+/src $AL4/AL4/Library/Visual/Print
+/src $AL4/AL4/Library/Visual/_Delphi/VCL
+/src $AL4/AL4/Library/Visual/_Delphi/FPC
+#/noconsole
+
+/ext pas
+/ext2 cs
+/$FPC
+/$TARGET=LINUX
+#/v
+/dst .\_Compiled_FPC_linux
+/run
+#/$REPORT_LEAKS=
+#/$PAUSE
