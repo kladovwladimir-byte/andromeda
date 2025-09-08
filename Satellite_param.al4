@@ -365,14 +365,14 @@ PUSH in_construct = TRUE :
 ; .
 
 METHOD button_colors :
-	Load_under_image.Set_background(GREEN)
-	Load_under_image.Set_foreground(YELLOW) .
+	Load_under_image.Set_background(YELLOW)
+	Load_under_image.Set_foreground(GREEN) .
 
 METHOD after_CONSTRUCT: 
 	Show_application_button(TRUE)
 	button_colors
 	------------------------ 'bounds', REUSED
-	Restore_bounds("Multi-spiral", "Param", "*") 
+	Restore_bounds("Multi-spiral", "Param", "whlt") 
 	------------------------ 'initial__spiral', REUSED	
 	All_satellites[].Clear
 	All_satellites[] << {satellite_param}(
@@ -732,6 +732,7 @@ OVERRIDE click :
         [".gif"]: .. = {Gif}.Load(Path= f).Bitmap
         [".jpg", ".jpeg"]: .. = {Jpeg}.From_file(f, 'FULL')
         [".tif", ".tiff"]: .. = {Tiff}.From_file(f) ;
+        //DEBUG: "loaded: =" Main_.Image.Width " x " .Height #NL ;
         Main_.Update_caption(f.Extract_file_name)
         Main_.Invalidate
         button_colors
@@ -995,6 +996,7 @@ METHOD caption_loc|alizable ==> STR :
 	= "Satellite /galaxy parameters"._CAPTION .
 
 OVERRIDE mouse_down :
+	Main_.lmb_down = mouse_button == 'LMB'
 	CASE sender_alias == "LABELHINT1" ?
 		 editing = NONE     
 	 	 STR s|tring_to_get_vals = hint_a(Satellite_num.Current, TRUE)
@@ -1081,7 +1083,7 @@ REAL range_to
 
 
 OVERRIDE mouse_move :
-	CASE dragging==NONE || !Global_key(L_BUTTON) ? ==> ;
+	CASE dragging==NONE || !Main_.Global_L_button ? ==> ;
 	BOOL neg|ative = value_start < 0 
 		 .. &&= Deviation_angle != editing != Inclination
 		 .. &&= Final_deviation != editing
@@ -1162,6 +1164,7 @@ METHOD Change_hint :
 OVERRIDE mouse_up :
 	dragging = NONE 
 	need_invalidate = TRUE
+	Main_.lmb_down = FALSE
 	CASE sender_alias IN ["LABELHINT1", "PERIOD_ROT", "EXCENTRICITY", "MASS_BH"] ? 
 	     NONE = hint_a(Satellite_num.Current, TRUE)
 	     editing = NONE
@@ -1238,7 +1241,7 @@ METHOD paste_from_table :
     		sp.Inclin = in[n].Real
     		sp.StartA = st[n].Real
     		All_satellites[i_sat] = sp.CLONE
-    		DEBUG: "set satellite " i_sat " sp.Inclin=" sp.Inclin #NL ;
+            //DEBUG: "set satellite " i_sat " sp.Inclin=" sp.Inclin #NL ;
     	;
     ;
     ------------------------- 'finish'

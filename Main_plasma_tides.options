@@ -52,6 +52,9 @@ Main_plasma_tides.al4
 /run
 #/$REPORT_LEAKS=
 #/$PAUSE
+/$PNGOBJECT
+/$ICON=Icon32x32-plasma-tidesl.ico
+/$NOTESTS
 
 ################################################################
 [FPC]
@@ -80,6 +83,7 @@ Main_plasma_tides.al4
 /run
 #/$REPORT_LEAKS=
 #/$PAUSE
+/$ICON=Icon32x32-plasma-tidesl.ico
 
 ################################################################
 [FPC_linux]

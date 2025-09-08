@@ -191,8 +191,11 @@ METHOD Paint_to(
 	               d_o.Width *= Scaling_image / 100
 	               d_o.Height *= Scaling_image / 100 ;
 	          
+	          INT bpp|_bits_per_pixel = 32
+	          //CASE "linux" IN platform_info ? bpp = 24 ;
+	          
 	          Scaled_image = New_bitmap(d_o.Width.Points_to_pixels,
-	          	d_o.Height.Points_to_pixels, 32)
+	          	d_o.Height.Points_to_pixels, 24)
 	          	
 	          CASE !Rotation_image.Near(0) ? 
 	               Scaled_image.Canvas.Offset(d_o.W/2, d_o.H/2)
@@ -202,12 +205,18 @@ METHOD Paint_to(
 	               
 	          Image.Stretch_draw(Scaled_image.Canvas, 
 	          	d_o.Offset_rect(-d_o.Left, -d_o.Top))
+              //DEBUG: "scaled image ready: " Scaled_image.Width " x " .Height  
+              //      #NL ;
 	     ;
 	     CASE !Scaling_image.Near(100) ? 
 	               d_o.Loc.X = _ - (d_o.Width / 2 - dwo.Width / 2)
 	               d_o.Loc.Y = _ - (d_o.Height / 2 - dwo.Height / 2)
 	     ;
-	     Scaled_image.Stretch_draw(c, d_o)
+	     //Scaled_image.Stretch_draw(c, d_o)
+         //DEBUG: "scaled image drawn to: " d_o.Loc.S " w=" d_o.W " h=" .H #NL
+         //   NONE= Scaled_image.Save("test-scaled.png")
+         //;
+	     Scaled_image.Draw(c, d_o.Loc)
 	;
 	CASE rmb_down && !change_start && !change_incl ? ==> ;
 	BOOL time_distortion = Satellite_param.Time_distortion.Checked  
@@ -660,6 +669,7 @@ REAL start_a|ngel_degrees) ==> {Matrix}, NEW
     RESULT = New_matrix_3x3(line_1, line_2, line_3)  
     .
     
+BOOL lmb_down, PUBLIC
 BOOL rmb_down
 BOOL drag_center|_of_galaxy
 {point} mouse_down0|_position
@@ -682,6 +692,7 @@ BOOL change_excen|tricity
 REAL excen0|tricity
 
 OVERRIDE mouse_down :
+	lmb_down = mouse_button == 'LMB'
 	rmb_down = mouse_button == 'RMB'
 	drag_center = !rmb_down
 	CASE drag_center ?
@@ -718,6 +729,7 @@ OVERRIDE mouse_down :
 	PBox.Invalidate_all .
 	
 OVERRIDE mouse_up :
+	lmb_down = FALSE
 	rmb_down = FALSE
 	drag_center = FALSE
 	rotate_proj = FALSE
@@ -738,12 +750,22 @@ FUN mod360|_of_real_value(REAL v|alue_to_mod) ==> REAL :
 	    [RESULT > 360] ? RESULT -= 360
 	    ELSE BREAK i ;
 	; .
+	
+INT is_linux
+	
+METHOD Global_L_button ==> BOOL :
+     CASE is_linux==0 ? 
+          CASE "linux" IN platform_info ? is_linux = 1 
+          ELSE is_linux = -1     ;
+     ;
+     CASE is_linux > 0 ? RESULT = lmb_down 
+     ELSE RESULT = Global_key(L_BUTTON) ; .
 
 OVERRIDE mouse_move :
 	PBox.Invalidate_all 
 	CASE Key.Shift || .Alt ? 
 	     last_mouse_shift = mouse ;
-	CASE !Global_key(L_BUTTON) && !rmb_down ? ==> ;
+	CASE !Global_L_button && !rmb_down ? ==> ;
 	{satellite_param} sat|_current 
 	sat = Satellite_param.All_satellites[.Satellite_num.Current].CLONE
 	CASE ?
