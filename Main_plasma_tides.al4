@@ -33,6 +33,7 @@ PUSH in_construct = TRUE :
 METHOD Update_caption(STR file_name) :
     Set_caption(if(file_name<>"", file_name " - ") 
     	"Emission model of spiral galaxy (tides on satellits of SMBH)"._CAPTION) 
+    All_img_names[Current_image] = file_name
     .
 
 
@@ -79,6 +80,26 @@ OVERRIDE Invalidate :
 METHOD Rescale|_image :
 	Scaled_image = NONE .
     
+{Bitmap} All_images[]
+{Bitmap} All_scaled|_images[]
+STR All_img_names[]
+INT Current_image
+REAL All_scales|_of_images[]
+REAL All_rotations|_of_images[]
+
+METHOD Clear_images :
+    All_images[].Clear
+    All_scaled[].Clear
+    All_img_names[].Clear
+    All_scales[].Clear
+    All_rotations[].Clear
+    --------------------- 'remove current'
+    Image = NONE
+    Scaled_image = NONE
+    Current_image = 0
+    Update_caption("")
+    -------------------- 'invalidate'
+    PBox.Invalidate_all .
     
 REAL Offset_x = 0.5
 REAL Offset_y = 0.5
@@ -97,17 +118,29 @@ OVERRIDE paint :
         drawn_dist = FALSE
         {Canvas} c|anvas_dest = PBox.Canvas
         Paint_to(c, FALSE)
-        CASE 0 <= Now.Seconds_diff(resize_time) <= 2 ?
+        CASE ?
+        [0 <= Now.Seconds_diff(resize_time) <= 2] ?
              STR t|ext_size_of_bix = PBox.Width.Points_to_pixels.S " x " 
              t = _ PBox.Height.Points_to_pixels.S
+             ---------------------- 'text', REUSED
              c.Foreground = WHITE
              PUSH c.Font.Size = 14 :
 	              c.Text(Pt(4, 4), t)
 	              c.Foreground = BLUE
 	              c.Text(Pt(2, 2), t) ;
+             ----------------------
+        [0 <= Now.Seconds_diff(last_camera_rot) <= 2] ?
+             t = "S: " rotate_s.mod180.S_float(2) 
+             t = _ " P: " rotate_p.mod180.S_float(2)
+             LIKE ............. 'text', BUT(BLUE==>ORANGE)
         ;
     ELSE BASE
     ; .
+    
+FUN mod180|_or_minus_180(REAL V|alue_180) ==> REAL :
+    RESULT = V.mod360
+    CASE RESULT > 180 ? RESULT -= 360 ;
+    .
     
 METHOD Get_filters(
 STR Filt|ers_all[], STR From|_filter_string)
@@ -122,16 +155,36 @@ STR Filt|ers_all[], STR From|_filter_string)
              CASE ff[0].Int==0 ? ff[0] = Find_by_name(_) ;
              CASE ff[1].Int==0 ? ff[1] = Find_by_name(_) ;
         	 FOR j IN [ff[0].Int TO ff[1].Int] : Filt[] << j.S ;
-        	 //Filt[].Delete(i)
         	 Filt[i] = ""
         ;
     ; .
     
 METHOD Find_by_name(STR Name|_of_satellite) ==> STR :
     FOR sat IN Satellite_param.All_satellites[] :
-        CASE sat.Name==Name ? RESULT = (sat.INDEX+1).S ==> ;
+        CASE sat.Name LIKE Name ? 
+             RESULT = (sat.INDEX+1).S 
+             DEBUG: "find(" Name ")==>" RESULT #NL ;
+             ==> ;
     ;
+    FOR sat IN Satellite_param.All_satellites[] :
+        CASE sat.Name.Lower.Starting(Name.Lower) ? 
+             RESULT = (sat.INDEX+1).S 
+             DEBUG: "find[" Name "]==>" RESULT #NL ;
+             ==> ;
+    ;
+    DEBUG: "not found<" Name ">"#NL ;
     RESULT = Name .
+    
+REAL ShiftX|_percents
+REAL ShiftY|_percents
+{Bitmap} Cache_image
+{rect} Cache_im_d_o|_stored_while_cahcing_image
+REAL Cache_sc|ale
+REAL Cache_ro|tate
+{point} Cache_shift
+INT Cache_cur|rent_image
+STR Cache_name|_image
+
     
 METHOD Paint_to(
 {Canvas} C|anvas_to || c, BOOL To_bitmap), OPERATORS({Matrix})
@@ -139,10 +192,20 @@ METHOD Paint_to(
 	c.Reset_transform
 	c.Background = BLACK
 	c.Erase
-	------------------- 'to filter satyellites'
+	CASE Satellite_param.Scale_up_shift ?
+	     REAL scaleup|_value = Satellite_param.Scale_image.Text.Real / 100
+	     c.Offset(PBox.Width/2, PBox.Height/2)
+	     c.Scale(scaleup, scaleup)
+	     c.Rotate(Satellite_param.Rotate_image.Text.Real)
+	     c.Offset(-PBox.Width/2, -PBox.Height/2)
+	     c.Offset(PBox.Width * ShiftX / 100, PBox.Height * ShiftY / 100)
+	;
+	------------------- 'to filter satellites'
 	CASE Satellite_param.Enable_filtering ? 
 	     STR filt|ers_all[]
-	     Get_filters(filt[], Satellite_param.Filter_sat.Text) ;
+	     Get_filters(filt[], Satellite_param.Filter_sat.Text)
+	     //DEBUG: "filters: " filt[].Merge(", ")#NL ;
+	;
 	------------------- 'size of PBox'
 	REAL h|eight_box = PBox.Height.Min(PBox.Width)
 	REAL h_box|_total = PBox.Height
@@ -165,24 +228,27 @@ METHOD Paint_to(
 	     {rect} dwo|_without_scale = d_o.CLONE
 	     --------------------------------------------- 'rotate ?'
 	     CASE Scaled_image == NONE 
-	          || (Scaled_image.Width.Pixels_to_points * Scaling_image / 100 
-	          		- d_o.Width).Abs
-	          + ((Scaled_image.Height.Pixels_to_points * Scaling_image / 100
-	          		- d_o.Height).Abs)
+	          || (Scaled_image.Width 
+	          		- d_o.Width.Points_to_pixels).Abs
+	          + ((Scaled_image.Height
+	          		- d_o.Height.Points_to_pixels).Abs)
 	          > 2
 	          || !Satellite_param.Scale_rotate_spirals 
 	          && (
 	          	 !Rotation_image.Near(Satellite_param.Rotate_image.Text.Real)
 	          || !Scaling_image.Near(Satellite_param.Scale_image.Text.Real))
 	          ?  
-	          //DEBUG: "!"
-	          //" w:" Scaled_image.Width.Pixels_to_points "<>" d_o.Width
-	          //" h:" Scaled_image.Height.Pixels_to_points "<> " d_o.Height
-	          //" rot: " Rotation_image " scale: " Scaling_image 
-	          //#NL ;
-	          CASE Satellite_param.Scale_rotate_spirals ? 
+	          DEBUG: "!"
+	          " w:" Scaled_image.Width "<>" d_o.Width.Points_to_pixels
+	          " h:" Scaled_image.Height "<>" d_o.Height.Points_to_pixels
+	          " rot: " Rotation_image "<>" Satellite_param.Rotate_image.Text.Real
+	          " scale: " Scaling_image"<>" Satellite_param.Scale_image.Text.Real 
+	          #NL ;
+	          CASE Satellite_param.Scale_rotate_spirals
+	          	|| Satellite_param.Scale_up_shift
+	          	   ?
 	               Scaling_image = 100
-	               Rotation_image = 0 
+	               Rotation_image = 0
 	          ELSE
 	               Scaling_image = Satellite_param.Scale_image.Text.Real
 	               Rotation_image = Satellite_param.Rotate_image.Text.Real
@@ -190,12 +256,13 @@ METHOD Paint_to(
 	          CASE !Scaling_image.Near(100) ? 
 	               d_o.Width *= Scaling_image / 100
 	               d_o.Height *= Scaling_image / 100 ;
-	          
-	          INT bpp|_bits_per_pixel = 32
-	          //CASE "linux" IN platform_info ? bpp = 24 ;
-	          
+	          CASE Satellite_param.Scale_up_shift ? 
+	               Scaling_image = Satellite_param.Scale_image.Text.Real
+	          ;
+	               
+	          -------------------- 'prepare scaled image'
 	          Scaled_image = New_bitmap(d_o.Width.Points_to_pixels,
-	          	d_o.Height.Points_to_pixels, 24)
+	          	d_o.Height.Points_to_pixels, 32)
 	          	
 	          CASE !Rotation_image.Near(0) ? 
 	               Scaled_image.Canvas.Offset(d_o.W/2, d_o.H/2)
@@ -205,6 +272,8 @@ METHOD Paint_to(
 	               
 	          Image.Stretch_draw(Scaled_image.Canvas, 
 	          	d_o.Offset_rect(-d_o.Left, -d_o.Top))
+	          	
+	          Scaled_image.Canvas.Reset_transform
               //DEBUG: "scaled image ready: " Scaled_image.Width " x " .Height  
               //      #NL ;
 	     ;
@@ -212,11 +281,49 @@ METHOD Paint_to(
 	               d_o.Loc.X = _ - (d_o.Width / 2 - dwo.Width / 2)
 	               d_o.Loc.Y = _ - (d_o.Height / 2 - dwo.Height / 2)
 	     ;
-	     //Scaled_image.Stretch_draw(c, d_o)
          //DEBUG: "scaled image drawn to: " d_o.Loc.S " w=" d_o.W " h=" .H #NL
          //   NONE= Scaled_image.Save("test-scaled.png")
          //;
-	     Scaled_image.Draw(c, d_o.Loc)
+         CASE !To_bitmap && Satellite_param.Scale_up_shift
+           && Cache_image != NONE
+           && Cache_sc.Near(Satellite_param.Scale_image.Text.Real)
+           && Cache_ro.Near(Satellite_param.Rotate_image.Text.Real)
+           && Cache_shift.X.Near(ShiftX)
+           && Cache_shift.Y.Near(ShiftY)
+           && Cache_cur==Current_image
+           && Cache_name==All_img_names[Current_image]
+           && Cache_im_d_o.Loc.X.Near(d_o.Loc.X)
+           && Cache_im_d_o.Loc.Y.Near(d_o.Loc.Y)
+           && Cache_im_d_o.W.Near(d_o.W)
+           && Cache_im_d_o.H.Near(d_o.H)
+           ? 
+           //DEBUG: "." ;
+           c.Copy_rect({rect}(W= ww.Points_to_pixels,
+		     	  			  H= h_box.Points_to_pixels),
+		     	  	   Cache_image.Canvas, 
+		     	  	   {rect}(W= ww.Points_to_pixels, 
+		     	  			  H= h_box.Points_to_pixels))
+           //DEBUG: " ! " ;
+		     	  			      
+         ELSE
+		     Scaled_image.Draw(c, d_o.Loc)
+		     CASE !To_bitmap && Satellite_param.Scale_up_shift ? 
+		          Cache_image = New_bitmap(ww.Points_to_pixels, 
+		          	h_box.Points_to_pixels, 32)
+		          		 
+		     	  Cache_image.Canvas.Copy_rect({rect}(W= ww.Points_to_pixels,
+		     	  		H= h_box.Points_to_pixels),
+		     	  		c, {rect}(W= ww.Points_to_pixels, 
+		     	  				  H= h_box.Points_to_pixels))  
+		     	  ---------------- 'store attributes of an image drawn scaled/rotated'
+		     	  Cache_im_d_o = d_o.CLONE
+		     	  Cache_sc = Satellite_param.Scale_image.Text.Real
+		     	  Cache_ro = Satellite_param.Rotate_image.Text.Real
+		     	  Cache_shift = Pt(ShiftX, ShiftY)
+		     	  Cache_cur = Current_image
+		     	  Cache_name = All_img_names[Current_image]
+		     ;
+         ;
 	;
 	CASE rmb_down && !change_start && !change_incl ? ==> ;
 	BOOL time_distortion = Satellite_param.Time_distortion.Checked  
@@ -594,6 +701,7 @@ METHOD Paint_to(
 REAL last_step_off|set
 REAL rotate_p|itch
 REAL rotate_s|couring
+{date_time} last_camera_rot|atate_time
 
     
 {Matrix} M_rot_proj|ection
@@ -674,6 +782,7 @@ BOOL rmb_down
 BOOL drag_center|_of_galaxy
 {point} mouse_down0|_position
 {point} offset0|_when_mouse_down
+{point} shift0|_when_mouse_down
 
 BOOL rotate_proj|ection
 REAL proj0|ection_rotation_start
@@ -725,6 +834,8 @@ OVERRIDE mouse_down :
 	start0 = Satellite_param.Starting_angle.Text.Real
 	excen0 = Satellite_param.Excentricity.Text.Real
 	offset0 = Pt(Offset_x, Offset_y)
+	shift0 = Pt(ShiftX, ShiftY)
+	------------------------------- 'prepare to undo later'
 	Stack_undo[] << Satellite_param.All_satellites[.Satellite_num.Current].CLONE
 	PBox.Invalidate_all .
 	
@@ -771,20 +882,37 @@ OVERRIDE mouse_move :
 	CASE ?
 	[rmb_down && (change_start || change_incl)] ?
 	     REAL new_val|ue = rotate_s0 + (mouse.X - mouse_down0.X)/PBox.Width * 360
-	     rotate_s = new_val.mod360 
+	     CASE !Key.Shift || change_start ? 
+	          rotate_s = new_val.mod360
+	          last_camera_rot = Now ;
 	     new_val = rotate_p0 + (mouse.Y - mouse_down0.Y) / PBox.Height * 360
-	     rotate_p = new_val.mod360
+	     CASE !Key.Shift || change_incl ? 
+	          rotate_p = new_val.mod360
+	          last_camera_rot = Now ;
 	[rmb_down] ? NONE
 	[drag_center] ?
 		 REAL w1|_width_to_offset = Min(PBox.Height,.Width)
-		 Offset_x = offset0.X + (mouse.X - mouse_down0.X) / w1
-		 Offset_y = offset0.Y + (mouse.Y - mouse_down0.Y) / w1
-		 ------------------ 'check__range', REUSED
-		 CASE ?
-		 [Offset_x < 0.001] ? Offset_x = 0.001 
-		 [Offset_x > 0.999] ? Offset_x = 0.999 ;
-		 ------------------
-		 LIKE ............. 'check__range', BUT (_x==>_y)*4
+		 CASE Satellite_param.Scale_up_shift ? 
+		      ShiftX = shift0.X + (mouse.X - mouse_down0.X) / w1 * 100
+		      ShiftY = shift0.Y + (mouse.Y - mouse_down0.Y) / w1 * 100
+		      CASE ?
+		      [ShiftX < -99] ? ShiftX = -99 
+		      [ShiftX > 99] ? ShiftX = 99 ;
+		      CASE ?
+		      [ShiftY < -99] ? ShiftY = -99 
+		      [ShiftY > 99] ? ShiftY = 99 ;
+		 ELSE
+			  Offset_x = offset0.X + (mouse.X - mouse_down0.X) / w1
+			  Offset_y = offset0.Y + (mouse.Y - mouse_down0.Y) / w1
+			  ------------------ 'check__range', REUSED
+			  CASE ?
+			  [Offset_x < 0.001] ? Offset_x = 0.001 
+			  [Offset_x > 0.999] ? Offset_x = 0.999 ;
+			  ------------------
+			  LIKE ............. 'check__range', BUT (_x==>_y)*4
+		 ;
+         //DEBUG: "Offset=" Offset_x " " Offset_y " Shift=" ShiftX " " ShiftY 
+         //   #NL ;
 	[rotate_proj] ?
 		 --------------------------------------- 'rotate__proj', REUSED
 		 new_val = proj0 + (mouse.X - mouse_down0.X) / PBox.Width * 360
@@ -815,7 +943,17 @@ OVERRIDE mouse_move :
 	     CASE !Key.Shift ? 
 	          new_val = (_ * 10000).Int / 10000.0 ;
 		 Satellite_param.Excentricity.Set_text(new_val.S)
+	;
+	PBox.Invalidate_all .
+	
+
+OVERRIDE mouse_double_click :
+	CASE Satellite_param.Scale_up_shift ? 
+	     ShiftX = 0
+	     ShiftY = 0
+	     PBox.Invalidate_all 
 	; .
+	
 	
 BOOL drawn_dist|ance
 
@@ -858,6 +996,69 @@ OVERRIDE key_down ==> {Form}.{action} :
 	     
 
 
+
+OVERRIDE mouse_wheel ==> BOOL :
+	CASE Key.Control ?
+		 Save_current_image(FALSE)     
+		 CASE vertical_wheel < 0 ?
+		      CASE Current_image > 0 ? 
+		           Current_image -= 1
+		      ELSE ==> ;
+		 ELSE 
+		 	  CASE Current_image < All_images[].Count-1 ? 
+		 	       Current_image += 1	
+		 	  ELSE ==> ;
+		 ;
+		 Image = All_images[Current_image]
+		 Scaled_image = All_scaled[Current_image]
+		 ---------------------- 'set individual scale/rotate'
+		 Satellite_param.Scale_image.Set_text(All_scales[Current_image].S)
+		 Satellite_param.Rotate_image.Set_text(All_rotations[Current_image].S)
+		 Update_caption(All_img_names[Current_image])
+		 PBox.Invalidate_all
+		 ==>                    
+	;
+	CASE vertical_wheel < 0 ? 
+	     CASE Satellite_param.Satellite_num.Current < .Count-1 ? 
+	          Satellite_param.Satellite_num.Select(.Current+1) ;
+	ELSE 
+		 CASE Satellite_param.Satellite_num.Current > 0 ? 
+		      Satellite_param.Satellite_num.Select(.Current-1) ;
+	; .
+	
+METHOD Save_current_image(BOOL Add_new|_image) :
+	CASE Image != NONE ? 
+	     CASE All_images[].Count < Current_image ? 
+	          All_images[] << Image
+	          All_scaled[] << Scaled_image 
+	          All_scales[] << Satellite_param.Scale_image.Text.Real
+	          All_rotations[] << Satellite_param.Rotate_image.Text.Real
+	     ;
+	     All_images[Current_image] = Image
+	     All_scaled[Current_image] = Scaled_image
+	     All_scales[Current_image] = Satellite_param.Scale_image.Text.Real
+	     All_rotations[Current_image] = Satellite_param.Rotate_image.Text.Real
+	;
+    CASE Add_new ? 
+    	 CASE Current_image < All_images[].Count ? Current_image += 1 ; 
+	     All_images[].Insert(Current_image, Image)
+	     All_scaled[].Insert(Current_image, Scaled_image)
+	     All_scales[].Insert(Current_image, Satellite_param.Scale_image.Text.Real)
+	     All_rotations[].Insert(Current_image, Satellite_param.Rotate_image.Text
+	     	.Real)
+	     	
+	     All_img_names[].Insert(Current_image, "")
+	     CASE All_images[].Count > 10 ? 
+	          All_images[].Delete(0) 
+	          All_scaled[].Delete(0)
+	          All_scales[].Delete(0)
+	          All_rotations[].Delete(0)
+	          All_img_names[].Delete(0)
+	          Current_image -= 1
+	     ;
+    ; .
+	
+	
 END
 
 */

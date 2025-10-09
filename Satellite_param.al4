@@ -35,7 +35,6 @@ BASE CLASS: {Form_common} .
 {Combo} Show_spirals
 {Paint_turtle} Save_load
 {Paint_turtle} Add_spiral|_button
-{Paint_turtle} Back_direction
 {Combo} List_lang|uages
 {Label} LabelXLang
 {Label} LabelShow|_spirals
@@ -61,7 +60,6 @@ BASE CLASS: {Form_common} .
 {Label} Label_final_deviation
 {Edit} Final_deviation
 {Edit} Mass_BH|ole
-{Label} Label_1 | _596687_726243
 {Button} Make_screenshot
 {Checkbox} Time_distortion
 {Edit} Filter_sat|ellites
@@ -70,17 +68,25 @@ BASE CLASS: {Form_common} .
 {Timer} Timer_activate_filter
 {Label} LabelName
 {Edit} Edit_name
+{Dialog_file} Dialog_save_scr|eenshot_directory
+{Paint_turtle} Back_direction
+{Paint_turtle} Del_image
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
 
-CONSTRUCT://434088BA Do not change manually (created by Form Designer)
+CONSTRUCT://1E7503C4 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
 	new_column("", 'CENTER', {Form}.{sizes_col}(Label=-90,Align_right=TRUE))
 
+	------------------ 'DIALOG_SAVE_SCR'
+	Dialog_save_scr = New_dialog_save(THIS, "DIALOG_SAVE_SCR")
+
+	...Filter = "Png file|*.png"
+	...Default_ext = "png"
 	----------------- 'TIMER_INVALIDATE'
 	Timer_invalidate = New_timer(THIS, "TIMER_INVALIDATE", 250)
 	---------------- 'LABELSELECTSPIRAL'
@@ -107,7 +113,6 @@ PUSH in_construct = TRUE :
 	...Set_text("Name:")
 	------------------------ 'EDIT_NAME'
 	Edit_name = New_edit(THIS, "EDIT_NAME")
-
 	---------------------- 'DIALOG_LOAD'
 	Dialog_load = New_dialog_open(THIS, "DIALOG_LOAD")
 
@@ -281,6 +286,15 @@ PUSH in_construct = TRUE :
 	...Set_checked(TRUE)
 	----------------- 'LOAD_UNDER_IMAGE'
 	Load_under_image = New_button(THIS, "LOAD_UNDER_IMAGE", "Load under image")
+	------------------------ 'DEL_IMAGE'
+	Del_image = New_paint_turtle_button(THIS,
+ "DEL_IMAGE",
+ "20D60BRU60BRD60"),
+ >> grayable[]
+
+	...Set_width(18)
+
+	...Set_height(18)
 	---------------- 'LABEL_ROTATEIMAGE'
 	Label_RotateImage = {Label}(Form_=THIS, Alias="LABEL_ROTATEIMAGE")
 
@@ -297,10 +311,6 @@ PUSH in_construct = TRUE :
 	Scale_image = New_edit(THIS, "SCALE_IMAGE")
 
 	...Set_text("100")
-	-------------------------- 'LABEL_1'
-	Label_1 = {Label}(Form_=THIS, Alias="LABEL_1")
-
-	...Set_text("")
 	------------------ 'MAKE_SCREENSHOT'
 	Make_screenshot = New_button(THIS, "MAKE_SCREENSHOT", "Screenshot !")
 	--------------------- 'LABEL_FILTER'
@@ -309,6 +319,304 @@ PUSH in_construct = TRUE :
 	...Set_text("Filter satellites:")
 	----------------------- 'FILTER_SAT'
 	Filter_sat = New_edit(THIS, "FILTER_SAT"), >> grayable[]
+
+	...Set_text("*")
+	------------ 'TIMER_ACTIVATE_FILTER'
+	Timer_activate_filter = New_timer(THIS, "TIMER_ACTIVATE_FILTER", 300)
+
+	...Set_active(FALSE)
+	----------------------- 'LABELxLANG'
+	LabelXLang = {Label}(Form_=THIS, Alias="LABELxLANG")
+
+	...Set_text("Language:")
+	------------------------ 'LIST_LANG'
+	List_lang = New_combo(THIS, "LIST_LANG", "")
+	--------------------- 'DIALOG_IMAGE'
+	Dialog_image = New_dialog_open(THIS, "DIALOG_IMAGE")
+
+	...Filter = "All supported images|*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif"
+	------------------------------------------------------------- 'column COL_1'
+	new_column("COL_1", 'TOP', DEFAULT_SIZES)
+
+	Set_column_controls_layout('CONTROLS_LEFT_LAST_RIGHT')
+	------------------------ 'LABELSHOW'
+	LabelShow = {Label}(Form_=THIS, Alias="LABELSHOW")
+
+	...Set_text("Show:")
+	--------------------- 'SHOW_SPIRALS'
+	Show_spirals = New_combo(THIS, "SHOW_SPIRALS", @
+"All spirals"
+"All, bold current"
+"All, bold all"
+"All bolder"
+"All bolder, white glove"
+"Single spiral (current only)"
+"Single spiral, bold"
+"Single spiral, bolder"
+"None (hide all spirals)")
+
+	...Set_width(150)
+	------------------------ 'SAVE_LOAD'
+	Save_load = New_paint_turtle_button(THIS,
+ "SAVE_LOAD",
+ "5R25DL40LL40UR25RR40DBR"
+  "40RR40 UL40 (D50ULL17LL50B)3")
+
+
+	...Set_width(54)
+
+	...Set_height(18)
+
+	...Set_multi_button("Save,Load,Additionally")
+	----------------------------------------'form size / position'
+	Set_size(300, 0, 'FIT_TO_DISPLAY')
+	-------------------------- 'TITLE of Form'
+	Set_caption("Satellite parameters")
+
+	after_CONSTRUCT
+; .
+
+METHOD old_CONSTRUCT://0E0FEAA8 Do not change manually (created by Form Designer)
+	before_CONSTRUCT
+PUSH in_construct = TRUE :
+	------------------------------------------------------------------ 'column '
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=-90,Align_right=TRUE))
+
+	------------------ 'DIALOG_SAVE_SCR'
+	Dialog_save_scr = New_dialog_save(THIS, "DIALOG_SAVE_SCR")
+
+	...Filter = "Png file|*.png"
+	...Default_ext = "png"
+	----------------- 'TIMER_INVALIDATE'
+	Timer_invalidate = New_timer(THIS, "TIMER_INVALIDATE", 250)
+	---------------- 'LABELSELECTSPIRAL'
+	LabelSelectSpiral = {Label}(Form_=THIS, Alias="LABELSELECTSPIRAL")
+
+	...Set_text("Select  satellite:")
+	-------------------- 'SATELLITE_NUM'
+	Satellite_num = New_combo(THIS, "SATELLITE_NUM", "1")
+	----------------------- 'ADD_SPIRAL'
+	Add_spiral = New_paint_turtle_button(THIS,
+ "ADD_SPIRAL",
+ "20R30DLL60B30RR30B60 "
+  "B30RR30 U45 (D5LL5LL5LL5LLU25)3")
+
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Add,Also")
+	------------------------ 'LABELNAME'
+	LabelName = {Label}(Form_=THIS, Alias="LABELNAME")
+
+	...Set_text("Name:")
+	------------------------ 'EDIT_NAME'
+	Edit_name = New_edit(THIS, "EDIT_NAME")
+	---------------------- 'DIALOG_LOAD'
+	Dialog_load = New_dialog_open(THIS, "DIALOG_LOAD")
+
+	...Filter = "Galaxy settings (*.gal)|*.gal"
+	...Default_ext = "gal"
+	---------------------- 'DIALOG_FILE'
+	Dialog_file = New_dialog_save(THIS, "DIALOG_FILE")
+
+	...Filter = "Galaxy settings (*.gal)|*.gal"
+	...Default_ext = "gal"
+	------------------ 'LABEL_BOX_WIDTH'
+	Label_box_width = {Label}(Form_=THIS, Alias="LABEL_BOX_WIDTH")
+
+	...Set_text("Box width, light-years:")
+	------------------------ 'BOX_WIDTH'
+	Box_width = New_text_edit(THIS, "BOX_WIDTH", "N")
+
+	...Set_text("100000")
+	--------------------- 'LABEL_PERIOD'
+	Label_period = {Label}(Form_=THIS, Alias="LABEL_PERIOD")
+
+	...Set_text("Period, years:")
+	----------------------- 'PERIOD_ROT'
+	Period_rot = New_text_edit(THIS, "PERIOD_ROT", "N")
+
+	...Set_text("100000")
+	------------------- 'BACK_DIRECTION'
+	Back_direction = New_paint_turtle_button(THIS, "BACK_DIRECTION", "20R30DLL60")
+
+	...Set_width(18)
+
+	...Set_height(18)
+
+
+	...Set_width(18)
+
+	...Set_height(18)
+	--------------- 'LABEL_EXCENTRICITY'
+	Label_Excentricity = {Label}(Form_=THIS, Alias="LABEL_EXCENTRICITY")
+
+	...Set_text("e, Excentricity (0...0.99999):")
+	--------------------- 'EXCENTRICITY'
+	Excentricity = New_text_edit(THIS, "EXCENTRICITY", "N")
+
+	...Set_text("0.5")
+	----------------------- 'LABEL_MASS'
+	Label_Mass = {Label}(Form_=THIS, Alias="LABEL_MASS")
+
+	...Set_text("Central Black Hole Mass (of Sun):")
+	-------------------------- 'MASS_BH'
+	Mass_BH = New_edit(THIS, "MASS_BH")
+
+	...Set_text("4270000")
+	--------------- 'LABEL_PLASMA_SPEED'
+	Label_plasma_speed = {Label}(Form_=THIS, Alias="LABEL_PLASMA_SPEED")
+
+	...Set_text("Plasma speed kc (k=0...1):")
+	--------------------- 'PLASMA_SPEED'
+	Plasma_speed = New_edit(THIS, "PLASMA_SPEED")
+
+	...Set_text("0.2")
+	-------------------- 'LABEL_FINAL_K'
+	Label_final_k = {Label}(Form_=THIS, Alias="LABEL_FINAL_K")
+
+	...Set_text("Final plasma speed (0 if the same):")
+	--------------- 'FINAL_PLASMA_SPEED'
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "N")
+	------------ 'LABEL_DEVIATION_ANGLE'
+	Label_deviation_angle = {Label}(Form_=THIS, Alias="LABEL_DEVIATION_ANGLE")
+
+	...Set_text("Deviation angle (-90...90)")
+	------------------ 'DEVIATION_ANGLE'
+	Deviation_angle = New_text_edit(THIS, "DEVIATION_ANGLE", "N")
+
+	...Set_text("30")
+	------------ 'LABEL_FINAL_DEVIATION'
+	Label_final_deviation = {Label}(Form_=THIS, Alias="LABEL_FINAL_DEVIATION")
+
+	...Set_text("Final deviation angle (in perihole)")
+	------------------ 'FINAL_DEVIATION'
+	Final_deviation = New_text_edit(THIS, "FINAL_DEVIATION", "N")
+
+	...Set_text("60")
+	----------------- 'LABEL_CONE_ANGLE'
+	Label_cone_angle = {Label}(Form_=THIS, Alias="LABEL_CONE_ANGLE")
+
+	...Set_text("Cone angle (0...90):")
+	----------------------- 'CONE_ANGLE'
+	Cone_angle = New_text_edit(THIS, "CONE_ANGLE", "N")
+
+	...Set_text("90")
+	---------------- 'LABEL_ROTATE_PROJ'
+	Label_rotate_proj = {Label}(Form_=THIS, Alias="LABEL_ROTATE_PROJ")
+
+	...Set_text("Rotate projection (0...360):")
+	---------------------- 'ROTATE_PROJ'
+	Rotate_proj = New_edit(THIS, "ROTATE_PROJ")
+
+	...Set_text("0")
+	---------------- 'LABEL_INCLINATION'
+	Label_inclination = {Label}(Form_=THIS, Alias="LABEL_INCLINATION")
+
+	...Set_text("Inclination (-180...180):")
+	---------------------- 'INCLINATION'
+	Inclination = New_edit(THIS, "INCLINATION")
+
+	...Set_text("0")
+	----------------- 'LABEL_STARTING_A'
+	Label_starting_a = {Label}(Form_=THIS, Alias="LABEL_STARTING_A")
+
+	...Set_text("Starting angle (0...360):")
+	------------------- 'STARTING_ANGLE'
+	Starting_angle = New_text_edit(THIS, "STARTING_ANGLE", "N")
+
+	...Set_text("0")
+	------------------- 'LABELARMCOLORS'
+	LabelArmColors = {Label}(Form_=THIS, Alias="LABELARMCOLORS")
+
+	...Set_text("Spiral arms colors:")
+	----------------------- 'ARM_COLORS'
+	Arm_colors = New_combo(THIS, "ARM_COLORS", @
+"White-white"
+"Yellow-yellow"
+"Red-red"
+"Blue-Blue"
+"Green-green"
+"Red-blue"
+"Green-magenta"
+"Cyan-lime")
+	-------------- 'LABEL_ACTIVITY_TIME'
+	Label_activity_time = {Label}(Form_=THIS, Alias="LABEL_ACTIVITY_TIME")
+
+	...Set_text("Activity time, years:")
+	-------------------- 'ACTIVITY_TIME'
+	Activity_time = New_edit(THIS, "ACTIVITY_TIME")
+
+	...Set_text("200000")
+	------------------ 'ADD_TO_ACTIVITY'
+	Add_to_activity = New_paint_turtle_button(THIS,
+ "ADD_TO_ACTIVITY",
+ "20R30DLL60B"
+  "30RR30B60 B30RR30 U45 D60")
+
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Inc,Dec")
+	------------- 'LABEL_FIRST_ACTIVITY'
+	Label_first_activity = {Label}(Form_=THIS, Alias="LABEL_FIRST_ACTIVITY")
+
+	...Set_text("Skip first activity")
+	------------------- 'FIRST_ACTIVITY'
+	First_activity = New_text_edit(THIS, "FIRST_ACTIVITY", "N")
+
+	...Set_text("0")
+	-------------- 'LABEL_LAST_ACTIVITY'
+	Label_last_activity = {Label}(Form_=THIS, Alias="LABEL_LAST_ACTIVITY")
+
+	...Set_text("Skip last activity, years:")
+	-------------------- 'LAST_ACTIVITY'
+	Last_activity = New_edit(THIS, "LAST_ACTIVITY")
+
+	...Set_text("0")
+	----------------------- 'LABELHINT1'
+	LabelHint1 = New_memo(THIS,
+ "LABELHINT1",
+ MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY)
+
+	...Set_height(30)
+
+	...Set_foreground(NAVY)
+	------------------ 'TIME_DISTORTION'
+	Time_distortion = New_checkbox(THIS, "TIME_DISTORTION", "Time distortion")
+	...Set_checked(TRUE)
+	----------------- 'LOAD_UNDER_IMAGE'
+	Load_under_image = New_button(THIS, "LOAD_UNDER_IMAGE", "Load under image")
+	---------------- 'LABEL_ROTATEIMAGE'
+	Label_RotateImage = {Label}(Form_=THIS, Alias="LABEL_ROTATEIMAGE")
+
+	...Set_text("Rotate image (0...360):")
+	--------------------- 'ROTATE_IMAGE'
+	Rotate_image = New_text_edit(THIS, "ROTATE_IMAGE", "N")
+
+	...Set_text("0")
+	----------------- 'LABEL_SCALEIMAGE'
+	Label_ScaleImage = {Label}(Form_=THIS, Alias="LABEL_SCALEIMAGE")
+
+	...Set_text("Scale image, %")
+	---------------------- 'SCALE_IMAGE'
+	Scale_image = New_edit(THIS, "SCALE_IMAGE")
+
+	...Set_text("100")
+	------------------ 'MAKE_SCREENSHOT'
+	Make_screenshot = New_button(THIS, "MAKE_SCREENSHOT", "Screenshot !")
+	--------------------- 'LABEL_FILTER'
+	Label_Filter = {Label}(Form_=THIS, Alias="LABEL_FILTER")
+
+	...Set_text("Filter satellites:")
+	----------------------- 'FILTER_SAT'
+	Filter_sat = New_edit(THIS, "FILTER_SAT"), >> grayable[]
+
+	...Set_text("*")
 	------------ 'TIMER_ACTIVATE_FILTER'
 	Timer_activate_filter = New_timer(THIS, "TIMER_ACTIVATE_FILTER", 300)
 
@@ -511,9 +819,13 @@ PUSH in_construct = TRUE :
 	
 METHOD Fill_scale_rotate :
 	PUSH in_construct = TRUE :
-	CASE Scale_rotate_spirals ? 
+	CASE ?
+	[Scale_rotate_spirals] ?
 	     Label_RotateImage.Set_text("Rotate all spirals (0...360)"._RotAllSpirals)
-	     Label_ScaleImage.Set_text("Scale spirals, %"._ScaleSpirals) 
+	     Label_ScaleImage.Set_text("Scale spirals, %"._ScaleSpirals)
+	[Scale_up_shift] ?
+	     Label_RotateImage.Set_text("Rotate all (0...360)"._RotAll)
+	     Label_ScaleImage.Set_text("Scale up all, %"._ScaleUpAll)
 	ELSE Label_RotateImage.Set_text("Rotate image (0...360):"._Rotate_photo)
 	     Label_ScaleImage.Set_text("Scale image, %"._Scale_photo)
 	; 
@@ -664,6 +976,20 @@ OVERRIDE value_change :
     need_invalidate = TRUE .
     
 BOOL need_invalidate
+STR save_scr|inshot_directory
+
+FUN next_name(STR name|_of_png_file) ==> STR :
+        DEBUG: "next name of [" name "]"#NL ;
+    STR ex|tention = name.Ext 
+    RESULT = name.Change_ext("") 
+    FOR i IN [RESULT.Len-1 DOWNTO 0] :
+        CASE "0" <= RESULT.[i] <= "9" ? NONE
+        ELSE INT old|_n|umber = RESULT.[i+1 TO *].Int
+        	 RESULT = _.[0 TO i] (old+1).S ex 
+        	 DEBUG: "next is [" RESULT "]"#NL ;
+        	 ==> ;
+    ;
+    RESULT = _ "2" ex .
     
 
 OVERRIDE click :
@@ -717,15 +1043,24 @@ OVERRIDE click :
         	 //bmp.Capture_screen(source.Loc)
         	 bmp = draw_to(bmp)
         ;
-        NONE = bmp.To_clipboard
+        CASE Key.Shift ? 
+             CASE save_scr == "" ? 
+                  CASE !Dialog_save_scr.Select_file ? ==> ;
+                  save_scr = Dialog_save_scr.File_name
+             ELSE save_scr = next_name(_) ;
+             {Png}.To_file(bmp, save_scr, 100)
+        ELSE NONE = bmp.To_clipboard 
+        	 save_scr = "" ;
+        
     ["BACK_DIRECTION"]:
         Period_rot.Set_text((-Period_rot.Text.Real).S)
     ["LOAD_UNDER_IMAGE"]:
     	Main_.Scaled_image = NONE
         CASE !Dialog_image.Select_file ? 
-             Main_.Image = NONE
+             Main_.Clear_images
              Main_.Invalidate ==> ;
-        STR f|ilename = Dialog_image.Filename     
+        Main_.Save_current_image(TRUE)
+        STR f|ilename = Dialog_image.Filename  
         CASE f.Ext.Lower ? 
         [".png"]: Main_.Image = {Png}.From_file(f, 'FULL')
         [".bmp"]: .. = {Bmp}.From_file(f)
@@ -736,6 +1071,19 @@ OVERRIDE click :
         Main_.Update_caption(f.Extract_file_name)
         Main_.Invalidate
         button_colors
+    ["DEL_IMAGE"]:
+        INT ci|image_current = Main_.Current_image
+        Main_.All_images[].Delete(ci)
+    	Main_.All_scaled[].Delete(ci)
+    	Main_.All_img_names[].Delete(ci)
+    	Main_.All_scales[].Delete(ci)
+    	Main_.All_rotations[].Delete(ci)
+    	CASE ci >= Main_.All_images[].Count ? 
+    	     Main_.Current_image -= 1 ;
+    	-------------------------- 'go to another image'
+    	Main_.Image = Main_.All_images[.Current_image]
+    	Main_.Scaled_image = NONE
+    	Main_.Invalidate
     ["ADD_SPIRAL"]:
         CASE Add_spiral.Current ? 
         ["Add"]:
@@ -775,12 +1123,17 @@ OVERRIDE click :
 
         ;
 	["ADD_TO_ACTIVITY"]:
+		REAL p|eriod_rotation = Period_rot.Text.Real.Abs
     	CASE Add_to_activity.Current ? 
     	["Inc"]:
-    		Activity_time.Set_text((.Text.Real + Period_rot.Text.Real).S)    
+    		REAL mul|tiplayer = 1
+    		CASE Key.Shift ? mul = 0.1 ;
+    		Activity_time.Set_text((.Text.Real + p * mul).S)    
     	["Dec"]: 
     		CASE Activity_time.Text.Real > Period_rot.Text.Real ? 
-    		     Activity_time.Set_text((.Text.Real - Period_rot.Text.Real).S)
+    			 mul = 1
+    			 CASE Key.Shift ? mul = 0.1 ;
+    		     Activity_time.Set_text((.Text.Real - p * mul).S)
     		;
     	;
 
@@ -799,8 +1152,9 @@ OVERRIDE click :
     	    c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
     	    c.Set_r("Offset_x", Main_.Offset_x)	
     	    c.Set_r("Offset_y", Main_.Offset_y)
-    	    c.Set_r("Image_rotate", Rotate_image.Text.Real)
-    	    c.Set_r("Image_scale", Scale_image.Text.Real)
+    	    CASE !Scale_up_shift ? 
+	    	     c.Set_r("Image_rotate", Rotate_image.Text.Real)
+	    	     c.Set_r("Image_scale", Scale_image.Text.Real) ;
     	    ----------------------- 'loop on all spirals'
     	    FOR i IN [0 TO Satellite_num.Count-1] :
     	        c.Section = (i+1).S
@@ -942,6 +1296,24 @@ OVERRIDE click :
 		""
 		)
 
+	""	Item(	"COMPENSATE_SPEED_BY_PERIOD",
+				"Compensate plasma speed change by period"
+		).Checked(
+		Compensate_speed
+		).Hotkey(
+		""
+		)
+
+	""	Separator
+
+	""	Item(	"UNSCALE_IMAGE",
+				"Unscale/unrotate image scaling rotating all spirals"
+		).Disabled(
+		Scale_up_shift || Scale_image.Text.Int==100 && Rotate_image.Text.Int==0
+		).Hotkey(
+		""
+		)
+
 	""	Item(	"SCALE_ROTATE_ALL",
 				"Scale/rotate all spirals rather then image"
 		).Checked(
@@ -949,6 +1321,16 @@ OVERRIDE click :
 		).Hotkey(
 		""
 		)
+
+	""	Item(	"SCALEUP_SHIFT",
+				"Scale up & shift all (magnifier mode)"
+		).Checked(
+		Scale_up_shift
+		).Hotkey(
+		""
+		)
+
+	""	Separator
 
 	""	Item(	"PLASMA_SPEED_ALTER",
 				"Plasma speed alternative rule"
@@ -986,11 +1368,13 @@ BOOL Each_10000_years|_change_brightness
 BOOL Grab_markers|_lines_drawn
 BOOL All_ellipses|_magnified
 BOOL Start_proj_together
+BOOL Compensate_speed
 BOOL Alter_plasma_speed
 BOOL Glove_all
 BOOL Glove_current
 BOOL Grab_to_grid
 BOOL Scale_rotate_spirals
+BOOL Scale_up_shift
     
 METHOD caption_loc|alizable ==> STR :
 	= "Satellite /galaxy parameters"._CAPTION .
@@ -1064,7 +1448,11 @@ OVERRIDE mouse_down :
 		 				   Timer_activate_filter.Set_active(TRUE)
 		 				   need_invalidate = TRUE ==>
 		 ELSE dragging = NONE ==> ;
+		 -------------------------------- 'save initial values'
 		 value_start = editing.Text.Real
+		 start_value_period = Period_rot.Text.Real
+		 start_value_plasma_speed = Plasma_speed.Text.Real
+		 start_value_activity = Activity_time.Text.Real
 		 Main_.Stack_undo[] << All_satellites[Satellite_num.Current].CLONE
 	; 
 	CASE Key.Shift ? 
@@ -1080,6 +1468,10 @@ REAL value_start|_editing
 REAL range_fr|om
 REAL range_to
 {point} mouse_pos0|ition_start_dragging
+
+REAL start_value_plasma_speed
+REAL start_value_period
+REAL start_value_activity
 
 
 OVERRIDE mouse_move :
@@ -1133,12 +1525,29 @@ OVERRIDE mouse_move :
 		           new_val = (_ * 10_000).Int / 10_000.0
 		      ELSE new_val = _.Int ;
 		 ;
-	     editing.Set_text(new_val.S) ; .
+	     editing.Set_text(new_val.S)
+	     CASE Compensate_speed && editing == Final_plasma_speed ? 
+	     	  REAL k_mul|tiplayer = new_val / value_start     
+	     	  CASE !k_mul.Near(0) ? 
+		           REAL new_plasma_speed = start_value_plasma_speed * k_mul 
+		           PUSH sender_ = Plasma_speed :
+		                Plasma_speed.Set_text(new_plasma_speed.S) ;
+		           REAL new_period = start_value_period / k_mul.Power(2.0/3) 
+		           PUSH sender_ = Period_rot :
+		                Period_rot.Set_text(new_period.S) ;
+		           //REAL new_activity = start_value_activity/ k_mul.Power(2.0/3) 
+		           REAL new_activity = start_value_activity / start_value_period
+		           .. = _ * new_period 
+		           PUSH sender_ = Activity_time :
+		                Activity_time.Set_text(new_activity.S) ;
+	     	  ;
+	     ;
+	; .
 	     
 INT hint_n|umber
 
 METHOD Change_hint :
-	hint_n = (_ + 1) % 14
+	hint_n = (_ + 1) % 19
     //DEBUG: "set hint #" hint_n #NL ;
 	CASE hint_n ? 
 	[0]: 
@@ -1150,6 +1559,7 @@ METHOD Change_hint :
 		
 	[4]:...Set_text("Hint: press SHIFT or ALT to view a distance from the "
 		"center in the projection plane"._H4)
+		
 	[5]: ...Set_text("Hint: Ctrl+Screenshot! button screenshots this window"._H5)
 	[6]: ...Set_text("Hint: Ctrl+Z/Shift+Ctrl+Z to undo/redo one change"._H6)
 	[7]: ...Set_text("Hint: Click on hint left/right side to copy a/q values"._H7)
@@ -1158,7 +1568,19 @@ METHOD Change_hint :
 	[10]: ...Set_text("Hint: use also names in filters instead of numbers"._H10)
 	[11]: ...Set_text("Hint: * in filters refers to a current satellite"._H11)
 	[12]: ...Set_text("Hint: drag with RMB in box to fly/reset camera"._H12)
-	[13]: ...Set_text("Hint: click on hint to copy a / q values"._H13)
+	[13]: ...Set_text("Hint: drag with Shift+RMB in box to fly/reset camera "
+			"along only X or Y axis"._H13)
+			
+	[14]: ...Set_text("Hint: click on hint to copy a / q values"._H14)
+	[15]: ...Set_text("Hint: Control+mouse_wheel to switch between last loaded "
+			"images"._H15)
+			
+	[16]: ...Set_text("Hint: When in <Scale Up Shift All> magnifier mode, "
+		    "drag with LMB from a center to move both a model and an image"._H16)
+
+	[17]: ...Set_text("Hint: mouse_wheel to switch between satellites"._H17)
+	[18]: ...Set_text("Hint: press Screenshot button with SHIFT to save a "
+			"sequence of frames to a directory"._H18)
 	; .
 
 OVERRIDE mouse_up :
@@ -1269,12 +1691,36 @@ OVERRIDE menu_item :
     ["GRAB_MARKERS"]: Grab_markers = !_
     ["ALL_ELLIPSES"]: All_ellipses = !_
     ["START_PROJ_TOGETHER"]: Start_proj_together = !_
+    ["COMPENSATE_SPEED_BY_PERIOD"]: Compensate_speed = !_
     ["PLASMA_SPEED_ALTER"]: Alter_plasma_speed = !_    	
     ["GLOVE"]: Glove_all = !_
     ["GLOVE_CUR"]: Glove_current = !_
     ["GRAB_GRID"]: Grab_to_grid = !_
     ["SCALE_ROTATE_ALL"]: Scale_rotate_spirals = !_
+    	Scale_up_shift = FALSE
+    	Main_.Cache_image = NONE
     	Fill_scale_rotate
+    ["SCALEUP_SHIFT"]:
+    	Scale_up_shift = !_
+    	CASE Scale_up_shift ? Scale_rotate_spirals = FALSE ;
+    	Fill_scale_rotate
+    ["UNSCALE_IMAGE"]:
+        REAL si|mage_scale = 100 / Scale_image.Text.Real
+        REAL ri|image_rotate = Rotate_image.Text.Real
+        FOR sp_r IN All_satellites[] :
+            sp_r.Period = _ * si.Power(3/2.0)
+            sp_r.Activity = _ * si.Power(3/2.0)
+            sp_r.Last_act = _ * si.Power(3/2.0)
+            sp_r.Rotate -= ri
+            All_satellites[sp_r.INDEX] = sp_r.CLONE  
+        ;
+        PUSH setting_spiral = TRUE :
+	         Main_.All_scales[.Current_image] = 100
+	         Main_.All_rotations[.Current_image] = 0
+	         Scale_image.Set_text("100")
+	         Rotate_image.Set_text("0")
+        ;
+        selected_satellite
     ["DEL_SPIRAL"]:
         CASE !ask("Spiral number " Satellite_num.Text " will be deleted."
              " Continue?") 
@@ -1374,7 +1820,7 @@ METHOD draw_to|_bitmap(
     CASE Last_activity.Text.Real > 0 ? 
          ..[] << Label_last_activity << Last_activity ;
     ..[] << LabelHint1
-    ------------------------------- 'darw all controls'
+    ------------------------------- 'draw all controls'
     REAL y|_position = 0
     FOR con IN contr[] :
         {rect} b|ounds_dest = con.Bounds.Offset(0,-Satellite_num.Bounds.Top)
@@ -1398,6 +1844,7 @@ METHOD draw_to|_bitmap(
 
 OVERRIDE disabled ==> BOOL :
     CASE sender_alias ?
+    ["DEL_IMAGE"]: RESULT = Main_.All_images[].Count <= 1
     ["FILTER_SAT"]: RESULT = !Enable_filtering
     ; .
     
