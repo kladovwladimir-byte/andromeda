@@ -4,8 +4,8 @@ CLASS {Main_plasma_tides}, UNTESTED:
 
 IMPORT {Form_common}, {Satellite_param}, {Elliptic_orbit}, {Localize_str} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
-IMPORT: {Vector}, {Matrix} .
-
+IMPORT: {Vector}, {Matrix}, {Calculations_diff}, {Bitmap_direct} .
+IMPORT, DEBUG: {Bmp} .
 
 BASE CLASS: {Form_common} .
 {Paintbox} PBox|_main
@@ -30,10 +30,11 @@ PUSH in_construct = TRUE :
 	after_CONSTRUCT
 ; .
 
-METHOD Update_caption(STR file_name) :
-    Set_caption(if(file_name<>"", file_name " - ") 
+METHOD Update_caption(STR file_path) :
+    Set_caption(if(file_path<>"", (All_img_names[].Find(file_path) + 1).S  
+    	": " file_path.Extract_file_name " - ") 
     	"Emission model of spiral galaxy (tides on satellits of SMBH)"._CAPTION) 
-    All_img_names[Current_image] = file_name
+    All_img_names[Current_image] = file_path
     .
 
 
@@ -124,6 +125,7 @@ OVERRIDE paint :
              t = _ PBox.Height.Points_to_pixels.S
              ---------------------- 'text', REUSED
              c.Foreground = WHITE
+             c.Reset_transform
              PUSH c.Font.Size = 14 :
 	              c.Text(Pt(4, 4), t)
 	              c.Foreground = BLUE
@@ -136,11 +138,6 @@ OVERRIDE paint :
         ;
     ELSE BASE
     ; .
-    
-FUN mod180|_or_minus_180(REAL V|alue_180) ==> REAL :
-    RESULT = V.mod360
-    CASE RESULT > 180 ? RESULT -= 360 ;
-    .
     
 METHOD Get_filters(
 STR Filt|ers_all[], STR From|_filter_string)
@@ -185,6 +182,8 @@ REAL Cache_ro|tate
 INT Cache_cur|rent_image
 STR Cache_name|_image
 
+{rect} d_o|verlay_dest
+
     
 METHOD Paint_to(
 {Canvas} C|anvas_to || c, BOOL To_bitmap), OPERATORS({Matrix})
@@ -215,7 +214,21 @@ METHOD Paint_to(
 	REAL box_size = Satellite_param.Box_width.Text.Real
 	-------------------- 'draw options'
 	BOOL bright_by_k = Satellite_param.Bright_by_plasma_speed
-	BOOL each_10_000 = Satellite_param.Each_10000_years
+	INT each_10_000 = Satellite_param.Each_10000_years
+	INT draw_dots = 0
+	CASE Satellite_param.Draw_as_dots ?
+	     draw_dots = each_10_000 / 1000 + 2
+	;
+	------------------- 'prepare to count differences'
+	Count_p = 0
+	Sum_bright_diff = 0
+	Count_diff_passed = 0
+	Count_check_passed = 0
+	Sum_threshold_passed = 0
+	Sum_check_passed = 0
+	draw_additionally = Calculations_diff.Combo_draw_additionally.Current
+	CASE !Calculations_diff.Draw_additionally.Checked ? 
+	     draw_additionally = -1 ;
 	----------------------------------- 'underlying image'
 	CASE Image != NONE ? 
 	     REAL ow|idth_overlay = Image.Width.Pixels_to_points
@@ -223,7 +236,7 @@ METHOD Paint_to(
 	     REAL kw|idth_kompress = ow / ww1
 	     REAL kh|eight_kompress = oh / ww1
 	     CASE kh < kw ? kw = kh ;
-	     {rect} d_o|verlay_dest = {rect}(W= ow/kw, H= oh/kw)
+	     d_o = {rect}(W= ow/kw, H= oh/kw)
 	     d_o = _.Offset((ww - ow/kw)/2, (h - oh/kw)/2)
 	     {rect} dwo|_without_scale = d_o.CLONE
 	     --------------------------------------------- 'rotate ?'
@@ -284,7 +297,7 @@ METHOD Paint_to(
          //DEBUG: "scaled image drawn to: " d_o.Loc.S " w=" d_o.W " h=" .H #NL
          //   NONE= Scaled_image.Save("test-scaled.png")
          //;
-         CASE !To_bitmap && Satellite_param.Scale_up_shift
+         CASE !To_bitmap && (Satellite_param.Scale_up_shift)
            && Cache_image != NONE
            && Cache_sc.Near(Satellite_param.Scale_image.Text.Real)
            && Cache_ro.Near(Satellite_param.Rotate_image.Text.Real)
@@ -307,7 +320,10 @@ METHOD Paint_to(
 		     	  			      
          ELSE
 		     Scaled_image.Draw(c, d_o.Loc)
-		     CASE !To_bitmap && Satellite_param.Scale_up_shift ? 
+		     CASE !To_bitmap && (Satellite_param.Scale_up_shift)
+		          ?
+		          Brightness_min = NONE
+		          Brightness_max = NONE
 		          Cache_image = New_bitmap(ww.Points_to_pixels, 
 		          	h_box.Points_to_pixels, 32)
 		          		 
@@ -324,8 +340,14 @@ METHOD Paint_to(
 		     	  Cache_name = All_img_names[Current_image]
 		     ;
          ;
+         --------------------- 'need brightness table?'
+         CASE Satellite_param.Calc_bright_diff ?
+              prepare_brightness_table //(ww, h_box)
+         ;
 	;
-	CASE rmb_down && !change_start && !change_incl ? ==> ;
+	CASE rmb_down 
+	     && (!Satellite_param.Rmb_3D_fly || !change_start && !change_incl) 
+	     ? ==> ;
 	BOOL time_distortion = Satellite_param.Time_distortion.Checked  
 	--------------------------------- 'find max plasma speed'
 	REAL speed_max = 0
@@ -333,6 +355,11 @@ METHOD Paint_to(
 	    CASE filt[].Count > 0 && (sat.INDEX+1).S !IN filt[] ? CONTINUE sat ;
 	    speed_max = _.Max(sat.SpeedK).Max(sat.FinalK)
 	;
+	--------------------------------- 'sun position (for retrospective in Milky Way)'
+	{point} sun|_system_position = Pt(
+		PBox.Width * mouse_down_rmb.X, PBox.Height * mouse_down_rmb.Y)
+		
+	REAL scale_ly_per_pt = box_size / ww
 	--------------------------------- 'loop on all sputniks'
 	
 	{point} prev|ious
@@ -372,11 +399,17 @@ METHOD Paint_to(
 		CASE !show_spiral && !Satellite_param.All_ellipses 
 		     && !hide_all_spirals
 		     ? CONTINUE sat ;
+		------------------- 'to filter by speed'
+		REAL min_speed|_of_plasma_to_draw = sat.Filter_speed
+		CASE !Satellite_param.Filtering_by_speed ? min_speed = 0 ;
+		-------------------     
 		BOOL glove|_white = Satellite_param.Glove_all
 		.. ||= Satellite_param.Glove_current 
 			&& sat.INDEX==Satellite_param.Satellite_num.Current
 			
 		CASE bright_by_k ? c.Pen_width *= 2 ;
+		CASE Satellite_param.Scale_up_shift ? 
+		     c.Pen_width = _ / Scaling_image * 100 ;
 	    {Vector} v|ector_pos|temp
 	    REAL dist|ance_to_center
 	    REAL sin_b|etha
@@ -406,13 +439,22 @@ METHOD Paint_to(
 	    {e_point} ep|oint_ellipse
 	    REAL start_time
 	    INT i_point|_index
+	    ------------------- 'center point'
+	    REAL xx0|_center = ww/2 + ww1*(Offset_x - 0.5)
+	    REAL yy0|_center = h/2 + h*(Offset_y - 0.5)
 	    ------------------- 'deviation rotation'
 	    REAL rot|ation_of_orbit
+	    ------------------- 'to provide calculations'
+	    BOOL do_calc|ulations = Satellite_param.Calc_bright_diff
+	    	 && Satellite_param.Satellite_num.Current == sat.INDEX
+	    diff_last_min[].Clear
+	    diff_last_max[].Clear
+	    -------------------
 	    FOR pass IN [1 TO 2] <-----------------------------------
 	        CASE pass ?
 	        [1]: INT arm_n|umber = -1
 	        [2]: arm_n = +1 ;
-	        	      
+	        
 	        LOCAL :
 	    		CASE sat.ArmsColors * 2 + pass - 1 ?
 	    		[0, 1]: c.Foreground = WHITE
@@ -432,11 +474,24 @@ METHOD Paint_to(
                 //CASE Satellite_param.Show_spirals.Current IN [3, 4]
                 //     || !each_10_000
                 //     ?
-	    		CASE !each_10_000 ? fore2 = fore1 ;
+	    		CASE each_10_000 == 0 ? fore2 = fore1 ;
 	    		provide_matrices(sat)
 	    		z_mul = Sin(PI/2 - sat.Cone_a*PI/180) / Sin(PI/4) * m_a
 	    		xy_mul = Cos(PI/2 - sat.Cone_a*PI/180) / Sin(PI/4) * m_a
 			;    		
+	        CASE Satellite_param.Which_spirals ? 
+	        [0]: NONE 
+	        [1]: 
+	            CASE pass != 1 ? CONTINUE pass ;
+	        [2]: 
+	            CASE pass != 2 ? CONTINUE pass ;
+	        [3]:
+	        	CASE pass==2 ? 
+	        	     fore1 = _.Mix_percents(WHITE, 25) 
+	        	     fore2 = _.Mix_percents(WHITE, 25) 
+	        	;
+	        ;
+	        	      
 	        present_prev = FALSE
 	        start_time = 0
 	        i_point = 0
@@ -466,11 +521,16 @@ METHOD Paint_to(
 	            	 [i_point == orbit.Points[].Count/2] ?
 	            	      M_start = provide_matrix_start(-sat.StartA + rot)
 	            	 ;
+	            	 ----------------------- 'no__prev', REUSED
+	            	 has_prev_in_out = FALSE
+	            	 diff_last_min[].Clear
+	            	 diff_last_max[].Clear
 	                 ------------------------
 			         CONTINUE j
 			    ;
 				CASE !show_spiral ?
 				     LIKE .............. 'next__point'
+				     LIKE .............. 'no__prev'
 				     CONTINUE j ;
 		        CASE {
 		        [sat.FinalK > 0 && sat.Excentricity > 0] ?
@@ -478,8 +538,8 @@ METHOD Paint_to(
 		             CASE Satellite_param.Alter_plasma_speed ? 
 		                  speed_i = sat.FinalK - _ * (.FinalK - .SpeedK)
 		             ELSE speed_i = sat.SpeedK + _ * (.FinalK - .SpeedK) ;
-		        [sat.Excentricity <= 0 && .FinalK > 0] ?
-		             speed_i = 0.5 * (sat.FinalK + .SpeedK)
+                //[sat.Excentricity <= 0 && .FinalK > 0] ?
+                //     speed_i = 0.5 * (sat.FinalK + .SpeedK)
 		        ELSE
 		             speed_i = sat.SpeedK
 		        }
@@ -522,17 +582,46 @@ METHOD Paint_to(
 		        ------------------------- 'final point coords'
 		        xx = _ / box_size * scale_size + ww/2 + ww1*(Offset_x - 0.5)
 		        yy = _ / box_size * scale_size + h/2 + h*(Offset_y - 0.5)
+		        --------------------- 'correct for retrospective from Sun in MW'
+		        CASE Satellite_param.Retrospective { 
+			         REAL dist_sun || ds = Distance(sun, Pt(xx,yy)) * scale_ly_per_pt
+			         REAL dist_xx_yy || dxy = Distance(Pt(xx, yy), Pt(xx0, yy0))
+			         REAL tt|ime_to_move_plasma = dxy * scale_ly_per_pt / speed_i
+			         xx = xx0 + (xx - xx0) * (tt - ds) / tt
+			         yy = yy0 + (yy - yy0) * (tt - ds) / tt
+			         CASE ds > tt ? 
+			              present_prev = FALSE
+			              LIKE ............... 'next__point'
+			              LIKE .............. 'no__prev'
+			              CONTINUE j ;
+		        }
 			    ------------------------- 'skip points far from bounds'
 			    CASE xx < -100 || xx > ww+100
 			         || yy < -100 || yy > h_box+100
+			         || speed_i < min_speed
 			         ?
 			         present_prev = FALSE
 			         LIKE ............... 'next__point'
+			         LIKE .............. 'no__prev'
 			         CONTINUE j ;
+		        ------------------------- 'do calculations ?'
+		        CASE do_calc ? 
+		             calculations_one_point(Pt(xx, yy), Pt(xx0, yy0), c)
+		        ;
 			    ------------------------- 'draw next or skip'
-				CASE present_prev {
-					 CASE (ep.T.Int / 10_000).Abs % 2 == 1 ?
+				CASE ?
+				[draw_dots > 0] ? 
+					CASE j % draw_dots == 0 ? 
+				    	c.Rect({rect}(Loc=Pt(xx-0.5,yy-0.5), W=1, H=1)) ;
+				[present_prev] ?
+					 CASE (ep.T.Int / each_10_000).Abs % 2 == 1 ?
 					      c.Foreground = fore2
+					      CASE Satellite_param.Dont_draw_dark && fore2 != fore1 ? 
+							   present_prev = TRUE
+							   prev = Pt(xx, yy)
+							   LIKE ................... 'next__point'
+							   CONTINUE j
+					      ;
 					 ELSE c.Foreground = fore1 ;
 					 CASE ?
 					 [bright_by_k] ?
@@ -573,7 +662,9 @@ METHOD Paint_to(
 					 ELSE
 					      c.Line(Pt(xx, yy), prev)
 					 ; 
-				ELSE c.Rect({rect}(Loc=Pt(xx-1,yy-1), W=2, H=2)) }
+				[min_speed > 0] ? NONE
+				ELSE c.Rect({rect}(Loc=Pt(xx-1,yy-1), W=2, H=2))
+				;
 				present_prev = TRUE
 				prev = Pt(xx, yy)
 				LIKE ................... 'next__point'
@@ -581,17 +672,31 @@ METHOD Paint_to(
 	    -------------------------------------------------------------->
 		//DEBUG: "satellite " sat.INDEX " last_pos=" sat.Last_i_pos #NL ;
 	;
-	CASE Bounds.Contains(Mouse_cur) || Key.Shift || Key.Alt 
-	     || To_bitmap && last_mouse_shift.X > 0 < .Y
-	     || Satellite_param.Grab_markers
-	     ?
-	     c.Foreground = TEAL 
+	BOOL draw_mark|ers = Satellite_param.Grab_markers
+	CASE !To_bitmap ? 
+	     draw_mark = _ || Bounds.Contains(Mouse_cur) 
+	     || Key.Shift || Key.Alt
+	     || To_bitmap && last_mouse_shift.X > 0 < .Y ;
+	CASE draw_mark ?
+	     c.Foreground = ORANGE.Mix(YELLOW) 
+	     CASE glove ? c.Foreground = _.Mix(WHITE) ;
 	     c.Pen_width = 1
 	     {point} mp|oint_draw_to = mouse
 		 CASE To_bitmap { 
 		      mp = last_mouse_shift.CLONE 
-		   	  //last_mouse_shift = Pt(0, 0)
 		 }
+		 CASE Satellite_param.Once_Retrospective ? 
+		      sun = Pt(
+		      	PBox.Width * mouse_down_rmb.X,
+		      	PBox.Height * mouse_down_rmb.Y)
+		      	
+		      PUSH c.Foreground = BLACK :
+		      PUSH c.Background = YELLOW :
+		           c.Ellipse({rect}(Loc= sun.Offset(-3, -3), W=6, H=6)) 
+		           c.Ellipse({rect}(Loc= sun.Offset(-1, -1), W=2, H=2))
+		      ;
+		      ;
+		 ;
 	     --------------------
 	     INT scur1|rent_sat = Satellite_param.Satellite_num.Current 
 	     INT scur2|_last_sat = scur1
@@ -619,9 +724,6 @@ METHOD Paint_to(
 		         ELSE ep = orbit.Points[0].CLONE ;
 		         ------------------------- 'apply rotations'
             	v = Vector_3(ep.X_LY, ep.Y_LY, 0) * M_transform
-                //v = Vector_3(ep.X_LY, ep.Y_LY, 0) * M_start
-                //v = _ * M_incl
-                //v = _ * M_rot_proj
             	xx = +v.[0] 
             	yy = -v.[1]
 		         ------------------------- 'scale and center then draw'
@@ -678,11 +780,6 @@ METHOD Paint_to(
 			 REAL m_size|_text = c.Measure(s).W
 			 CASE tp.X + m_size > ww ? tp.X = ww - m_size - 5 ;
 			 CASE tp.Y < 0 ? tp.Y = 0 ;
-			 PUSH c.Foreground = WHITE :
-			      c.Text(tp.Offset(1.Pixels_to_points, 1.Pixels_to_points), s) 
-			 ;
-			 c.Text(tp, s) 
-			 drawn_dist = TRUE
 			 ------------------------- 'some lines here'
 			 PUSH c.Foreground :
 			 	  v = Vector_3(PBox.Width, 0, 0) * M_rot_proj
@@ -694,8 +791,17 @@ METHOD Paint_to(
 	 			  
 			 	  c.Line(Pt(xx - v.[0], yy + v.[1]), Pt(xx + v.[0], yy - v.[1]))
 			 ;
+			 c.Reset_transform
+			 PUSH c.Foreground = WHITE :
+			      c.Text(tp.Offset(1.Pixels_to_points, 1.Pixels_to_points), s) 
+			 ;
+			 c.Text(tp, s) 
+			 drawn_dist = TRUE
 		;
-	; .
+	; 
+	CASE do_calc ? 
+	     final_calculations ;
+	.
 	
 
 REAL last_step_off|set
@@ -781,6 +887,7 @@ BOOL lmb_down, PUBLIC
 BOOL rmb_down
 BOOL drag_center|_of_galaxy
 {point} mouse_down0|_position
+{point} mouse_down_rmb|_relative_position
 {point} offset0|_when_mouse_down
 {point} shift0|_when_mouse_down
 
@@ -828,6 +935,8 @@ OVERRIDE mouse_down :
     rotate_p0 = rotate_p
     rotate_s0 = rotate_s
 	mouse_down0 = mouse
+	CASE rmb_down ? 
+	     mouse_down_rmb = Pt(mouse.X/PBox.Width, mouse.Y/PBox.Height) ;
 	------------------------------- 'store initial value(s)'
 	proj0 = Satellite_param.Rotate_proj.Text.Real
 	incl0 = Satellite_param.Inclination.Text.Real
@@ -862,6 +971,10 @@ FUN mod360|_of_real_value(REAL v|alue_to_mod) ==> REAL :
 	    ELSE BREAK i ;
 	; .
 	
+FUN mod180|_or_minus_180(REAL V|alue_180) ==> REAL :
+    RESULT = V.mod360
+    CASE RESULT > 180 ? RESULT -= 360 ; .
+
 INT is_linux
 	
 METHOD Global_L_button ==> BOOL :
@@ -880,7 +993,7 @@ OVERRIDE mouse_move :
 	{satellite_param} sat|_current 
 	sat = Satellite_param.All_satellites[.Satellite_num.Current].CLONE
 	CASE ?
-	[rmb_down && (change_start || change_incl)] ?
+	[rmb_down && Satellite_param.Rmb_3D_fly && (change_start || change_incl)] ?
 	     REAL new_val|ue = rotate_s0 + (mouse.X - mouse_down0.X)/PBox.Width * 360
 	     CASE !Key.Shift || change_start ? 
 	          rotate_s = new_val.mod360
@@ -892,7 +1005,8 @@ OVERRIDE mouse_move :
 	[rmb_down] ? NONE
 	[drag_center] ?
 		 REAL w1|_width_to_offset = Min(PBox.Height,.Width)
-		 CASE Satellite_param.Scale_up_shift ? 
+		 CASE ?
+		 [Satellite_param.Scale_up_shift && !Key.Control] ?
 		      ShiftX = shift0.X + (mouse.X - mouse_down0.X) / w1 * 100
 		      ShiftY = shift0.Y + (mouse.Y - mouse_down0.Y) / w1 * 100
 		      CASE ?
@@ -901,7 +1015,7 @@ OVERRIDE mouse_move :
 		      CASE ?
 		      [ShiftY < -99] ? ShiftY = -99 
 		      [ShiftY > 99] ? ShiftY = 99 ;
-		 ELSE
+		 [!Satellite_param.Control_drag_center || Key.Control] ?
 			  Offset_x = offset0.X + (mouse.X - mouse_down0.X) / w1
 			  Offset_y = offset0.Y + (mouse.Y - mouse_down0.Y) / w1
 			  ------------------ 'check__range', REUSED
@@ -931,7 +1045,7 @@ OVERRIDE mouse_move :
 	     
 	[change_incl] ?
 	     new_val = incl0 + (mouse.Y - mouse_down0.Y) / PBox.Height * 180
-		 new_val = _.mod360
+		 new_val = _.mod180
 		 CASE !Key.Shift ? new_val = _.Int ;
 		 Satellite_param.Inclination.Set_text(new_val.S)
 	[change_excen] ?
@@ -1057,6 +1171,254 @@ METHOD Save_current_image(BOOL Add_new|_image) :
 	          Current_image -= 1
 	     ;
     ; .
+    
+{Matrix} Brightness_min|_avg_table
+{Matrix} Brightness_max|_avg_table
+
+INT Count_p|oints|_bright_diff_calculated
+REAL Sum_bright_diff
+REAL Avg_bright_diff
+REAL Diff_threshold = 15
+INT Count_diff_passed|_greater_then_threshold
+REAL Sum_threshold_passed
+REAL Avg_threshold_passed
+INT Count_check_passed
+REAL Sum_check_passed
+REAL Avg_check_passed|_diff
+REAL Step_points = 2
+INT draw_additionally
+
+{Calculations_diff} Calculations_diff|_form
+{Bitmap_direct} temp_bmp|_direct
+
+METHOD prepare_brightness_table :
+    CASE Brightness_min != NONE ? ==> ;
+	INT w|_points = Scaled_image.Width.Pixels_to_points.Int
+	INT h|_points = Scaled_image.Height.Pixels_to_points.Int
+    {Matrix} m_min|_brightness_temp = New_matrix(h, w)
+    {Matrix} m_max|_brightness_temp = New_matrix(h, w)
+    temp_bmp = New_bitmap_direct(w, h, 32)
+    ------------------------- 'prepare temp image with points as sizes'
+    Scaled_image.Stretch_draw(temp_bmp.Canvas, {rect}(
+    	W=w.Pixels_to_points, H=h.Pixels_to_points))
+    	//W=temp_bmp.Width.Pixels_to_points, H=temp_bmp.Height.Pixels_to_points))
+
+    DEBUG: 
+          {Bmp}.To_file(Scaled_image, "Scaled_image.bmp") 
+          {Bmp}.To_file(temp_bmp, "temp.bmp") 
+    ;
+    temp_bmp.Lock(TRUE)
+    FOR y IN [0 TO m_min.NRows-1] :
+        INT yy|_source_pixels_row = y //.Points_to_pixels
+    	FOR x IN [0 TO m_min.NColumns-1] :
+    		INT xx|_source_pixel_column = yy * temp_bmp.Row_width + x*4 //.Points_to_pixels
+    			
+    	    m_min.[x, y] = temp_bmp.Pixels[xx].Int.Min(
+    	    			   temp_bmp.Pixels[xx+1].Int).Min( 
+    	    			   temp_bmp.Pixels[xx+2].Int) 
+    	    			   
+    	    m_max.[x, y] = temp_bmp.Pixels[xx].Int.Max(
+    	    			   temp_bmp.Pixels[xx+1].Int).Max( 
+    	    			   temp_bmp.Pixels[xx+2].Int) 
+    	;
+    ; 
+    temp_bmp.Unlock(FALSE) 
+    --------------------------- 'now calculate each point as average of NxN'
+    Brightness_min = New_matrix(h, w)
+    Brightness_max = New_matrix(h, w)
+    REAL total_min = 255
+    REAL total_max = 0
+    FOR y IN [0 TO m_min.NRows-1] :
+        FOR x IN [0 TO m_min.NColumns-1] :
+            REAL min_b|rigtness = 100
+            REAL max_b|rigtness = 0
+            FOR x1 IN [(x - Step_points.Int).Max(0) TO (
+            	x + Step_points.Int).Min(m_min.NColumns-1)] <--------------
+                FOR y1 IN [(y - Step_points.Int).Max(0) TO (
+                	y + Step_points.Int).Min(m_min.NRows-1)] :
+                    min_b = _.Min(m_min.[x1, y1])
+                    max_b = _.Max(m_max.[x1, y1])
+                ;
+            -------------------------------------------------------------->
+            Brightness_min.[x, y] = min_b
+            Brightness_max.[x, y] = max_b
+            total_min = _.Min(min_b)
+            total_max = _.Max(max_b)
+        ;
+    ; 
+    ------------------------ 'normalize to range 0-100'
+    REAL total_r|ange = total_max - total_min + 1
+    FOR y IN [0 TO m_min.NRows-1] :
+        FOR x IN [0 TO m_min.NColumns-1] :
+            Brightness_min.[x, y] = (_ - total_min) / total_r * 100
+            Brightness_max.[x, y] = (_ - total_min) / total_r * 100
+        ;
+    ;
+    .
+
+REAL diff_last_min|_3_pts[]
+REAL diff_last_max|_3_pts[]
+REAL check_last_min|_3_pts[]
+REAL check_last_max|_3_pts[]
+{point} prev_out|er_point
+{point} prev_inn|er_point
+BOOL has_prev_in_out
+
+    
+METHOD calculations_one_point(
+{point} dest|ination, {point} c|enter_point, {Canvas} Canv|as_dest)
+    :
+	REAL dist|ance_to_center = Distance(dest, c)
+	CASE dist < 0.01 ? ==> ;
+    {point} inn|er_point
+    {point} out|er_point 
+    REAL dist2|_to_move = (dist + Step_points*2) / dist
+    INT dx|_offset = d_o.Left.Int
+    INT dy|_offset = d_o.Top.Int
+	---------------------- 'out', REUSED
+    out = Pt(c.X + (dest.X - c.X) * dist2,
+    		 c.Y + (dest.Y - c.Y) * dist2)
+    ----------------------
+    CASE 0 <= out.X < Brightness_min.NColumns ? NONE ELSE ==> ;
+    CASE 0 <= out.Y < Brightness_min.NRows ? NONE ELSE ==> ;
+    dist2 = (dist - Step_points) / dist      
+    LIKE ................. 'out', BUT(out==>inn)
+    CASE 0 <= inn.X < Brightness_min.NColumns ? NONE ELSE ==> ;
+    CASE 0 <= inn.Y < Brightness_min.NRows ? NONE ELSE ==> ;
+    BOOL use_dest|ination_point_too = TRUE     
+    --------------------------------------- 'get__min__brightness', REUSED
+    REAL b_min|_brightness = Brightness_min.[out.X.Int-dx, out.Y.Int-dy].Min(
+    	Brightness_min.[inn.X.Int - dx, inn.Y.Int - dy])
+    CASE use_dest ? 
+         .. = _.Min(Brightness_min.[dest.X.Int - dx, dest.Y.Int - dy]) ;
+	-------------------------
+	LIKE .............. 'get__min__brightness', BUT (min==>max)*4, (Min==>Max)*2
+	
+	--------------------------------------- 'to check additionally'
+	dist2 = (dist + Step_points*4) / dist
+	{point} i_2|_point
+	{point} o_2|_points
+	LIKE .............. 'out', BUT (out==>o_2)
+	LIKE .............. 'out', BUT (out==>i_2)
+	use_dest = FALSE
+	LIKE .............. 'get__min__brightness',
+		BUT (b_min==>ch_min), (out==>o_2)*2, (inn==>i_2)*2
+		
+	LIKE .............. 'get__min__brightness',
+		BUT (b_min==>ch_max), (out==>o_2)*2, (inn==>i_2)*2,
+			(min==>max)*3, (Min==>Max)*2
+			
+
+    DEBUG: 
+          temp_bmp.Canvas.Foreground = RED
+          temp_bmp.Canvas.Units = 'PIXELS'
+          temp_bmp.Canvas.Rect({rect}(Loc= dest.CLONE, W=1, H=1)) 
+          PUSH temp_bmp.Canvas.Foreground = LIME :
+               temp_bmp.Canvas.Rect({rect}(Loc= out.CLONE, W=1, H=1))
+          ;
+          PUSH temp_bmp.Canvas.Foreground = YELLOW :
+               temp_bmp.Canvas.Rect({rect}(Loc= inn.CLONE, W=1, H=1))
+          ;
+    ;
+    --------------------------- 'count results'
+    Count_p += 1
+    diff_last_min[] << b_min
+    diff_last_max[] << b_max
+    check_last_min[] << ch_min
+    check_last_max[] << ch_max
+    
+    CASE diff_last_min[].Count > 1 ? 
+    	 b_min = _.Min(diff_last_min[0])
+    	 b_max = _.Max(diff_last_max[0])
+    	 ch_min = _.Min(check_last_min[0]) 
+    	 ch_max = _.Max(check_last_max[0]) 
+    ;
+    	 
+    CASE diff_last_min[].Count > 2 ? 
+    	 b_min = _.Min(diff_last_min[1])
+    	 b_max = _.Max(diff_last_max[1]) 
+    	 ch_min = _.Min(check_last_min[1]) 
+    	 ch_max = _.Max(check_last_max[1]) 
+    	 diff_last_min[].Delete(0)	 
+    	 diff_last_max[].Delete(0)	 
+    ;
+    	 
+    REAL diff|erence = b_max - b_min
+    Sum_bright_diff += diff
+    CASE diff >= Diff_threshold ? 
+         BOOL passed_now = TRUE
+         Count_diff_passed += 1 
+         Sum_threshold_passed += diff
+         CASE ch_max - ch_min <= Diff_threshold ? 
+              BOOL check_passed = TRUE
+              Count_check_passed += 1
+              Sum_check_passed += diff 
+         ;
+    ;
+         
+    CASE has_prev_in_out ? 
+         PUSH Canv.Pen_width = 1 :
+	     CASE draw_additionally ? 
+	     [0, 1, 3]:  
+	    	  PUSH Canv.Brush_style = 'CLEAR_BRUSH':
+	    	  PUSH Canv.Foreground = LIME :
+	    	       Canv.Rect({rect}(Loc= prev_out.Offset(-0.5,-0.5), W=1, H=1))
+	    	  ;
+	    	  PUSH Canv.Foreground = YELLOW :
+	    	       Canv.Rect({rect}(Loc= prev_inn.Offset(-0.5,-0.5), W=1, H=1))
+	    	  ;
+	    	  ;
+	     [2]: //!all passed areas
+	    	  PUSH Canv.Brush_style = 'CLEAR_BRUSH':
+	    	  PUSH Canv.Foreground = LIME :
+	    	       Canv.Rect({rect}(Loc= prev_out.Offset(
+	    	       	-Step_points,-Step_points), W=2*Step_points, H=2*Step_points))
+	    	  ;
+	    	  PUSH Canv.Foreground = YELLOW :
+	    	       Canv.Rect({rect}(Loc= prev_inn.Offset(
+	    	       	-Step_points,-Step_points), W=2*Step_points, H=2*Step_points))
+	    	  ;
+	    	  ;
+	     ;
+	     ;
+    ;
+    DEBUG:
+          {point} mice|_position = mouse.Offset(-PBox.Bounds.Left-dx, -.Top-dy)
+          CASE dest.Distance(mice) <= 3 ? 
+               << dest.S ": " has_prev_in_out.S "(" diff_last_min[].Count.S ")"
+               " b_min=" b_min.S " b_max=" b_max " diff=" diff
+               "" if(passed_now, " (passed)") #NL 
+               ;
+          CASE !debug_diff_at_mice ? 
+               debug_diff_at_mice = TRUE
+          << "mice=" mice.S " min=" Brightness_min.[mice.X.Int, mice.Y.Int]
+          	 " max=" Brightness_max.[mice.X.Int, mice.Y.Int] #NL
+          ;
+    ;
+    ---------------------------- 'save prev in/out points'
+    has_prev_in_out = TRUE
+    prev_out = out.CLONE
+    prev_inn = inn.CLONE
+    CASE draw_additionally > 0 && !passed_now ? 
+         has_prev_in_out = FALSE 
+    ;
+    CASE draw_additionally >= 3 && (!passed_now || !check_passed) ? 
+         has_prev_in_out = FALSE ;
+    .
+    
+BOOL debug_diff_at_mice
+    
+METHOD final_calculations :
+    CASE Count_p==0 ? ==> ;
+    Avg_bright_diff = Sum_bright_diff / Count_p
+    Avg_threshold_passed = Sum_threshold_passed / Count_diff_passed.Max(1)
+    Avg_check_passed = Sum_check_passed / Count_check_passed.Max(1)
+    Calculations_diff.Update   
+    DEBUG: 
+          {Bmp}.To_file(temp_bmp, "temp2.bmp") 
+          debug_diff_at_mice = FALSE
+    ;
+    .
 	
 	
 END

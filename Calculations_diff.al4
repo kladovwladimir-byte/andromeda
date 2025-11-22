@@ -1,0 +1,188 @@
+/*
+
+CLASS {Calculations_diff|erences}, UNTESTED:
+
+IMPORT {Form_common} .
+IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
+IMPORT: {Main_plasma_tides} .
+
+BASE CLASS: {Form_common} .
+
+{Main_plasma_tides} Main_|form_, INIT, READ
+
+{Label} Label_count_p|oints
+{Edit} Count_p|oints
+{Label} Label_sum_bright_diff
+{Edit} Sum_bright_diff
+{Label} Label_avg_bright_diff|erence
+{Edit} Avg_bright_diff
+{Label} Label_diff_threshold
+{Edit} Diff_threshold
+{Label} Label_count_diff_passed
+{Edit} Count_diff_passed
+{Label} Label_avg_threshold_percents
+{Edit} Avg_threshold_passed
+{Label} Label_step_points
+{Edit} Step_points
+{Checkbox} Draw_additionally
+{Combo} Combo_draw_additionally
+{Label} Label_count_passed_2|nd_check
+{Edit} Count_check_passed
+{Label} Label_Avg_check_passed
+{Edit} Avg_check_passed
+
+METHOD before_CONSTRUCT: .
+
+CONSTRUCT://2F74E2FE Do not change manually (created by Form Designer)
+	before_CONSTRUCT
+PUSH in_construct = TRUE :
+	------------------------------------------------------------------ 'column '
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=-100,Align_right=TRUE))
+
+	-------------------- 'LABEL_COUNT_P'
+	Label_count_p = {Label}(Form_=THIS, Alias="LABEL_COUNT_P")
+
+	...Set_text("Count points:")
+	-------------------------- 'COUNT_P'
+	Count_p = New_read_only_edit(THIS, "COUNT_P")
+	------------------- 'LABEL_SUM_DIFF'
+	Label_sum_bright_diff = {Label}(Form_=THIS, Alias="LABEL_SUM_DIFF")
+
+	...Set_text("Sum diff:")
+	------------------ 'SUM_BRIGHT_DIFF'
+	Sum_bright_diff = New_read_only_edit(THIS, "SUM_BRIGHT_DIFF")
+	------------ 'LABEL_AVG_BRIGHT_DIFF'
+	Label_avg_bright_diff = {Label}(Form_=THIS, Alias="LABEL_AVG_BRIGHT_DIFF")
+
+	...Set_text("Avg bright difference:")
+	------------------ 'AVG_BRIGHT_DIFF'
+	Avg_bright_diff = New_read_only_edit(THIS, "AVG_BRIGHT_DIFF")
+	------------- 'LABEL_DIFF_THRESHOLD'
+	Label_diff_threshold = {Label}(Form_=THIS, Alias="LABEL_DIFF_THRESHOLD")
+
+	...Set_text("Difference threshold (0-100):")
+	------------------- 'DIFF_THRESHOLD'
+	Diff_threshold = New_text_edit(THIS, "DIFF_THRESHOLD", "N")
+	---------- 'LABEL_COUNT_DIFF_PASSED'
+	Label_count_diff_passed = {Label}(Form_=THIS, Alias="LABEL_COUNT_DIFF_PASSED")
+
+	...Set_text("Count points passed:")
+	---------------- 'COUNT_DIFF_PASSED'
+	Count_diff_passed = New_read_only_edit(THIS, "COUNT_DIFF_PASSED")
+	----- 'LABEL_AVG_THRESHOLD_PERCENTS'
+	Label_avg_threshold_percents = {Label}(Form_=THIS,
+ Alias="LABEL_AVG_THRESHOLD_PERCENTS")
+
+	...Set_text("Avg threshold passed:")
+	------------- 'AVG_THRESHOLD_PASSED'
+	Avg_threshold_passed = New_read_only_edit(THIS, "AVG_THRESHOLD_PASSED")
+	---------------- 'Label_step_points'
+	Label_step_points = {Label}(Form_=THIS, Alias="Label_step_points")
+
+	...Set_text("Step points(0-100):")
+	---------------------- 'STEP_POINTS'
+	Step_points = New_edit(THIS, "STEP_POINTS")
+	-------------------------- 'LABEL_1'
+	Label_count_passed_2 = {Label}(Form_=THIS, Alias="LABEL_1")
+
+	...Set_text("Count passed 2nd check:")
+	--------------- 'COUNT_CHECK_PASSED'
+	Count_check_passed = New_read_only_edit(THIS, "COUNT_CHECK_PASSED")
+	-------------------------- 'LABEL_1'
+	Label_Avg_check_passed = {Label}(Form_=THIS, Alias="LABEL_1")
+
+	...Set_text("Avg check passed:")
+	----------------- 'AVG_CHECK_PASSED'
+	Avg_check_passed = New_read_only_edit(THIS, "AVG_CHECK_PASSED")
+	---------------- 'DRAW_ADDITIONALLY'
+	Draw_additionally = New_checkbox(THIS,
+ "DRAW_ADDITIONALLY",
+ "Draw additionally:")
+	---------- 'COMBO_DRAW_ADDITIONALLY'
+	Combo_draw_additionally = New_combo(THIS, "COMBO_DRAW_ADDITIONALLY", @
+"All dots"
+"All passed dots"
+"All passed areas"
+"All check passed dots"
+"")
+	----------------------------------------'form size / position'
+	Set_size(260, 0, 'FIT_TO_DISPLAY')
+	-------------------------- 'TITLE of Form'
+	Set_caption("Differences calculations")
+
+	after_CONSTRUCT
+	Auto_height
+; .
+
+
+METHOD after_CONSTRUCT: 
+	------------------------ 'bounds', REUSED
+	Restore_bounds("Plasma-tides", "Calculations", "whlt") 
+	------------------------
+	Diff_threshold.Set_text(Main_.Diff_threshold.S)
+	Step_points.Set_text(Main_.Step_points.S)
+	Combo_draw_additionally.Select(0)
+	.
+	
+OVERRIDE moved :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+	
+OVERRIDE resize :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+	
+	
+
+METHOD Update|_edits :
+	STR s|tring_from_value
+	---------------------------- 'one', REUSED
+	s = Main_.Count_p.S$
+    CASE s <> Count_p.Text ? 
+         Count_p.Set_text(s) ;
+    ---------------------------------
+    LIKE ...... 'one', BUT (Count_p==>Sum_bright_diff)*3
+    LIKE ...... 'one', BUT (Count_p==>Avg_bright_diff)*3, ($==>'_float(1)')
+    
+    -------------------------- 'passed'
+    STR percents = " (" (Main_.Count_diff_passed*100.0/Main_.Count_p).S_float(1) 
+    	"%)"
+    	     
+    LIKE ...... 'one', BUT (Count_p==>Count_diff_passed)*3, ($==>'"" percents')
+    LIKE ...... 'one', BUT (Count_p==>Avg_threshold_passed)*3, ($==>'_float(1)')
+    
+    -------------------------- 'checked'
+    percents = " (" (Main_.Count_check_passed*100.0 / Main_.Count_p).S_float(1) 
+    	"%)"
+    	     
+    LIKE ...... 'one', BUT (Count_p==>Count_check_passed)*3, ($==>'"" percents')
+    LIKE ...... 'one', BUT (Count_p==>Avg_check_passed)*3, ($==>'_float(1)')
+    .
+    
+    
+
+
+OVERRIDE closing ==> {Form}.{action} :
+	Main_.Calculations_diff = NONE
+	Main_.Satellite_param.Calc_bright_diff = FALSE
+	.
+	
+	
+
+OVERRIDE value_change :
+    CASE sender_alias ?
+    ["DRAW_ADDITIONALLY"]: Main_.PBox.Invalidate_all
+    ["DIFF_THRESHOLD"]: Main_.Diff_threshold = Diff_threshold.Text.Real
+    ["STEP_POINTS"]: Main_.Step_points = Step_points.Text.Real
+    				 Main_.Brightness_min = NONE
+    				 Main_.Brightness_max = NONE
+    ; .
+    
+    
+
+OVERRIDE selection_change :
+    CASE sender_alias ?
+    ["COMBO_DRAW_ADDITIONALLY"]:
+        Main_.PBox.Invalidate_all
+    ; .
+END
+
+*/
