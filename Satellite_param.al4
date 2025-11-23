@@ -992,38 +992,43 @@ OVERRIDE click :
     		----------------------- 'select', REUSED     
     	    CASE !Dialog_file.Select_file ? ==> ;
     	    c = New_write_in_file_config(Dialog_file.Filename, "")
-    	    ----------------------- 'common parameters'
-    	    c.Set_r("Box_width", Box_width.Text.Real)
-    	    c.Set_i("Count_spirals", Satellite_num.Count)
-    	    c.Set_r("Mass_BH", Mass_BH.Text.Real)
-    	    ----------------------- '+image'
-    	    c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
-    	    c.Set_r("Offset_x", Main_.Offset_x)	
-    	    c.Set_r("Offset_y", Main_.Offset_y)
-    	    CASE !Scale_up_shift ? 
-	    	     c.Set_r("Image_rotate", Rotate_image.Text.Real)
-	    	     c.Set_r("Image_scale", Scale_image.Text.Real) ;
-    	    ----------------------- 'loop on all spirals'
-    	    FOR i IN [0 TO Satellite_num.Count-1] :
-    	        c.Section = (i+1).S
-    	        s = All_satellites[i].CLONE
-    	        c...Set_s("Name", s.Name)
-    	         ...Set_r("Period", s.Period)
-    	         ...Set_r("Excentricity", s.Excentricity)
-    	         ...Set_r("Deviation", s.Deviation)
-    	         ...Set_r("Deviation_final", s.Deviation_final)
-    	         ...Set_r("Cone_a", s.Cone_a)
-    	         ...Set_r("Rotate", s.Rotate)
-    	         ...Set_r("Inclin", s.Inclin)
-    	         ...Set_r("StartA", s.StartA)
-    	         ...Set_r("SpeedK", s.SpeedK)
-    	         ...Set_r("FinalK", s.FinalK)
-    	         ...Set_r("Filter_speed", s.Filter_speed)
-    	         ...Set_r("Activity", s.Activity)
-    	         ...Set_r("First_ac", s.First_ac) 
-    	         ...Set_r("Last_act", s.Last_act) 
-    	         ...Set_i("Arms_colors", s.ArmsColors)
+    	    -----------------------
+    	    PUSH c.No_write = TRUE :
+	    	     ----------------------- 'common parameters'
+	    	     c.Set_r("Box_width", Box_width.Text.Real)
+	    	     c.Set_i("Count_spirals", Satellite_num.Count)
+	    	     c.Set_r("Mass_BH", Mass_BH.Text.Real)
+	    	     ----------------------- '+image'
+	    	     c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
+	    	     c.Set_r("Offset_x", Main_.Offset_x)	
+	    	     c.Set_r("Offset_y", Main_.Offset_y)
+	    	     CASE !Scale_up_shift ? 
+		    	      c.Set_r("Image_rotate", Rotate_image.Text.Real)
+		    	      c.Set_r("Image_scale", Scale_image.Text.Real) ;
+	    	     ----------------------- 'loop on all spirals'
+	    	     FOR i IN [0 TO Satellite_num.Count-1] :
+	    	         PUSH c.Section = (i+1).S :
+		    	          s = All_satellites[i].CLONE
+		    	          c...Set_s("Name", s.Name)
+		    	           ...Set_r("Period", s.Period)
+		    	           ...Set_r("Excentricity", s.Excentricity)
+		    	           ...Set_r("Deviation", s.Deviation)
+		    	           ...Set_r("Deviation_final", s.Deviation_final)
+		    	           ...Set_r("Cone_a", s.Cone_a)
+		    	           ...Set_r("Rotate", s.Rotate)
+		    	           ...Set_r("Inclin", s.Inclin)
+		    	           ...Set_r("StartA", s.StartA)
+		    	           ...Set_r("SpeedK", s.SpeedK)
+		    	           ...Set_r("FinalK", s.FinalK)
+		    	           ...Set_r("Filter_speed", s.Filter_speed)
+		    	           ...Set_r("Activity", s.Activity)
+		    	           ...Set_r("First_ac", s.First_ac) 
+		    	           ...Set_r("Last_act", s.Last_act) 
+		    	           ...Set_i("Arms_colors", s.ArmsColors)
+	    	         ;
+	    	     ;
     	    ;
+    	    c.Update
     	    ------------------ 'update__caption', REUSED
     	    Set_caption(Dialog_file.Filename.Extract_file_name.Change_ext("") 
     	    	" - " caption_loc)
@@ -1032,6 +1037,7 @@ OVERRIDE click :
         	INT was_cur|rent_spiral = Satellite_num.Current
         	LIKE .................. 'select', 
         		 BUT(_write_==>_read_), (Dialog_file==>Dialog_load)*2
+        	c.Section = ""
         	----------------------- 'common:'
         	Box_width.Set_text(c.Real("Box_width").S)
         	Satellite_num.Clear
