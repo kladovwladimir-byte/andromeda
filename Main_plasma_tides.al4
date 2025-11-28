@@ -1,6 +1,6 @@
 /*
 
-CLASS {Main_plasma_tides}, UNTESTED:
+CLASS {Main_plasma_tides}, UNTESTED, BITWISE .
 
 IMPORT {Form_common}, {Satellite_param}, {Elliptic_orbit}, {Localize_str} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
@@ -157,15 +157,15 @@ STR Filt|ers_all[], STR From|_filter_string)
     ; .
     
 METHOD Find_by_name(STR Name|_of_satellite) ==> STR :
-    FOR sat IN Satellite_param.All_satellites[] :
-        CASE sat.Name LIKE Name ? 
-             RESULT = (sat.INDEX+1).S 
+    FOR sat1 IN Satellite_param.All_satellites[] :
+        CASE sat1.Name LIKE Name ? 
+             RESULT = (sat1.INDEX+1).S 
              DEBUG: "find(" Name ")==>" RESULT #NL ;
              ==> ;
     ;
-    FOR sat IN Satellite_param.All_satellites[] :
-        CASE sat.Name.Lower.Starting(Name.Lower) ? 
-             RESULT = (sat.INDEX+1).S 
+    FOR sat1 IN Satellite_param.All_satellites[] :
+        CASE sat1.Name.Lower.Starting(Name.Lower) ? 
+             RESULT = (sat1.INDEX+1).S 
              DEBUG: "find[" Name "]==>" RESULT #NL ;
              ==> ;
     ;
@@ -206,19 +206,24 @@ METHOD Paint_to(
 	     //DEBUG: "filters: " filt[].Merge(", ")#NL ;
 	;
 	------------------- 'size of PBox'
-	REAL h|eight_box = PBox.Height.Min(PBox.Width)
-	REAL h_box|_total = PBox.Height
-	REAL ww|idth_box = PBox.Width
-	REAL ww1|idth_to_offset = ww.Min(h_box)
-	REAL scale_size = ww1
-	REAL box_size = Satellite_param.Box_width.Text.Real
+	h = PBox.Height.Min(PBox.Width)
+	h_box = PBox.Height
+	ww = PBox.Width
+	ww1 = ww.Min(h_box)
+	scale_size = ww1
+	box_size = Satellite_param.Box_width.Text.Real
+	max_dist = Satellite_param.Max_dist.Text.Real
 	-------------------- 'draw options'
-	BOOL bright_by_k = Satellite_param.Bright_by_plasma_speed
-	INT each_10_000 = Satellite_param.Each_10000_years
-	INT draw_dots = 0
+	bright_by_k = Satellite_param.Bright_by_plasma_speed
+	each_10_000 = Satellite_param.Each_10000_years
+	draw_dots = 0
 	CASE Satellite_param.Draw_as_dots ?
 	     draw_dots = each_10_000 / 1000 + 2
 	;
+	transp_mask = 0xFF000000
+	CASE Satellite_param.Draw_as_polygons ? transp_mask = 0x2F000000 ;
+	CASE Satellite_param.Transp != 0 ? 
+	     transp_mask = (Satellite_param.Transp * 255 / 100).ShiftL(24) ;
 	------------------- 'prepare to count differences'
 	Count_p = 0
 	Sum_bright_diff = 0
@@ -348,44 +353,44 @@ METHOD Paint_to(
 	CASE rmb_down 
 	     && (!Satellite_param.Rmb_3D_fly || !change_start && !change_incl) 
 	     ? ==> ;
-	BOOL time_distortion = Satellite_param.Time_distortion.Checked  
+	time_distortion = Satellite_param.Time_distortion.Checked  
 	--------------------------------- 'find max plasma speed'
-	REAL speed_max = 0
-	FOR sat IN Satellite_param.All_satellites[] :
-	    CASE filt[].Count > 0 && (sat.INDEX+1).S !IN filt[] ? CONTINUE sat ;
-	    speed_max = _.Max(sat.SpeedK).Max(sat.FinalK)
+	speed_max = 0
+	FOR sat1 IN Satellite_param.All_satellites[] :
+	    CASE filt[].Count > 0 && (sat1.INDEX+1).S !IN filt[] ? CONTINUE sat1 ;
+	    speed_max = _.Max(sat1.SpeedK).Max(sat1.FinalK)
 	;
 	--------------------------------- 'sun position (for retrospective in Milky Way)'
-	{point} sun|_system_position = Pt(
+	sun = Pt(
 		PBox.Width * mouse_down_rmb.X, PBox.Height * mouse_down_rmb.Y)
 		
-	REAL scale_ly_per_pt = box_size / ww
+	scale_ly_per_pt = box_size / ww
 	--------------------------------- 'loop on all sputniks'
 	
-	{point} prev|ious
-	FOR sat IN Satellite_param.All_satellites[] :
-		CASE filt[].Count > 0 && (sat.INDEX+1).S !IN filt[] ? CONTINUE sat ;
+	FOR sat1 IN Satellite_param.All_satellites[] :
+		sat = sat1.CLONE
+		CASE filt[].Count > 0 && (sat1.INDEX+1).S !IN filt[] ? CONTINUE sat1 ;
 		{Elliptic_orbit} orbit|_of_satellite 
-		.. = get_orbit(sat.Excentricity, TRUE)
+		.. = get_orbit(sat.Eccentricity, TRUE)
 		CASE orbit == NONE ?
              //DEBUG: "orbit not found for e=" sat.Excentricity #NL ;
-		     CONTINUE sat ;
+		     CONTINUE sat1 ;
 		CASE orbit.Points[].Count==0 ? 
              //DEBUG: "count points in orbit==0, e=" sat.Excentricity #NL ;
-		     CONTINUE sat ;
+		     CONTINUE sat1 ;
 		c.Pen_width = 1
-		BOOL show_spiral = TRUE
+		show_spiral = TRUE
 		CASE Satellite_param.Show_spirals.Current ? 
 		[0]: NONE //! all
 		[1]: //! all, bold current 
-		    CASE sat.INDEX == Satellite_param.Satellite_num.Current ?
+		    CASE sat1.INDEX == Satellite_param.Satellite_num.Current ?
 		         c.Pen_width = 4 ;
 		[2]: c.Pen_width = 2 //! all bold
 		[3]: c.Pen_width = 4 //! all bolder
 		[4]: c.Pen_width = 5 //! all bolder, white glove
 		[5]: c.Pen_width = 8
              ------------------- 'single sat (current only)', REUSED
-			 show_spiral = sat.INDEX == Satellite_param.Satellite_num.Current
+			 show_spiral = sat1.INDEX == Satellite_param.Satellite_num.Current
              //CASE sat.INDEX <> Satellite_param.Satellite_num.Current ?
              //     CONTINUE sat ;
              --------------------
@@ -398,63 +403,41 @@ METHOD Paint_to(
 		;
 		CASE !show_spiral && !Satellite_param.All_ellipses 
 		     && !hide_all_spirals
-		     ? CONTINUE sat ;
+		     ? CONTINUE sat1 ;
 		------------------- 'to filter by speed'
-		REAL min_speed|_of_plasma_to_draw = sat.Filter_speed
+		min_speed = sat.Filter_speed
 		CASE !Satellite_param.Filtering_by_speed ? min_speed = 0 ;
 		-------------------     
-		BOOL glove|_white = Satellite_param.Glove_all
+		glove = Satellite_param.Glove_all
 		.. ||= Satellite_param.Glove_current 
-			&& sat.INDEX==Satellite_param.Satellite_num.Current
+			&& sat1.INDEX==Satellite_param.Satellite_num.Current
 			
 		CASE bright_by_k ? c.Pen_width *= 2 ;
 		CASE Satellite_param.Scale_up_shift ? 
 		     c.Pen_width = _ / Scaling_image * 100 ;
-	    {Vector} v|ector_pos|temp
-	    REAL dist|ance_to_center
-	    REAL sin_b|etha
-	    REAL speed_i|_point
-	    REAL k_distort|tion
-	    REAL xx|_position
-	    REAL yy|_position
-	    REAL zz|_position
-	    REAL z_mul|tiplier
-	    REAL xy_mul|tiplier
-	    REAL from_year|_last_shown = sat.Last_act
-	    REAL skip_years|_first_shown = sat.First_ac
-	    REAL end_year|_last_accounted = sat.Activity
-	    REAL per_scale = -sat.Period / orbit.Points[*].T
+		     
+	    from_year = sat.Last_act
+	    skip_years = sat.First_ac
+	    per_scale = -sat.Period / orbit.Points[*].T
+	    end_year = sat.Activity
 	    -------------------- 'scalings'
 	    REAL m_T|_period_multiplyer = sat.Period / T0
 	    REAL m_M|ass_multiplyer = Satellite_param.Mass_BH.Text.Real 
 	         .. = _ * Sun_mass / Mass_BH0
 	    REAL m_a|_coords_multiplyer = (m_T.qq * m_M).Power(1.0/3)
-	    REAL abs_per_scale = per_scale.Abs
 	    //DEBUG: "per_scale=" per_scale #NL ;
-			------------------ '+ some declarations'
-	    INT fore1|_ground_main
-	    INT fore2|_ground_for_each_other_10_000_years
-	    REAL dT|ime_passed
-	    BOOL present_prev|ious
-	    {e_point} ep|oint_ellipse
-	    REAL start_time
-	    INT i_point|_index
+	    
 	    ------------------- 'center point'
-	    REAL xx0|_center = ww/2 + ww1*(Offset_x - 0.5)
-	    REAL yy0|_center = h/2 + h*(Offset_y - 0.5)
-	    ------------------- 'deviation rotation'
-	    REAL rot|ation_of_orbit
+	    xx0 = ww/2 + ww1*(Offset_x - 0.5)
+	    yy0 = h/2 + h*(Offset_y - 0.5)
+	    
 	    ------------------- 'to provide calculations'
-	    BOOL do_calc|ulations = Satellite_param.Calc_bright_diff
-	    	 && Satellite_param.Satellite_num.Current == sat.INDEX
+	    do_calc = Satellite_param.Calc_bright_diff
+	    	 && Satellite_param.Satellite_num.Current == sat1.INDEX
 	    diff_last_min[].Clear
 	    diff_last_max[].Clear
 	    -------------------
 	    FOR pass IN [1 TO 2] <-----------------------------------
-	        CASE pass ?
-	        [1]: INT arm_n|umber = -1
-	        [2]: arm_n = +1 ;
-	        
 	        LOCAL :
 	    		CASE sat.ArmsColors * 2 + pass - 1 ?
 	    		[0, 1]: c.Foreground = WHITE
@@ -492,183 +475,8 @@ METHOD Paint_to(
 	        	;
 	        ;
 	        	      
-	        present_prev = FALSE
-	        start_time = 0
-	        i_point = 0
-	        
-	        rot = 0
-	        last_step_off = 0
 	        -----------------
-			FOR j IN [0 TO end_year.Int] <------------------------
-			    ep = orbit.Points[i_point].CLONE
-		        dT = end_year - (ep.T + start_time) * abs_per_scale 
-				CASE dT < 0 ?
-	                 //DEBUG: "BREAK arm_n=" arm_n " j=" j " i_point=" i_point 
-	                 //       " ep.T=" ep.T #NL ;
-				     BREAK j ;
-				//INT last_i_point = i_point
-				sat.Last_i_pos = i_point
-				Satellite_param.All_satellites[sat.INDEX] = sat.CLONE
-				//CASE !show_spiral && !hide_all_spirals ? CONTINUE j ;
-				REAL time|_from_0 = (start_time + ep.T) * abs_per_scale 
-			    CASE time < from_year || time > end_year - skip_years ?
-			         ------------------------ 'next__point', REUSED
-			         i_point += 1
-	            	 CASE ?
-	            	 [i_point >= orbit.Points[].Count] ?
-	            		  start_time += orbit.Points[*].T
-	            		  i_point -= orbit.Points[].Count
-	            	 [i_point == orbit.Points[].Count/2] ?
-	            	      M_start = provide_matrix_start(-sat.StartA + rot)
-	            	 ;
-	            	 ----------------------- 'no__prev', REUSED
-	            	 has_prev_in_out = FALSE
-	            	 diff_last_min[].Clear
-	            	 diff_last_max[].Clear
-	                 ------------------------
-			         CONTINUE j
-			    ;
-				CASE !show_spiral ?
-				     LIKE .............. 'next__point'
-				     LIKE .............. 'no__prev'
-				     CONTINUE j ;
-		        CASE {
-		        [sat.FinalK > 0 && sat.Excentricity > 0] ?
-		        	 speed_i = (ep.R - orbit.Q_min) / (.Q_max - .Q_min) 
-		             CASE Satellite_param.Alter_plasma_speed ? 
-		                  speed_i = sat.FinalK - _ * (.FinalK - .SpeedK)
-		             ELSE speed_i = sat.SpeedK + _ * (.FinalK - .SpeedK) ;
-                //[sat.Excentricity <= 0 && .FinalK > 0] ?
-                //     speed_i = 0.5 * (sat.FinalK + .SpeedK)
-		        ELSE
-		             speed_i = sat.SpeedK
-		        }
-		        CASE {
-		        [sat.Excentricity <= 0 || sat.Deviation_final.Near(0)] ?
-		             REAL dev|iation_ep = sat.Deviation 
-		        ELSE
-		        	 dev = (ep.R - orbit.Q_min) / (.Q_max - .Q_min)
-		        	 dev = sat.Deviation + _*(.Deviation_final - .Deviation)
-		        }
-		        REAL cos_dev|iation = Cos(dev * PI / 180)
-				REAL sin_dev|iation = Sin(dev * PI / 180)
-	
-                --------------- 'first position on orbit than add plasma move'
-				xx = ep.X_LY * per_scale
-				xx += arm_n * (
-				     ep.Dir.X * cos_dev - ep.Dir.Y * sin_dev)
-				     * dT * speed_i * xy_mul
-				yy = ep.Y_LY * per_scale
-				yy += arm_n * (
-				     ep.Dir.X * sin_dev + ep.Dir.Y * cos_dev)
-				     * dT * speed_i * xy_mul
-				zz = arm_n * (ep.Dir.X.qq + ep.Dir.Y.qq).Sqrt * dT * speed_i
-				.. *= z_mul
-		        ------------------------- 'apply rotations'
-		        v = Vector_3(xx, yy, zz) * M_transform
-                //v = Vector_3(xx, yy, zz) * M_start
-                //v = _ * M_incl
-                //v = _ * M_rot_proj
-		        xx = +v.[0]
-		        yy = -v.[1]
-		        ------------------------- 'time distortion'
-		        CASE time_distortion {
-			         dist = (v.[0].qq+v.[1].qq+v.[2].qq).Sqrt
-			         sin_b = -v.[2] / dist
-			         k_distort = (1 / speed_i) / (1 / speed_i + sin_b)
-			         xx = _ * k_distort
-			         yy = _ * k_distort
-		        }
-		        ------------------------- 'final point coords'
-		        xx = _ / box_size * scale_size + ww/2 + ww1*(Offset_x - 0.5)
-		        yy = _ / box_size * scale_size + h/2 + h*(Offset_y - 0.5)
-		        --------------------- 'correct for retrospective from Sun in MW'
-		        CASE Satellite_param.Retrospective { 
-			         REAL dist_sun || ds = Distance(sun, Pt(xx,yy)) * scale_ly_per_pt
-			         REAL dist_xx_yy || dxy = Distance(Pt(xx, yy), Pt(xx0, yy0))
-			         REAL tt|ime_to_move_plasma = dxy * scale_ly_per_pt / speed_i
-			         xx = xx0 + (xx - xx0) * (tt - ds) / tt
-			         yy = yy0 + (yy - yy0) * (tt - ds) / tt
-			         CASE ds > tt ? 
-			              present_prev = FALSE
-			              LIKE ............... 'next__point'
-			              LIKE .............. 'no__prev'
-			              CONTINUE j ;
-		        }
-			    ------------------------- 'skip points far from bounds'
-			    CASE xx < -100 || xx > ww+100
-			         || yy < -100 || yy > h_box+100
-			         || speed_i < min_speed
-			         ?
-			         present_prev = FALSE
-			         LIKE ............... 'next__point'
-			         LIKE .............. 'no__prev'
-			         CONTINUE j ;
-		        ------------------------- 'do calculations ?'
-		        CASE do_calc ? 
-		             calculations_one_point(Pt(xx, yy), Pt(xx0, yy0), c)
-		        ;
-			    ------------------------- 'draw next or skip'
-				CASE ?
-				[draw_dots > 0] ? 
-					CASE j % draw_dots == 0 ? 
-				    	c.Rect({rect}(Loc=Pt(xx-0.5,yy-0.5), W=1, H=1)) ;
-				[present_prev] ?
-					 CASE (ep.T.Int / each_10_000).Abs % 2 == 1 ?
-					      c.Foreground = fore2
-					      CASE Satellite_param.Dont_draw_dark && fore2 != fore1 ? 
-							   present_prev = TRUE
-							   prev = Pt(xx, yy)
-							   LIKE ................... 'next__point'
-							   CONTINUE j
-					      ;
-					 ELSE c.Foreground = fore1 ;
-					 CASE ?
-					 [bright_by_k] ?
-					     PUSH c.Pen_width :
-					          CASE (speed_i/speed_max * 10).Int ?
-					          [0]: c.Pen_width = _ * 0.25
-					          [1, 2]: .. = _ * 0.4
-					          [3, 4]: .. = _ * 0.5
-					          [5, 6, 7]: .. = _ * 0.75
-					          ELSE NONE ;
-					          CASE sat.FinalK > 0 ? 
-					               CASE (speed_i/speed_max * 10).Int ? 
-					               [0]: c.Foreground = _.Mix_percents(BLACK,25) 
-					               [1]: c.Foreground = _.Mix_percents(BLACK,50) 
-					               [2]: c.Foreground = _.Mix_percents(BLACK,75) 
-					               [5]: c.Foreground = _.Mix_percents(WHITE,75) 
-					               [6]: c.Foreground = _.Mix_percents(WHITE,70) 
-					               [7]: c.Foreground = _.Mix_percents(WHITE,65) 
-					               [8]: c.Foreground = _.Mix_percents(WHITE,60) 
-					               [9]: c.Foreground = _.Mix_percents(WHITE,55)
-					               [10]:c.Foreground = _.Mix_percents(WHITE,50) 
-					               ;
-					          ;
-					          CASE glove ?
-					               PUSH c.Foreground = WHITE :
-					               		c.Line(Pt(xx, yy), prev) ;
-					               c.Pen_width = (_ - 1).Max(0)
-					          ;
-					     	  c.Line(Pt(xx, yy), prev)
-					     ;
-					 [c.Pen_width>=5] ?
-					      PUSH c.Pen_width = c.Pen_width-1 :
-					           PUSH c.Foreground = WHITE :
-					           		c.Line(Pt(xx, yy), prev) ;
-					           c.Pen_width = c.Pen_width-2
-					           c.Line(Pt(xx, yy), prev)
-					      ;
-					 ELSE
-					      c.Line(Pt(xx, yy), prev)
-					 ; 
-				[min_speed > 0] ? NONE
-				ELSE c.Rect({rect}(Loc=Pt(xx-1,yy-1), W=2, H=2))
-				;
-				present_prev = TRUE
-				prev = Pt(xx, yy)
-				LIKE ................... 'next__point'
-	        -------------------------------------------------------->
+	        draw_one_arm(sat1.INDEX, orbit, pass, c= c)
 	    -------------------------------------------------------------->
 		//DEBUG: "satellite " sat.INDEX " last_pos=" sat.Last_i_pos #NL ;
 	;
@@ -703,9 +511,11 @@ METHOD Paint_to(
 	     CASE Satellite_param.All_ellipses ? 
 	          scur1 = 0
 	          scur2 = Satellite_param.All_satellites[].Count-1 ;
-	     FOR sat IN Satellite_param.All_satellites[scur1 TO scur2] :
-	         CASE filt[].Count > 0 && (sat.INDEX+1).S !IN filt[] ? CONTINUE sat ;
-			 orbit = get_orbit(sat.Excentricity, TRUE)
+	     FOR sat1 IN Satellite_param.All_satellites[scur1 TO scur2] :
+	     	 sat = sat1.CLONE
+	         CASE filt[].Count > 0 && (sat1.INDEX+1).S !IN filt[] ? 
+	              CONTINUE sat1 ;
+			 orbit = get_orbit(sat.Eccentricity, TRUE)
 			 provide_matrices(sat)
 			 ----------- 'ellipse'
 	         m_T = sat.Period / T0
@@ -717,10 +527,10 @@ METHOD Paint_to(
 	         REAL aa|_big_semiaxis_L_Y 
 	         .. = G * m_M * Mass_BH0 * (T0 * m_T * YEAR).qq / 4 / PI.qq
 	         .. = _.Power(1/3.0) / LY
-	         present_prev = FALSE
+	         BOOL present_prev|ious = FALSE
 		     FOR j IN [0 TO orbit.Points[].Count] :
 		         CASE j < orbit.Points[].Count ?
-		              ep = orbit.Points[j].CLONE
+		              {e_point} ep|oint_ellipse = orbit.Points[j].CLONE
 		         ELSE ep = orbit.Points[0].CLONE ;
 		         ------------------------- 'apply rotations'
             	v = Vector_3(ep.X_LY, ep.Y_LY, 0) * M_transform
@@ -762,8 +572,8 @@ METHOD Paint_to(
 			     tp.X -= 100
 			 				 
 			 [!in_op && mp.X < PBox.Left + .Width / 4 || change_excen] ? 
-			     s = "EXCENTRICITY"._EXCENTRICITY
-			     		#NL Satellite_param.Excentricity.Text
+			     s = "Eccentricity"._Eccentricity
+			     		#NL Satellite_param.Eccentricity.Text
 			     		
 			 [last_mouse_shift.X > 0 < .Y] ?
 			   CASE To_bitmap ? last_mouse_shift = Pt(0, 0) ;
@@ -803,6 +613,287 @@ METHOD Paint_to(
 	     final_calculations ;
 	.
 	
+BOOL time_distortion
+BOOL do_calc|ulations
+
+REAL end_year|_last_accounted	
+REAL per_scale
+{satellite_param} sat|ellite_params
+REAL from_year|_last_shown
+REAL skip_years|_first_shown
+BOOL show_spiral
+REAL ww|idth_box
+REAL ww1|idth_to_offset
+REAL h|eight_box
+REAL h_box|_total
+
+REAL xx|_position
+REAL yy|_position
+REAL zz|_position
+REAL xy_mul|tiplier
+REAL z_mul|tiplier
+{Vector} v|ector_pos|temp
+
+{point} sun|_system_position
+REAL scale_ly_per_pt
+
+REAL box_size
+REAL scale_size
+REAL max_dist
+
+REAL xx0|_center
+REAL yy0|_center
+REAL dist|ance_to_center
+REAL min_speed|_of_plasma_to_draw
+{point} prev|ious
+
+INT each_10_000
+INT draw_dots
+INT fore1|_ground_main
+INT fore2|_ground_for_each_other_10_000_years
+BOOL bright_by_k
+REAL speed_max
+BOOL glove|_white
+
+{point} prev_round[]
+{point} curr_round[]
+INT round|s_counter
+INT transp_mask
+    	
+METHOD draw_one_arm(
+INT sat_index,
+{Elliptic_orbit} orbit|_of_satellite,
+INT pass|_arm_number,
+{Canvas} c|anvas_destination), OPERATORS({Matrix})
+    :
+    BOOL present_prev|ious = FALSE
+    REAL start_time = 0
+    INT i_point|_index = 0
+    REAL abs_per_scale = per_scale.Abs
+    CASE pass ?
+    [1]: INT arm_n|umber = -1
+    [2]: arm_n = +1 ;
+    round = 0
+    BOOL polygons|_draw = Satellite_param.Draw_as_polygons
+    ------------------- 'deviation rotation'
+    REAL rot|ation_of_orbit = 0
+    last_step_off = 0
+    FOR j IN [0 TO end_year.Int] <------------------------
+        {e_point} ep|oint_ellipse = orbit.Points[i_point].CLONE
+        REAL dT|ime_passed = end_year - (ep.T + start_time) * abs_per_scale
+        CASE dT < 0 ?
+             //DEBUG: "BREAK arm_n=" arm_n " j=" j " i_point=" i_point
+             //       " ep.T=" ep.T #NL ;
+             BREAK j ;
+        //INT last_i_point = i_point
+        sat.Last_i_pos = i_point
+        Satellite_param.All_satellites[sat_index] = sat.CLONE
+        //CASE !show_spiral && !hide_all_spirals ? CONTINUE j ;
+        REAL time|_from_0 = (start_time + ep.T) * abs_per_scale
+        CASE time < from_year || time > end_year - skip_years ?
+             ------------------------ 'next__point', REUSED
+             i_point += 1
+             CASE i_point >= orbit.Points[].Count ?
+                  start_time += orbit.Points[*].T
+                  i_point -= orbit.Points[].Count
+                  CASE polygons { 
+                       CASE pass==1 ? finish_round(c, fore1, pass)
+                       ELSE finish_round(c, fore2, pass) ;      
+                       round += 1
+                  }
+             //[i_point == orbit.Points[].Count/2] ?
+             //     M_start = provide_matrix_start(-sat.StartA + rot)
+             ;
+             ----------------------- 'no__prev', REUSED
+             has_prev_in_out = FALSE
+             diff_last_min[].Clear
+             diff_last_max[].Clear
+             -----------------------
+             CONTINUE j
+        ;
+        CASE !show_spiral ?
+             LIKE .............. 'next__point'
+             LIKE .............. 'no__prev'
+             CONTINUE j ;
+        CASE {
+        [sat.FinalK > 0 && sat.Eccentricity > 0] ?
+             REAL speed_i|_point = (ep.R - orbit.Q_min) / (.Q_max - .Q_min)
+             CASE Satellite_param.Alter_plasma_speed ?
+                  speed_i = sat.FinalK - _ * (.FinalK - .SpeedK)
+             ELSE speed_i = sat.SpeedK + _ * (.FinalK - .SpeedK) ;
+        ELSE
+             speed_i = sat.SpeedK
+        }
+        CASE {
+        [sat.Eccentricity <= 0 || sat.Deviation_final.Near(0)] ?
+             REAL dev|iation_ep = sat.Deviation
+        ELSE
+             dev = (ep.R - orbit.Q_min) / (.Q_max - .Q_min)
+             dev = sat.Deviation + _*(.Deviation_final - .Deviation)
+        }
+        REAL cos_dev|iation = Cos(dev * PI / 180)
+        REAL sin_dev|iation = Sin(dev * PI / 180)
+
+        --------------- 'first position on orbit than add plasma move'
+        xx = ep.X_LY * per_scale
+        xx += arm_n * (
+             ep.Dir.X * cos_dev - ep.Dir.Y * sin_dev)
+             * dT * speed_i * xy_mul
+        yy = ep.Y_LY * per_scale
+        yy += arm_n * (
+             ep.Dir.X * sin_dev + ep.Dir.Y * cos_dev)
+             * dT * speed_i * xy_mul
+        zz = arm_n * (ep.Dir.X.qq + ep.Dir.Y.qq).Sqrt * dT * speed_i
+        .. *= z_mul
+        ------------------------- 'apply rotations'
+        v = Vector_3(xx, yy, zz) * M_transform
+        //v = Vector_3(xx, yy, zz) * M_start
+        //v = _ * M_incl
+        //v = _ * M_rot_proj
+        xx = +v.[0]
+        yy = -v.[1]
+        ------------------------- 'time distortion'
+        CASE time_distortion || max_dist > 0 {
+             dist = (v.[0].qq+v.[1].qq+v.[2].qq).Sqrt
+             CASE 0 < max_dist < dist ? 
+                  present_prev = FALSE
+                  LIKE ............... 'next__point'
+                  LIKE .............. 'no__prev'
+                  CONTINUE j ;
+             CASE time_distortion ? 
+	              REAL sin_b|etha = -v.[2] / dist
+	              REAL k_distort|tion = (1 / speed_i) / (1 / speed_i + sin_b)
+	              xx = _ * k_distort
+	              yy = _ * k_distort ;
+        }
+        ------------------------- 'final point coords'
+        xx = _ / box_size * scale_size + ww/2 + ww1*(Offset_x - 0.5)
+        yy = _ / box_size * scale_size + h/2 + h*(Offset_y - 0.5)
+        --------------------- 'correct for retrospective from Sun in MW'
+        CASE Satellite_param.Retrospective {
+             REAL dist_sun || ds = Distance(sun, Pt(xx,yy)) * scale_ly_per_pt
+             REAL dist_xx_yy || dxy = Distance(Pt(xx, yy), Pt(xx0, yy0))
+             REAL tt|ime_to_move_plasma = dxy * scale_ly_per_pt / speed_i
+             xx = xx0 + (xx - xx0) * (tt - ds) / tt
+             yy = yy0 + (yy - yy0) * (tt - ds) / tt
+             CASE ds > tt ?
+                  present_prev = FALSE
+                  LIKE ............... 'next__point'
+                  LIKE .............. 'no__prev'
+                  CONTINUE j ;
+        }
+        ------------------------- 'skip points far from bounds'
+        CASE xx < -100 || xx > ww+100
+             || yy < -100 || yy > h_box+100
+             || speed_i < min_speed
+             ?
+             present_prev = FALSE
+             LIKE ............... 'next__point'
+             LIKE .............. 'no__prev'
+             CONTINUE j ;
+        ------------------------- 'do calculations ?'
+        CASE do_calc ?
+             calculations_one_point(Pt(xx, yy), Pt(xx0, yy0), c)
+        ;
+        ------------------------- 'draw next or skip'
+        CASE ?
+        [draw_dots > 0] ?
+            CASE j % draw_dots == 0 ?
+                c.Rect({rect}(Loc=Pt(xx-0.5,yy-0.5), W=1, H=1)) ;
+        [present_prev] ?
+             CASE (ep.T.Int / each_10_000).Abs % 2 == 1 ?
+                  c.Foreground = fore2
+                  CASE Satellite_param.Dont_draw_dark && fore2 != fore1 ?
+                       present_prev = TRUE
+                       prev = Pt(xx, yy)
+                       LIKE ................... 'next__point'
+                       CONTINUE j
+                  ;
+             ELSE c.Foreground = fore1 ;
+             CASE ?
+             [polygons] ?
+                 curr_round[] << Pt(xx, yy)
+             [bright_by_k] ?
+                 PUSH c.Pen_width :
+                      CASE (speed_i/speed_max * 10).Int ?
+                      [0]: c.Pen_width = _ * 0.25
+                      [1, 2]: .. = _ * 0.4
+                      [3, 4]: .. = _ * 0.5
+                      [5, 6, 7]: .. = _ * 0.75
+                      ELSE NONE ;
+                      CASE sat.FinalK > 0 ?
+                           CASE (speed_i/speed_max * 10).Int ?
+                           [0]: c.Foreground = _.Mix_percents(BLACK,25)
+                           [1]: c.Foreground = _.Mix_percents(BLACK,50)
+                           [2]: c.Foreground = _.Mix_percents(BLACK,75)
+                           [5]: c.Foreground = _.Mix_percents(WHITE,75)
+                           [6]: c.Foreground = _.Mix_percents(WHITE,70)
+                           [7]: c.Foreground = _.Mix_percents(WHITE,65)
+                           [8]: c.Foreground = _.Mix_percents(WHITE,60)
+                           [9]: c.Foreground = _.Mix_percents(WHITE,55)
+                           [10]:c.Foreground = _.Mix_percents(WHITE,50)
+                           ;
+                      ;
+                      CASE glove ?
+                           PUSH c.Foreground = WHITE :
+                                ---------------------- 'transp__mask', REUSED
+		                        CASE Satellite_param.Transp!=0 ? 
+			               			 c.Foreground = _ & 0xFFFFFF | transp_mask ;
+		                        ----------------------
+                                c.Line(Pt(xx, yy), prev) ;
+                           c.Pen_width = (_ - 1).Max(0)
+                      ;
+                      LIKE ........................... 'transp__mask'
+                      c.Line(Pt(xx, yy), prev)
+                 ;
+             [c.Pen_width>=5] ?
+                  PUSH c.Pen_width = c.Pen_width-1 :
+                       PUSH c.Foreground = WHITE :
+                            LIKE ................. 'transp__mask'
+                            c.Line(Pt(xx, yy), prev) ;
+                       c.Pen_width = c.Pen_width-2
+                       LIKE ...................... 'transp__mask'
+                       c.Line(Pt(xx, yy), prev)
+                  ;
+             ELSE
+             	  LIKE ........................... 'transp__mask'
+                  c.Line(Pt(xx, yy), prev)
+             ;
+        [min_speed > 0] ? NONE
+        ELSE c.Rect({rect}(Loc=Pt(xx-1,yy-1), W=2, H=2))
+        ;
+        present_prev = TRUE
+        prev = Pt(xx, yy)
+        LIKE ................... 'next__point'
+    -------------------------------------------------------->
+    .
+    
+	
+METHOD finish_round(
+{Canvas} c|destination, INT fill|_color, INT pass|_arm_number_1_or_2)
+    :
+	CASE prev_round[].Count > 0 && (pass==1 || round > 0) ?
+         //DEBUG:
+         //      PUSH c.Foreground = LIME :
+         //           c.Poly(curr_round[1 TO *], FALSE) ;
+         //      PUSH c.Foreground = YELLOW :
+         //           c.Poly(prev_round[1 TO *], FALSE) ;
+         //;
+	     FOR pt IN curr_round[* DOWNTO 1] :
+	         prev_round[] << pt.CLONE ;
+	     PUSH c.Background = fill & 0xFFFFFF | transp_mask :
+	     PUSH c.Pen_style = 'CLEAR_PEN' :
+	          c.Poly(prev_round[1 TO *], TRUE)
+	     ;
+	     ;
+	     curr_round[].Clear
+	     prev_round[].Clear ==>
+	;
+	prev_round[].Clear
+	FOR pt IN curr_round[] :
+	    prev_round[] << pt.CLONE ;
+	curr_round[].Clear
+    .
 
 REAL last_step_off|set
 REAL rotate_p|itch
@@ -941,7 +1032,7 @@ OVERRIDE mouse_down :
 	proj0 = Satellite_param.Rotate_proj.Text.Real
 	incl0 = Satellite_param.Inclination.Text.Real
 	start0 = Satellite_param.Starting_angle.Text.Real
-	excen0 = Satellite_param.Excentricity.Text.Real
+	excen0 = Satellite_param.Eccentricity.Text.Real
 	offset0 = Pt(Offset_x, Offset_y)
 	shift0 = Pt(ShiftX, ShiftY)
 	------------------------------- 'prepare to undo later'
@@ -990,7 +1081,7 @@ OVERRIDE mouse_move :
 	CASE Key.Shift || .Alt ? 
 	     last_mouse_shift = mouse ;
 	CASE !Global_L_button && !rmb_down ? ==> ;
-	{satellite_param} sat|_current 
+	//{satellite_param} sat|_current 
 	sat = Satellite_param.All_satellites[.Satellite_num.Current].CLONE
 	CASE ?
 	[rmb_down && Satellite_param.Rmb_3D_fly && (change_start || change_incl)] ?
@@ -1056,7 +1147,7 @@ OVERRIDE mouse_move :
 	     
 	     CASE !Key.Shift ? 
 	          new_val = (_ * 10000).Int / 10000.0 ;
-		 Satellite_param.Excentricity.Set_text(new_val.S)
+		 Satellite_param.Eccentricity.Set_text(new_val.S)
 	;
 	PBox.Invalidate_all .
 	
@@ -1084,14 +1175,14 @@ METHOD get_orbit(
 REAL ex|centricity, BOOL create|_if_not_exists) ==> {Elliptic_orbit}, PUBLIC
     :
     FOR orbit IN orbits[] :
-        CASE orbit.Excentricity.Near(ex) ? 
+        CASE orbit.Eccentricity.Near(ex) ? 
              RESULT = orbit 
         	 orbits[].Delete(orbit.INDEX)
         	 orbits[] << RESULT ==>     
         ;
     ;
     CASE !create ? ==> ;
-    orbits[] << {Elliptic_orbit}(Excentricity= ex)
+    orbits[] << {Elliptic_orbit}(Eccentricity= ex)
     RESULT = orbits[*]
     CASE orbits[].Count > 20 * Satellite_param.All_satellites[].Count ? 
          orbits[].Delete(0) ; .
@@ -1193,14 +1284,14 @@ INT draw_additionally
 
 METHOD prepare_brightness_table :
     CASE Brightness_min != NONE ? ==> ;
-	INT w|_points = Scaled_image.Width.Pixels_to_points.Int
-	INT h|_points = Scaled_image.Height.Pixels_to_points.Int
-    {Matrix} m_min|_brightness_temp = New_matrix(h, w)
-    {Matrix} m_max|_brightness_temp = New_matrix(h, w)
-    temp_bmp = New_bitmap_direct(w, h, 32)
+	INT wp|_points = Scaled_image.Width.Pixels_to_points.Int
+	INT hp|_points = Scaled_image.Height.Pixels_to_points.Int
+    {Matrix} m_min|_brightness_temp = New_matrix(hp, wp)
+    {Matrix} m_max|_brightness_temp = New_matrix(hp, wp)
+    temp_bmp = New_bitmap_direct(wp, hp, 32)
     ------------------------- 'prepare temp image with points as sizes'
     Scaled_image.Stretch_draw(temp_bmp.Canvas, {rect}(
-    	W=w.Pixels_to_points, H=h.Pixels_to_points))
+    	W=wp.Pixels_to_points, H=hp.Pixels_to_points))
     	//W=temp_bmp.Width.Pixels_to_points, H=temp_bmp.Height.Pixels_to_points))
 
     DEBUG: 
@@ -1209,23 +1300,23 @@ METHOD prepare_brightness_table :
     ;
     temp_bmp.Lock(TRUE)
     FOR y IN [0 TO m_min.NRows-1] :
-        INT yy|_source_pixels_row = y //.Points_to_pixels
+        INT y_row|_source_pixels_row = y
     	FOR x IN [0 TO m_min.NColumns-1] :
-    		INT xx|_source_pixel_column = yy * temp_bmp.Row_width + x*4 //.Points_to_pixels
+    		INT x_col|_source_pixel_column = y_row * temp_bmp.Row_width + x*4 //.Points_to_pixels
     			
-    	    m_min.[x, y] = temp_bmp.Pixels[xx].Int.Min(
-    	    			   temp_bmp.Pixels[xx+1].Int).Min( 
-    	    			   temp_bmp.Pixels[xx+2].Int) 
+    	    m_min.[x, y_row] = temp_bmp.Pixels[x_col].Int.Min(
+    	    			   temp_bmp.Pixels[x_col+1].Int).Min( 
+    	    			   temp_bmp.Pixels[x_col+2].Int) 
     	    			   
-    	    m_max.[x, y] = temp_bmp.Pixels[xx].Int.Max(
-    	    			   temp_bmp.Pixels[xx+1].Int).Max( 
-    	    			   temp_bmp.Pixels[xx+2].Int) 
+    	    m_max.[x, y_row] = temp_bmp.Pixels[x_col].Int.Max(
+    	    			   temp_bmp.Pixels[x_col+1].Int).Max( 
+    	    			   temp_bmp.Pixels[x_col+2].Int) 
     	;
     ; 
     temp_bmp.Unlock(FALSE) 
     --------------------------- 'now calculate each point as average of NxN'
-    Brightness_min = New_matrix(h, w)
-    Brightness_max = New_matrix(h, w)
+    Brightness_min = New_matrix(hp, wp)
+    Brightness_max = New_matrix(hp, wp)
     REAL total_min = 255
     REAL total_max = 0
     FOR y IN [0 TO m_min.NRows-1] :
@@ -1268,7 +1359,7 @@ BOOL has_prev_in_out
 METHOD calculations_one_point(
 {point} dest|ination, {point} c|enter_point, {Canvas} Canv|as_dest)
     :
-	REAL dist|ance_to_center = Distance(dest, c)
+	dist = Distance(dest, c)
 	CASE dist < 0.01 ? ==> ;
     {point} inn|er_point
     {point} out|er_point 

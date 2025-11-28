@@ -48,8 +48,8 @@ BASE CLASS: {Form_common} .
 {Label} Label_final_k|_plasma_speed
 {Edit} Final_plasma_speed
 
-{Label} Label_Excentricity
-{Edit} Excentricity
+{Label} Label_Eccentricity
+{Edit} Eccentricity
 {Label} Label_Mass|_Central_SMBH
 {Timer} Timer_invalidate
 {Label} Label_deviation_angle
@@ -75,12 +75,14 @@ BASE CLASS: {Form_common} .
 {Edit} Filter_speed
 {Paint_turtle} Star_filter
 {Paint_turtle} BH_mass_change
+{Label} Label_max_dist|ance
+{Edit} Max_dist|ance_from_core
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
 
-CONSTRUCT://069E6CBB Do not change manually (created by Form Designer)
+CONSTRUCT://44C9533C Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -92,7 +94,7 @@ PUSH in_construct = TRUE :
 	...Filter = "Png file|*.png"
 	...Default_ext = "png"
 	----------------- 'TIMER_INVALIDATE'
-	Timer_invalidate = New_timer(THIS, "TIMER_INVALIDATE", 250)
+	Timer_invalidate = New_timer(THIS, "TIMER_INVALIDATE", 50)
 	---------------- 'LABELSELECTSPIRAL'
 	LabelSelectSpiral = {Label}(Form_=THIS, Alias="LABELSELECTSPIRAL")
 
@@ -114,7 +116,7 @@ PUSH in_construct = TRUE :
 	------------------------ 'LABELNAME'
 	LabelName = {Label}(Form_=THIS, Alias="LABELNAME")
 
-	...Set_text("Name:")
+	...Set_text("Name:"._Name)
 	------------------------ 'EDIT_NAME'
 	Edit_name = New_edit(THIS, "EDIT_NAME")
 	---------------------- 'DIALOG_LOAD'
@@ -149,12 +151,12 @@ PUSH in_construct = TRUE :
 	...Set_width(18)
 
 	...Set_height(18)
-	--------------- 'LABEL_EXCENTRICITY'
-	Label_Excentricity = {Label}(Form_=THIS, Alias="LABEL_EXCENTRICITY")
+	--------------- 'LABEL_ECCENTRICITY'
+	Label_Eccentricity = {Label}(Form_=THIS, Alias="LABEL_ECCENTRICITY")
 
-	...Set_text("e, Excentricity (0...0.99999):")
-	--------------------- 'EXCENTRICITY'
-	Excentricity = New_text_edit(THIS, "EXCENTRICITY", "N")
+	...Set_text("e, Eccentricity (0...0.99999):")
+	--------------------- 'ECCENTRICITY'
+	Eccentricity = New_text_edit(THIS, "ECCENTRICITY", "N")
 
 	...Set_text("0.5")
 	----------------------- 'LABEL_MASS'
@@ -206,11 +208,13 @@ PUSH in_construct = TRUE :
 
 	...Set_text("60")
 	----------------- 'LABEL_CONE_ANGLE'
-	Label_cone_angle = {Label}(Form_=THIS, Alias="LABEL_CONE_ANGLE")
+	Label_cone_angle = {Label}(Form_=THIS,
+ Alias="LABEL_CONE_ANGLE"),
+ >> can_hide[]
 
 	...Set_text("Cone angle (0...90):")
 	----------------------- 'CONE_ANGLE'
-	Cone_angle = New_text_edit(THIS, "CONE_ANGLE", "N")
+	Cone_angle = New_text_edit(THIS, "CONE_ANGLE", "N"), >> can_hide[]
 
 	...Set_text("90")
 	---------------- 'LABEL_ROTATE_PROJ'
@@ -258,7 +262,7 @@ PUSH in_construct = TRUE :
 	-------------------- 'ACTIVITY_TIME'
 	Activity_time = New_edit(THIS, "ACTIVITY_TIME")
 
-	...Set_text("200000")
+	...Set_text("120000")
 	------------------ 'ADD_TO_ACTIVITY'
 	Add_to_activity = New_paint_turtle_button(THIS,
  "ADD_TO_ACTIVITY",
@@ -285,6 +289,14 @@ PUSH in_construct = TRUE :
 	...Set_text("Skip last activity, years:")
 	-------------------- 'LAST_ACTIVITY'
 	Last_activity = New_edit(THIS, "LAST_ACTIVITY")
+
+	...Set_text("0")
+	------------------- 'LABEL_MAX_DIST'
+	Label_max_dist = {Label}(Form_=THIS, Alias="LABEL_MAX_DIST")
+
+	...Set_text("Maximal distance, light-years:")
+	------------------------- 'MAX_DIST'
+	Max_dist = New_edit(THIS, "MAX_DIST")
 
 	...Set_text("0")
 	----------------------- 'LABELHINT1'
@@ -424,7 +436,7 @@ METHOD after_CONSTRUCT:
 	All_satellites[].Clear
 	All_satellites[] << {satellite_param}(
 		Period= Period_rot.Text.Real,
-		Excentricity= 0.5,
+		Eccentricity= 0.5,
 		Cone_a= Cone_angle.Text.Real,
 		Rotate= Rotate_proj.Text.Real,
 		Inclin= Inclination.Text.Real,
@@ -490,7 +502,8 @@ PUSH in_construct = TRUE :
 	..[] << "Cyan-lime"._Cyan_lime
 	Arm_colors.Set_array(to_show[0 TO *])
 	Arm_colors.Select(was_cur)
-	LabelXLang.Set_text("Language (" ("?"._Language) "):")
+	----------------------- 'LABELxLANG'
+	LabelXLang.Set_text("Language"._Language " (Language):")
 	//---------------------------- 'RESET'
 	//Reset.Set_text("Reset"._Reset_button)
 	---------------------- 'show'
@@ -511,19 +524,37 @@ PUSH in_construct = TRUE :
 	Label_inclination .Set_text("Inclination (-180...180):"._Inclination)
 	----------------- 'LABEL_STARTING_A'
 	Label_starting_a.Set_text("Starting angle (0...360):"._Starting_angle)
+	--------------- 'LABEL_Eccentricity'
+	Label_Eccentricity.Set_text("e, Eccentricity (0...0.99999):"._e_Eccentricity)
+	----------------------- 'LABEL_MASS'
+	Label_Mass.Set_text("Central Black Hole Mass (of Sun):"._BH_mass)
 	--------------- 'LABEL_PLASMA_SPEED'
 	Label_plasma_speed.Set_text("Plasma speed kc (k=0...1):"._Plasma_speed)
 	-------------------- 'LABEL_FINAL_K'
 	Label_final_k.Set_text("Final plasma speed (0 if the same):"._Final_plasma_k)
+	------------ 'LABEL_DEVIATION_ANGLE'
+	Label_deviation_angle.Set_text("Deviation angle (-90...90)"._Deviation_angle)
+	------------ 'LABEL_FINAL_DEVIATION'
+	Label_final_deviation.Set_text("Final deviation angle (in perihole)"
+	""._Final_deviation_angle)
 	------------------- 'LABELARMCOLORS'
 	LabelArmColors.Set_text("Spiral arms colors:"._Spiral_arms_colors)
 	-------------- 'LABEL_ACTIVITY_TIME'
 	Label_activity_time.Set_text("Activity time, years:"._Activity_time)
 	-------------- 'LABEL_LAST_ACTIVITY'
 	Label_last_activity.Set_text("Skip last activity, years:"._Last_activity)
+	------------------- 'LABEL_MAX_DIST'
+	Label_max_dist.Set_text("Maximal distance, light-years:"._Max_dist)
 	----------------------- 'LABELHINT1'
 	LabelHint1.Set_text(
-		"Hint: drag center of spiral to the galaxy center"._Hint1)
+		"Hint: drag center of spiral with CONTROL move to the galaxy center"
+		""._Hint1)
+	--------------------- 'LABEL_FILTER'
+	Label_Filter.Set_text("Filter satellites:"._Filter_satellites)
+	--------------- 'LABEL_SPEED_FILTER'
+	Label_speed_filter.Set_text("Filter plasma speed"._Filter_plasma_speed)
+	------------- 'LABEL_FIRST_ACTIVITY'
+	Label_first_activity.Set_text("Skip first activity"._Skip_1st_activity)
 	----------------- 'LOAD_UNDER_IMAGE'
 	Load_under_image .Set_text("Load under image"._Load_under_image)
 	----------------------- '3 combos'
@@ -534,7 +565,7 @@ PUSH in_construct = TRUE :
 	Edit_name.Set_text("")
 	Box_width.Set_text("100000")
 	Period_rot.Set_text("100000")
-	Excentricity.Set_text("0.5")
+	Eccentricity.Set_text("0.5")
 	Mass_BH.Set_text("4270000")
 	--------- 'emission'
 	Plasma_speed.Set_text("0.2")
@@ -547,12 +578,14 @@ PUSH in_construct = TRUE :
 	Rotate_proj.Set_text("0")
 	Inclination.Set_text("0")
 	Starting_angle.Set_text("0")
-	Activity_time.Set_text("200000")
+	Activity_time.Set_text("120000")
 	First_activity.Set_text("0")
 	Last_activity.Set_text("0")
 	--------- 'image'
 	Rotate_image.Set_text("0")
 	Scale_image.Set_text("100")
+	------------------ 'MAKE_SCREENSHOT'
+	Make_screenshot.Set_text("Screenshot !"._Make_screenshot)
 ; 
 	Fill_scale_rotate .
 	
@@ -590,7 +623,7 @@ OVERRIDE closing ==> {Form}.{action} :
 STRUCTURE {satellite_param|eters} :
 	STR Name|_of_satellite
     REAL Period|_rotation
-    REAL Excentricity
+    REAL Eccentricity
     REAL Cone_a|ngle
     REAL Rotate|_projection
     REAL Inclin|ation
@@ -605,6 +638,7 @@ STRUCTURE {satellite_param|eters} :
     REAL Activity|_time
     REAL First_ac|tivity
     REAL Last_act|ivity 
+    REAL Max_dist|ance
     ------------------------ 'position on orbit'
     INT Last_i_pos
     .
@@ -645,7 +679,7 @@ METHOD selected_satellite :
 		 Edit_name.Set_text(s.Name)
 		 ---------------------------------- 'galaxy parameters'  
 	     Period_rot.Set_text(s.Period.S) 
-	     Excentricity.Set_text(s.Excentricity.S)
+	     Eccentricity.Set_text(s.Eccentricity.S)
 	     Cone_angle.Set_text(s.Cone_a.S)
 	     Rotate_proj.Set_text(s.Rotate.S)
 	     ---------------------------------- 'satellite parameters'
@@ -658,6 +692,7 @@ METHOD selected_satellite :
 	     Activity_time.Set_text(s.Activity.S)
 	     First_activity.Set_text(s.First_ac.S)
 	     Last_activity.Set_text(s.Last_act.S)
+	     Max_dist.Set_text(s.Max_dist.S)
 	     ---------------------------------- 'view parameters'
 	     Inclination.Set_text(s.Inclin.S)
 	     Starting_angle.Set_text(s.StartA.S)
@@ -673,7 +708,7 @@ INT i_s|atellite_index, BOOL set_hint|_text) ==> STR
 	REAL m_a|_coords_multiplyer
 	REAL m_M|ass_blak_hole_mult
 	{satellite_param} s|piral_sel = All_satellites[i_s].CLONE
-	orbit = Main_.get_orbit(s.Excentricity, FALSE)
+	orbit = Main_.get_orbit(s.Eccentricity, FALSE)
 	CASE orbit != NONE ? 
     	 m_T = s.Period / T0
     	 m_M = Mass_BH.Text.Real * Sun_mass / Mass_BH0
@@ -700,7 +735,7 @@ OVERRIDE value_change :
         Main_.Invalidate ==>
     ["PERIOD_ROT"]: s.Period = Period_rot.Text.Real
     	NONE = hint_a(Satellite_num.Current, TRUE)
-    ["EXCENTRICITY"]: s.Excentricity = Excentricity.Text.Real
+    ["ECCENTRICITY"]: s.Eccentricity = Eccentricity.Text.Real
     	NONE = hint_a(Satellite_num.Current, TRUE)
     ["CONE_ANGLE"]: s.Cone_a = Cone_angle.Text.Real
     ["ROTATE_PROJ"]: s.Rotate = Rotate_proj.Text.Real
@@ -713,6 +748,7 @@ OVERRIDE value_change :
     ["ACTIVITY_TIME"]: s.Activity = Activity_time.Text.Real
     ["FIRST_ACTIVITY"]: s.First_ac = First_activity.Text.Real
     ["LAST_ACTIVITY"]: s.Last_act = Last_activity.Text.Real
+    ["MAX_DIST"]: s.Max_dist = Max_dist.Text.Real
     ["FILTER_SPEED"]: s.Filter_speed = Filter_speed.Text.Real
     ; 
     All_satellites[Satellite_num.Current] = s.CLONE
@@ -1011,7 +1047,7 @@ OVERRIDE click :
 		    	          s = All_satellites[i].CLONE
 		    	          c...Set_s("Name", s.Name)
 		    	           ...Set_r("Period", s.Period)
-		    	           ...Set_r("Excentricity", s.Excentricity)
+		    	           ...Set_r("Eccentricity", s.Eccentricity)
 		    	           ...Set_r("Deviation", s.Deviation)
 		    	           ...Set_r("Deviation_final", s.Deviation_final)
 		    	           ...Set_r("Cone_a", s.Cone_a)
@@ -1024,6 +1060,7 @@ OVERRIDE click :
 		    	           ...Set_r("Activity", s.Activity)
 		    	           ...Set_r("First_ac", s.First_ac) 
 		    	           ...Set_r("Last_act", s.Last_act) 
+		    	           ...Set_r("Max_dist", s.Max_dist) 
 		    	           ...Set_i("Arms_colors", s.ArmsColors)
 	    	         ;
 	    	     ;
@@ -1059,7 +1096,8 @@ OVERRIDE click :
         	    All_satellites[] << {satellite_param}(
         			Name= c.Str("Name"),
         			Period= c.Real("Period"),
-        			Excentricity= c.Real("Excentricity"),
+        			Eccentricity= c.Real("Eccentricity")
+        				+ c.Real("Excentricity"),
         			Deviation= c.Real("Deviation"),
         			Deviation_final= c.Real("Deviation_final"),
         			Cone_a= c.Real("Cone_a"),
@@ -1072,6 +1110,7 @@ OVERRIDE click :
         			Activity= c.Real("Activity"),
         			First_ac= c.Real("First_ac"),
         			Last_act= c.Real("Last_act"),
+        			Max_dist = c.Real("Max_dist"),
         			ArmsColors = c.Int("Arms_colors")
         	    	)
         	;
@@ -1085,13 +1124,13 @@ OVERRIDE click :
             popup_menu(
 
 	""	Item(	"BRIGHT_BY_K",
-				"Bright/width by plasma speed"
+				"Bright/width by plasma speed"._Bright_by_plasma_speed
 		).Checked(
 		Bright_by_plasma_speed
 		)
 
 	""	Item(	"",
-				"Change bright each ..."
+				"Change bright each ..."._Bright_each
 		)
 
 	""	Begin
@@ -1101,49 +1140,95 @@ OVERRIDE click :
 	""	End
 
 	""	Item(	"GLOVE",
-				"Glove all spirals"
+				"Glove all spirals"._Glove_all
 		).Checked(
 		Glove_all
 		)
 
 	""	Item(	"GLOVE_CUR",
-				"Glove current spiral"
+				"Glove current spiral"._Glove_current
 		).Checked(
 		Glove_current
 		)
 
+	""	Item(	"",
+				"Draw ..."._Draw_as
+		)
+
+	""	Begin
+
 	""	Item(	"DRAW_DOTS",
-				"Draw as dots"
+				"... as dots"._as_dots
 		).Checked(
 		Draw_as_dots
 		)
 
+	""	Item(	"AS_POLUGONS",
+				"... as polygons"._as_polygons
+		).Checked(
+		Draw_as_polygons
+		)
+
+	""	End
+
 	""	Item(	"",
-				"Show spirals..."
+				"Transparency..."._Transparency
+		)
+
+	""	Begin
+
+	""	Item(	"TRANSP75",
+				"75 %"
+		).Checked(
+		Transp==75
+		)
+
+	""	Item(	"TRANSP50",
+				"50 %"
+		).Checked(
+		Transp==50
+		)
+
+	""	Item(	"TRANSP25",
+				"25 %"
+		).Checked(
+		Transp==25
+		)
+
+	""	Item(	"NOTRANSP",
+				"No"._No_transp
+		).Checked(
+		Transp==0
+		)
+
+	""	End
+
+	""	Item(	"",
+				"Show arms..."._Show_spirals
 		)
 
 	""	Begin
 
 	""	Item(	"BOTH",
-				"Both"
+				"Both"._Both
 		).Checked(
 		Which_spirals==0
 		)
 
 	""	Item(	"ONE",
-				"One"
+				"One"._One
 		).Checked(
 		Which_spirals==1
 		)
 
 	""	Item(	"TWO",
-				"Two"
+				"Two"._Two
 		).Checked(
 		Which_spirals==2
 		)
 
 	""	Item(	"BOTH_2ND_LIGHTENED",
-				"Both but second is lightened"
+				"Both but second is lightened"._Both_but_2nd_light
 		).Checked(
 		Which_spirals==3
 		)
@@ -1153,35 +1238,51 @@ OVERRIDE click :
 	""	Separator
 
 	""	Item(	"GRAB_MARKERS",
-				"Grab scrinshots with marker lines"
+				"Grab scrinshots with marker lines"._Grab_marker_lines
 		).Checked(
 		Grab_markers
 		)
 
 	""	Item(	"ALL_ELLIPSES",
-				"Draw orbits of all satellites magnified x 1000"
+				"Draw orbits of all satellites magnified x 1000"._Draw_orbits_x1000
 		).Checked(
 		All_ellipses
 		)
 
 	""	Item(	"GRAB_GRID",
-				"Grab to grid 100x100 pixels"
+				"Grab to grid 100x100 pixels"._Grid_100x100
 		).Checked(
 		Grab_to_grid
 		)
 
 	""	Item(	"",
-				"Draw coordinate letters && digits"
+				"Draw coordinate letters && digits"._Coordinate_letters_digits
 		)
 
 	""	Begin
 
-	""	Custom(Letters_digits_options)
+	""	Item(	"LETTERS_DIGITS_NO",
+				"Never"._Never
+		).Checked(
+		Grid_letters==0
+		)
+
+	""	Item(	"LETTERS_DIGITS_ONES",
+				"Ones on top and left edges"._Once_on_top_left
+		).Checked(
+		Grid_letters==1
+		)
+
+	""	Item(	"LETTERS_DIGITS_EACH10",
+				"Each 10 cells and on right/bottom edges too"._Each_10_cells
+		).Checked(
+		Grid_letters==2
+		)
 
 	""	End
 
 	""	Item(	"GRAB_ROT",
-				"Grab rotated 90 degrees CW"
+				"Grab rotated 90 degrees CW"._Grab_rotated
 		).Checked(
 		Grab_rotated
 		)
@@ -1189,19 +1290,19 @@ OVERRIDE click :
 	""	Separator
 
 	""	Item(	"START_PROJ_TOGETHER",
-				"Change starting angle and projection rotation todether"
+				"Change starting angle and projection rotation together"._Change_start_and_rotation_together
 		).Checked(
 		Start_proj_together
 		)
 
 	""	Item(	"COMPENSATE_SPEED_BY_PERIOD",
-				"Compensate plasma speed change by period"
+				"Compensate plasma speed change by period"._Compensate_plasma_speed_by_period
 		).Checked(
 		Compensate_speed
 		)
 
 	""	Item(	"3D_FLY_RMB",
-				"3D-fly with Right Mouse Button"
+				"3D-fly with Right Mouse Button"._3D_fly
 		).Checked(
 		Rmb_3D_fly
 		)
@@ -1209,11 +1310,11 @@ OVERRIDE click :
 	""	Separator
 
 	""	Item(	"SAVE_POS",
-				"Save position && size"
+				"Save position && size"._Save_position_size
 		)
 
 	""	Item(	"",
-				"Restore size/position..."
+				"Restore size/position..."._Restore_position_size
 		)
 
 	""	Begin
@@ -1223,47 +1324,53 @@ OVERRIDE click :
 	""	End
 
 	""	Item(	"UNSCALE_IMAGE",
-				"Unscale/unrotate image scaling rotating all spirals"
+				"Unscale/unrotate image scaling rotating all spirals"._Unscale_unrotate
 		).Disabled(
 		Scale_up_shift || Scale_image.Text.Int==100 && Rotate_image.Text.Int==0
 		)
 
 	""	Item(	"SCALE_ROTATE_ALL",
-				"Scale/rotate all spirals rather then image"
+				"Scale/rotate all spirals rather then image"._Scale_rotate_spirals
 		).Checked(
 		Scale_rotate_spirals
 		)
 
 	""	Item(	"SCALEUP_SHIFT",
-				"Scale up & shift all (magnifier mode)"
+				"Scale up & shift all (magnifier mode)"._Scale_up_shift
 		).Checked(
 		Scale_up_shift
 		)
 
 	""	Item(	"CONTROL_TO_DRAG_CENTER",
-				"Use CONTROL to drag center"
+				"Use CONTROL to drag center"._Use_control_to_drag_center
 		).Disabled(
 		Scale_up_shift
 		).Checked(
 		Control_drag_center
 		)
 
+	""	Item(	"SHOW_CONE",
+				"Show Cone angle"._Show_cone_angle
+		).Checked(
+		Show_cone
+		)
+
 	""	Separator
 
 	""	Item(	"PLASMA_SPEED_ALTER",
-				"Plasma speed alternative rule"
+				"Plasma speed alternative rule"._Plasma_alter
 		).Checked(
 		Alter_plasma_speed
 		)
 
 	""	Item(	"RETROSPECTIVE",
-				"Time retrospective to point"
+				"Time retrospective to point"._Time_retrospective
 		).Checked(
 		Retrospective
 		)
 
 	""	Item(	"CALC_DIFF",
-				"Calculate brightness difference"
+				"Calculate brightness difference"._Calculate_brightness_diff
 		).Checked(
 		Calc_bright_diff
 		)
@@ -1271,19 +1378,19 @@ OVERRIDE click :
 	""	Separator
 
 	""	Item(	"COPY_TABLE",
-				"Copy parameters to table"
+				"Copy parameters to table"._Copy_to_table
 		).Hotkey(
 		"F5"
 		)
 
 	""	Item(	"PASTE_TABLE",
-				"Paste parameters"
+				"Paste parameters"._Paste_params
 		).Hotkey(
 		"F6"
 		)
 
 	""	Item(	"RESET",
-				"Reset"
+				"Reset"._Reset
 		))
 
 
@@ -1338,27 +1445,6 @@ METHOD Each_10000_years_options ==> STR :
 		)
     .
     
-METHOD Letters_digits_options ==> STR :
-	RESULT = ""
-	""	Item(	"LETTERS_DIGITS_NO",
-				"Never"
-		).Checked(
-		Grid_letters==0
-		)
-
-	""	Item(	"LETTERS_DIGITS_ONES",
-				"Ones on top and left edges"
-		).Checked(
-		Grid_letters==1
-		)
-
-	""	Item(	"LETTERS_DIGITS_EACH10",
-				"Each 10 cells and on right/bottom edges too"
-		).Checked(
-		Grid_letters==2
-		)
-    .
-    
 METHOD List_saved_positions ==> STR :
     {Config} conf|_temp = New_read_config("PlasmaTides", 'USER', "sizes")
     FOR i IN [0 TO 9] :
@@ -1385,12 +1471,15 @@ BOOL Grab_rotated|_90_CW
 BOOL Scale_rotate_spirals
 BOOL Scale_up_shift
 BOOL Control_drag_center = TRUE
+BOOL Show_cone
 BOOL Draw_as_dots
-INT Which_spirals
+BOOL Draw_as_polygons
+INT Which_spirals = 3
 BOOL Retrospective
 BOOL Once_Retrospective|_was_turned_on
 BOOL Calc_bright_diff
 BOOL Rmb_3D_fly
+INT Transp|arency = 50
     
 METHOD caption_loc|alizable ==> STR :
 	= "Satellite /galaxy parameters"._CAPTION .
@@ -1421,9 +1510,12 @@ OVERRIDE mouse_down :
 		 	range_fr = editing.Text.Real / 2
 		 	range_to = editing.Text.Real * 2 
 		 	--------------------------------
+		 ["LABEL_MAX_DIST"]: editing = Max_dist 
+		     LIKE .......... 'box__width'
+		     range_to = _.Max(10000)
 		 ["LABEL_PERIOD"]: editing = Period_rot
 		 	LIKE ...................... 'box__width'
-		 ["LABEL_EXCENTRICITY"]: editing = Excentricity
+		 ["LABEL_Eccentricity"]: editing = Eccentricity
 		 	range_fr = 0
 		 	range_to = 0.99999
 		 ["LABEL_MASS"]: editing = Mass_BH
@@ -1557,7 +1649,7 @@ OVERRIDE mouse_move :
 		      CASE ?
 		      [Final_plasma_speed == editing || editing == Plasma_speed] ?
 		           new_val = (_ * 100).Int / 100.0 
-		      [editing == Excentricity || editing == Filter_speed] ?
+		      [editing == Eccentricity || editing == Filter_speed] ?
 		           new_val = (_ * 10_000).Int / 10_000.0
 		      ELSE new_val = _.Int ;
 		 ;
@@ -1623,7 +1715,7 @@ OVERRIDE mouse_up :
 	dragging = NONE 
 	need_invalidate = TRUE
 	Main_.lmb_down = FALSE
-	CASE sender_alias IN ["LABELHINT1", "PERIOD_ROT", "EXCENTRICITY", "MASS_BH"] ? 
+	CASE sender_alias IN ["LABELHINT1", "PERIOD_ROT", "Eccentricity", "MASS_BH"] ? 
 	     NONE = hint_a(Satellite_num.Current, TRUE)
 	     editing = NONE
 	ELSE Change_hint ;
@@ -1643,7 +1735,7 @@ METHOD copy_to_table :
              t[0] = _ #TAB sat.Name
         ELSE t[0] = _ #TAB (sat.INDEX+1).S ;
         t[1] = _ #TAB sat.Period.S
-        t[2] = _ #TAB sat.Excentricity.S
+        t[2] = _ #TAB sat.Eccentricity.S
         t[3] = _ #TAB sat.SpeedK.S
         t[4] = _ #TAB sat.FinalK.S
         -------------------------- '2'
@@ -1688,7 +1780,7 @@ METHOD paste_from_table :
     	    INT i_sat|ellite = list_sat[n].Int - 1 
     		{satellite_param} sp|arameters = All_satellites[i_sat].CLONE
     		sp.Period = pe[n].Real
-    		sp.Excentricity = ex[n].Real
+    		sp.Eccentricity = ex[n].Real
     		sp.SpeedK = sK[n].Real
     		sp.FinalK = fK[n].Real
     		------------------------ 'values 2'    
@@ -1709,6 +1801,10 @@ METHOD paste_from_table :
 
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["TRANSP75"]: Transp = 75
+    ["TRANSP50"]: Transp = 50
+    ["TRANSP25"]: Transp = 25
+    ["NOTRANSP"]: Transp = 0
     ["SAVE_POS"]:
         {Config} conf|_temp = New_write_config("PlasmaTides", 'USER', "sizes")
         FOR i IN [9 DOWNTO 1] :
@@ -1725,7 +1821,9 @@ OVERRIDE menu_item :
     ["PASTE_TABLE"]:
 		paste_from_table ==>
     ["RESET"]:
-        CASE !ask("All values will be set to default. Continue?"._Reset) ? ==> ;
+        CASE !ask("All values will be set to default. Continue?"
+             ""._Reset_continue) ?
+             ==> ;
         FOR sp_r IN All_satellites[* DOWNTO 1] :
             All_satellites[].Delete(sp_r.INDEX) ;
         Satellite_num.Set_items("1")
@@ -1756,6 +1854,9 @@ OVERRIDE menu_item :
     
     ["GRAB_ROT"]: Grab_rotated = !_
     ["DRAW_DOTS"]: Draw_as_dots = !_
+    	Draw_as_polygons = FALSE
+    ["AS_POLUGONS"]: Draw_as_polygons = !_
+    	Draw_as_dots = FALSE
     ["BOTH"]: Which_spirals = 0
     ["ONE"]:  Which_spirals = 1
     ["TWO"]:  Which_spirals = 2
@@ -1778,8 +1879,8 @@ OVERRIDE menu_item :
     	Scale_up_shift = !_
     	CASE Scale_up_shift ? Scale_rotate_spirals = FALSE ;
     	Fill_scale_rotate
-    ["CONTROL_TO_DRAG_CENTER"]:
-        Control_drag_center = !_
+    ["CONTROL_TO_DRAG_CENTER"]: Control_drag_center = !_
+    ["SHOW_CONE"]: Show_cone = !_
     ["UNSCALE_IMAGE"]:
         REAL si|mage_scale = 100 / Scale_image.Text.Real
         REAL ri|image_rotate = Rotate_image.Text.Real
@@ -1897,7 +1998,7 @@ METHOD draw_to|_bitmap(
     CASE Edit_name.Text != "" ? 
          ..[] << LabelName << Edit_name ;
     ..[] << Label_period << Period_rot
-    ..[] << Label_Excentricity << Excentricity
+    ..[] << Label_Eccentricity << Eccentricity
     ..[] << Label_Mass << Mass_BH
     ..[] << Label_plasma_speed<<Plasma_speed <<Label_final_k<<Final_plasma_speed
     ..[] << Label_deviation_angle << Deviation_angle 
@@ -1940,6 +2041,12 @@ OVERRIDE disabled ==> BOOL :
     ; .
     
     
+
+OVERRIDE hidden ==> BOOL :
+    CASE sender_alias ?
+    ["LABEL_CONE_ANGLE", "CONE_ANGLE"]: 
+        RESULT = !Show_cone && Cone_angle.Text.Real >= 90
+    ; .
 END
 
 */

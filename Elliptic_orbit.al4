@@ -12,7 +12,7 @@ CLASS {Elliptic_orbit}, UNTESTED:
 IMPORT: {{Standard}}, {{Files}}, {{Visual}} .
 IMPORT: {Main_plasma_tides} . //-> qq
 
-REAL Excentric|ity, INIT, READ
+REAL Eccentric|ity, INIT, READ
 
 CONST REAL : 
 	G|ravitation_constant = 6.6743e-11
@@ -32,6 +32,7 @@ STRUCTURE {e_point|_of_ellipse} :
     REAL T|ime_from_start_move_at_Apoholy
     REAL V|elocity 
     {point} Dir|ection|_vector_of_length_1
+    REAL A|ngle_from_0
     .
     
 {e_point} Points|_array[]  
@@ -44,15 +45,17 @@ CONSTRUCT:
 	-------------------------------- 'a, b, Q_min, Q_max'
 	REAL a|_big_semiaxis_Meters = G * Mass_BH0 * (T0 * YEAR).qq / 4 / PI.qq
 	.. = _.Power(1/3.0) /// LY
-	Q_min = a * (1 - Excentricity)
-	Q_max = a * (1 + Excentricity) 
+	Q_min = a * (1 - Eccentricity)
+	Q_max = a * (1 + Eccentricity) 
     //DEBUG: "{Elliptic_orbit}.a=" a #NL ;
-	REAL b|_small_semiax = a * Sqrt(1 - Excentricity.qq)
+	REAL b|_small_semiax = a * Sqrt(1 - Eccentricity.qq)
 	{e_point} prev|ious_point
 	FOR i IN [0 TO Points[].Count-1] :
 		{e_point} p|oint_of_i = {e_point}(
-			X= a * (Cos(t) - Excentricity), Y= b * Sin(t),
-			R= (a.qq * (Cos(t) - Excentricity).qq + b.qq * Sin(t).qq).Sqrt)
+			X= a * (Cos(t) - Eccentricity), Y= b * Sin(t),
+			R= (a.qq * (Cos(t) - Eccentricity).qq + b.qq * Sin(t).qq).Sqrt)
+			
+		p.A = ATan2(p.Y, p.X) * 180 / PI
 		----------------- 'in light years'	
 		p.X_LY = p.X / LY
 		p.Y_LY = p.Y / LY
