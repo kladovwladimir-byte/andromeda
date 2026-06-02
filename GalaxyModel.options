@@ -17,6 +17,8 @@ Main_plasma_tides.al4
 /$Visual
 #/noconsole
 
+#/op I2<124
+
 /ext cs
 #/v
 /dst .\_Compiled_C#
@@ -24,7 +26,9 @@ Main_plasma_tides.al4
 /run
 #/$REPORT_LEAKS=
 #/$PAUSE
+/NOINDEXING
 /$ICON=Icon32x32-plasma-tidesl.ico
+/$NOLONGOP
 
 ################################################################
 [Delphi_vcl]
