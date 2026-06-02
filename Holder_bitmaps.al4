@@ -1,0 +1,16 @@
+/*
+
+CLASS {Holder_bitmaps}, UNTESTED:
+
+IMPORT: {{Standard}}, {{Files}}, {Bitmap} .
+
+{Bitmap} Bitmaps|_list[]
+
+METHOD Delete|_image({Bitmap} B|_to_delete) :
+    Bitmaps[].Remove(B) .
+    
+METHOD Count|_bitmaps ==> INT := Bitmaps[].Count .
+
+END
+
+*/

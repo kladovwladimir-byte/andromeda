@@ -1,0 +1,2191 @@
+/*
+
+CLASS {Stamp_parameters}, UNTESTED, BITWISE:
+
+IMPORT {Form_common}, {Satellite_param}, {HSV} .
+IMPORT: {{Visual}}, {{Standard}}, {{Files}}, {Stamp3D}, {Main_plasma_tides} .
+IMPORT: {Jpeg}, {Png}, {Localize_str}, {Bitmap_direct} .
+IMPORT, DEBUG: {Bmp} .
+
+BASE CLASS: {Form_common} .
+
+
+{Label} Label_x_offset
+{Label} Label_y_offset
+{Edit} X_offset
+{Edit} Y_offset
+{Label} Label_value
+{Edit} Value|_added_to_each_channel
+{Label} Label_shift
+{Edit} Shift_final|_value
+{Checkbox} Use_file|_scratch
+{Button} Button_stamp|_ctreate
+{Checkbox} Remove_old_stamp
+{Label} LabelFixChannel
+{Combo} Channel_fix
+{Progress} Progress_1
+{Paint_turtle} Copy_bitmap
+{Paint_turtle} Inc_dec_shift
+{Label} LabelConvert
+{Combo} Convert_colors
+{Dialog_file} Dialog_file_save
+{Paintbox} P_Hints|_bottom
+{Label} LabelPostProcess
+{Combo} Post_processing
+{Paint_turtle} Run_post_process
+{Label} Label_View_transparent
+{Edit} Transparency_percents
+{Checkbox} Scale_transparent
+{Paint_turtle} Transparency_on_off
+{Label} Label_iterations|_to_mix
+{Edit} Iterations_count
+{Paintbox} Paintbox_1
+{Paintbox} Paintbox_2
+{Label} Label_multiplier
+{Edit} Edit_multiplier
+{Label} Label_stamp_type
+{Combo} Stamp_type
+{Checkbox} Recenter|_after_flat_stamp
+
+METHOD before_CONSTRUCT: .
+
+CONSTRUCT://7184EBE1 Do not change manually (created by Form Designer)
+	before_CONSTRUCT
+PUSH in_construct = TRUE :
+	------------------------------------------------------------------ 'column '
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=200,Align_right=TRUE))
+
+	---------------------- 'DIALOG_FILE'
+	Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE")
+
+	...Filter = "All images|*.png;*.jpg"
+	...Default_ext = "png"
+	------------------- 'LABEL_X_OFFSET'
+	Label_x_offset = {Label}(Form_=THIS, Alias="LABEL_X_OFFSET")
+
+	...Set_text("X offset")
+	------------------------- 'X_OFFSET'
+	X_offset = New_edit(THIS, "X_OFFSET")
+
+	...Set_text("3")
+	------------------- 'LABEL_Y_OFFSET'
+	Label_y_offset = {Label}(Form_=THIS, Alias="LABEL_Y_OFFSET")
+
+	...Set_text("Y offsetr")
+	------------------------- 'Y_OFFSET'
+	Y_offset = New_edit(THIS, "Y_OFFSET")
+
+	...Set_text("3")
+	---------------------- 'LABEL_VALUE'
+	Label_value = {Label}(Form_=THIS, Alias="LABEL_VALUE")
+
+	...Set_text("Value (%):")
+	---------------------------- 'VALUE'
+	Value = New_edit(THIS, "VALUE")
+
+	...Set_text("500")
+	---------------------- 'LABEL_SHIFT'
+	Label_shift = {Label}(Form_=THIS, Alias="LABEL_SHIFT")
+
+	...Set_text("Shift final by modulo 255:")
+	---------------------- 'SHIFT_FINAL'
+	Shift_final = New_edit(THIS, "SHIFT_FINAL")
+
+	...Set_text("0")
+	-------------------- 'INC_DEC_SHIFT'
+	Inc_dec_shift = New_paint_turtle_button(THIS,
+ "INC_DEC_SHIFT",
+ "20R30DLL60B30RR"
+  "30B60 B30RR30 U45 D60")
+, >> grayable[]
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Incr,Decr")
+	--------------------- 'LABELCONVERT'
+	LabelConvert = {Label}(Form_=THIS, Alias="LABELCONVERT")
+
+	...Set_text("Convert colors:")
+	------------------- 'CONVERT_COLORS'
+	Convert_colors = New_combo(THIS, "CONVERT_COLORS", @
+"0:Not convert"
+"1:Distance from shift"
+"2:Below shift only"
+"3:Above shift only"
+"4:Anti-distance from shift"
+"5:Inverted anti-distance"
+"6:Anti-qudratic distance"
+"7:Inverted anti-quadratic distance"
+"8:Anti-squared distance"
+"9:Inverted anti-squared distance"
+"10:Distance from shift sin"
+"11:Distance from shift sin-powered-2"
+"12:Distance from shift sin-squared^1/2")
+	----------------- 'LABEL_STAMP_TYPE'
+	Label_stamp_type = {Label}(Form_=THIS, Alias="LABEL_STAMP_TYPE")
+
+	...Set_text("Stamp type:")
+	----------------------- 'STAMP_TYPE'
+	Stamp_type = New_combo(THIS, "STAMP_TYPE", @
+"Flat stamp"
+"Flat by HSV.V"
+"Radial stamp"
+"Radial stamp by HSV"
+"Flat stepwise (Shift-->Step)")
+	------------------ 'LABELFIXCHANNEL'
+	LabelFixChannel = {Label}(Form_=THIS, Alias="LABELFIXCHANNEL")
+
+	...Set_text("Fix channel:")
+	---------------------- 'CHANNEL_FIX'
+	Channel_fix = New_combo(THIS, "CHANNEL_FIX", @
+"No"
+"Red"
+"Green"
+"Blue")
+	------------------------- 'USE_FILE'
+	Use_file = New_checkbox(THIS,
+ "USE_FILE",
+ "Use external file (to handle large images)"),
+ >> grayable[]
+	----------------- 'REMOVE_OLD_STAMP'
+	Remove_old_stamp = New_checkbox(THIS,
+ "REMOVE_OLD_STAMP",
+ "Replace previous stamp")
+	...Set_checked(TRUE)
+	------------------------- 'RECENTER'
+	Recenter = New_checkbox(THIS, "RECENTER", "Recenter (after flat samp)")
+	...Set_checked(TRUE)
+	--------------------- 'BUTTON_STAMP'
+	Button_stamp = New_button(THIS, "BUTTON_STAMP", "Create stamp"._Create_stamp)
+	...Make_default
+	---------------------- 'COPY_BITMAP'
+	Copy_bitmap = New_paint_turtle_button(THIS,
+ "COPY_BITMAP",
+ "5RD(60LL)4 UL30 RD("
+  "60LL)4")
+, >> grayable[]
+
+	...Set_width(18)
+
+	...Set_height(16)
+	----------------------- 'PAINTBOX_1'
+	Paintbox_1 = New_paintbox(THIS, "PAINTBOX_1", "")
+
+	...Set_height(10)
+	----------------- 'LABELPOSTPROCESS'
+	LabelPostProcess = {Label}(Form_=THIS, Alias="LABELPOSTPROCESS")
+
+	...Set_text("Post processing operation (always replaces current image):")
+	------------------ 'POST_PROCESSING'
+	Post_processing = New_combo(THIS, "POST_PROCESSING", @
+"1: Invert image"
+"2: Grayscale"
+"3: Darken 25%"
+"4: Darken 50%"
+"5: Lighten 25%"
+"6: Lighten 50%"
+"7: Saturate 25%"
+"8: Saturate 50%"
+"9: Mix several stamps"
+"10: Mix stamps via geometric average"
+"11: Mix several stamps slowly"
+"12: (serie) Apply iteration times"
+"13: (serie) Apply radial in circle"
+"14: Union two images 50/50 (second inverted)"
+"15: (serie) Sequence 50/50 mixed each 2 stamps"
+"16: (serie) Mixed to the same frame"
+"17: (serie) Mixed/saturated to the same frame"
+"18: (serie) Mixed to the same frame (inverted)"
+"19: (serie) Mixed/saturated to the same frame (inverted)"
+"20: [long!] Dispersion on sequence-->mask current image"
+"21:[slow!]  Dispersion --> new mask image"
+"22: curves r,g,b #iterations"
+"23: curves h,s,v #iterations"
+"24. Reverse colors from average to both directions"
+"25. Reverse colors from average to dark only"
+"26. Reverse colors from average to light only"
+"27. Reverse colors from average parametrized"
+"28. Downscale 1/2"
+"29. Downscale 1/3"
+"30. Downscale 1/5"
+"31. Build 3D-map")
+	----------------- 'RUN_POST_PROCESS'
+	Run_post_process = New_paint_turtle_button(THIS,
+ "RUN_POST_PROCESS",
+ "10L30DFR4"
+  "0RR40BL80NRRU70R15LD50RR50NRRF50RR50 NURR110D DFL15BL30NB15RR30(RR50)2")
+
+
+	...Set_width(54)
+
+	...Set_height(18)
+
+	...Set_multi_button("Processing,Grayscale,Undo")
+
+	...Set_fill(BLACK)
+	----------------- 'LABEL_MULTIPLIER'
+	Label_multiplier = {Label}(Form_=THIS,
+ Alias="LABEL_MULTIPLIER"),
+ >> grayable[]
+
+	...Set_text("Multiplier:")
+	------------------ 'EDIT_MULTIPLIER'
+	Edit_multiplier = New_edit(THIS, "EDIT_MULTIPLIER"), >> grayable[]
+
+	...Set_text("-4")
+	----------------------- 'PAINTBOX_2'
+	Paintbox_2 = New_paintbox(THIS, "PAINTBOX_2", "")
+
+	...Set_height(10)
+	----------------- 'LABEL_ITERATIONS'
+	Label_iterations = {Label}(Form_=THIS,
+ Alias="LABEL_ITERATIONS"),
+ >> grayable[]
+
+	...Set_text("Iterations count, offset step, circle radius/final value:")
+	----------------- 'ITERATIONS_COUNT'
+	Iterations_count = New_edit(THIS, "ITERATIONS_COUNT"), >> grayable[]
+
+	...Set_text("6 1 1 ^2 3 2 3 8 *2.5 13")
+	----------- 'LABEL_VIEW_TRANSPARENT'
+	Label_View_transparent = {Label}(Form_=THIS, Alias="LABEL_VIEW_TRANSPARENT")
+
+	...Set_text("View transparent over previous:")
+	------------ 'TRANSPARENCY_PERCENTS'
+	Transparency_percents = New_edit(THIS, "TRANSPARENCY_PERCENTS")
+
+	...Set_text("0")
+	-------------- 'TRANSPARENCY_ON_OFF'
+	Transparency_on_off = New_paint_turtle_button(THIS,
+ "TRANSPARENCY_ON_OFF",
+ "20L"
+  "D40B20LL40R30B80BLU60D (20R5R8)4")
+
+
+	...Set_width(18)
+
+	...Set_height(18)
+	---------------- 'SCALE_TRANSPARENT'
+	Scale_transparent = New_checkbox(THIS,
+ "SCALE_TRANSPARENT",
+ "Scale transparent underlaying image too")
+	----------------------- 'PROGRESS_1'
+	Progress_1 = New_progress(THIS, "PROGRESS_1")
+	-------------------------- 'P_HINTS'
+	P_Hints = New_paintbox(THIS, "P_HINTS", "")
+
+	...Set_height(38)
+	----------------------------------------'form size / position'
+	Set_size(300, 0, 'FIT_TO_DISPLAY')
+	-------------------------- 'TITLE of Form'
+	Set_caption("3D-stamp parameters"._3D_stamp)
+
+	after_CONSTRUCT
+	Auto_height
+; .
+
+{Main_plasma_tides} Main_|form_, INIT, READ
+
+
+METHOD after_CONSTRUCT: 
+	Show_application_button(TRUE)
+	------------------------ 'bounds', REUSED
+	Restore_bounds(Main_.App_name, "Stamp_param", "whlt") 	
+	------------------------
+	Stamp_type.Select(0)
+	Channel_fix.Select(0)
+	Convert_colors.Select(0)
+	Post_processing.Select(0)
+	.
+
+OVERRIDE moved :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+
+OVERRIDE resize :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+	
+//{Threshold_param} Threshold|_parameters_dialog
+STR Back_file
+
+
+OVERRIDE click :
+    CASE sender_alias ?
+    ["TRANSPARENCY_ON_OFF"]:
+        CASE Transparency_percents.Text.Int ? 
+        [0]: Transparency_percents.Set_text("50")
+        ELSE Transparency_percents.Set_text("0") ;
+    ["INC_DEC_SHIFT"]:
+    	INT was|_value = Shift_final.Text.Int
+        CASE Inc_dec_shift.Current ? 
+        ["Decr"]: Shift_final.Set_text((was - 1).Max(0).S) 
+        ["Incr"]: Shift_final.Set_text((was + 1).Min(255).S) 
+        ;
+    ["BUTTON_STAMP", "RUN_POST_PROCESS"]:
+        s_alias = sender_alias
+        r_current = Run_post_process.Current
+        CASE Back_file == "" ? 
+             FOR i IN [0 TO 100] :
+             	 Back_file = Get_special_dir(APPLICATION_DATA) 
+             	 .. = _.Trailing_slash Main_.App_name.Trailing_slash 
+             	 CASE !Back_file.Dir_exists ? Create_dir(Back_file) ;
+             	 Back_file = _ "Backstamp-" i.S ".png"
+                 CASE Back_file.Exists ? CONTINUE i ;
+             ;
+        ;
+        CASE r_current != "Undo" ? 
+             {Png}.To_file(Main_.Image, Back_file, 100) ;
+        CASE ?
+        [s_alias=="RUN_POST_PROCESS" && r_current=="Grayscale"] ?
+             r_current = "Processing"
+             CASE Key.Control ? 
+                  Run_button(1)
+             ELSE Run_button(2) ;
+             Main_.Satellite_param.Thumbnails.Invalidate_all
+        [s_alias=="RUN_POST_PROCESS" && r_current=="Undo"] ?
+        	 CASE Back_file.Exists ? 
+        	 	  DEBUG: "Undo from: " Back_file #NL ;
+        	      Main_.All_images[.Current_image] = {Png}.From_file(
+        	      		Back_file, {reduce_size}.'FULL')
+        	      		
+        	      Main_.Satellite_param.Go_to_another_image
+        	 ;
+        ELSE Run_button(Post_processing.Current + 1)
+        ;
+        Main_.Satellite_param.Thumbnails.Invalidate_all
+    ["COPY_BITMAP"]:
+        CASE Main_.Satellite_param.Locked_images ? ==> ;
+        CASE Key.Shift ?
+             CASE !Dialog_file_save.Select_file ? ==> ;
+             {Bitmap} image_s|aving_TEMP = Main_.Image
+             CASE Transparency_percents.Text.Real > 0 ? 
+                  {Bitmap} overlay|_temp = Make_scaled_prev2 
+                  image_s = New_bitmap(image_s.Width, .Height, 24)
+                  Main_.Image.Draw(image_s.Canvas, Pt(0,0))
+                  overlay.Draw(image_s.Canvas, Pt(0, 0))
+             ;
+             CASE Dialog_file_save.Filename.Ext.Lower ? 
+             [".jpg"]: 
+                 {Jpeg}.To_file(image_s, Dialog_file_save.Filename, 100)
+             [".png"]:
+                 {Png}.To_file(image_s, Dialog_file_save.Filename, 100)
+             ;
+        ELSE NONE = Main_.Image.To_clipboard
+        ;
+    ; .
+    
+METHOD Make_scaled_prev2 ==> {Bitmap_direct}, NEW :
+	INT alpha|_tran = Transparency_percents.Text.Int * 255 / 100
+    DEBUG: "making scaled_prev2 Alpha=" alpha
+    	" " Main_.Current_image #NL ;
+    RESULT = New_bitmap_direct(Main_.Image.Width, .Height, 32)
+   	Main_.All_images[.Current_image-1].Draw(RESULT.Canvas, Pt(0, 0))
+   	FOR y IN [0 TO RESULT.Height-1] :
+   	    RESULT.Lock_rows(y, 1, TRUE) 
+   	    INT xb|yte_position_in_pixels_row = 0
+   	    FOR x IN [0 TO RESULT.Width - 1] :
+   	        RESULT.Pixels[xb+3] = alpha.Byte
+   	        xb += 4
+   	    ;
+   		RESULT.Unlock(TRUE)    
+   	; .
+    
+
+OVERRIDE closing ==> {Form}.{action} :
+	RESULT = 'DECLINE'
+	Cancelling = TRUE
+	Hide 
+	-------------------------- 'delete undo file'
+	CASE Back_file.Exists ? 
+	     Delete_file(Back_file)
+	     Back_file = ""
+	;
+	.
+	
+{Edit} editing|_control
+INT edit_fr|om_value
+INT edit_to|_value
+INT edit_base|_value
+{point} mouse_down|_position
+	
+
+OVERRIDE mouse_down :
+	CASE Progress_1.Bounds.Contains(mouse) ? Cancelling = TRUE ;
+	CASE sender_alias.Starting("LABEL_") ?
+	     CASE sender_alias ? 
+	     ["LABEL_X_OFFSET"]: editing = X_offset
+	     		------------------------------- 'offset__from__to', REUSED
+	     		edit_fr = 0
+	     		edit_to = (editing.Text.Int * 2).Max(10)
+	     		CASE edit_to >= 50 ? edit_fr = edit_to / 4 ;
+	     		CASE editing.Text.Int == 0 ? 
+	     		     edit_fr = -10 
+	     		     edit_to = 10 ;
+	     		-------------------------------     
+	     ["LABEL_Y_OFFSET"]: editing = Y_offset
+	     		LIKE .......................... 'offset__from__to'
+	     ["LABEL_VALUE"]: editing = Value
+	     		edit_fr = 1
+	     		edit_to = 1500
+	     		CASE editing.Text.Int == 150 ? 
+	     		     edit_to = 5000 ;
+	     ["LABEL_SHIFT"]: editing = Shift_final
+	     		edit_fr = 0
+	     		edit_to = 255
+	     		CASE editing.Text.Int == 0 ? 
+	     		     edit_fr = -10 
+	     		     edit_to = 10 ;
+    	 ["LABEL_VIEW_TRANSPARENT"]: editing = Transparency_percents
+	     		edit_fr = 0
+	     		edit_to = 100
+    	 ["LABEL_MULTIPLIER"]: editing = Edit_multiplier
+    	 		edit_fr = -10
+    	 		edit_to = 10
+	     ;
+	     edit_base = editing.Text.Int
+	     mouse_down = mouse
+	; .
+
+OVERRIDE mouse_move :
+	CASE editing != NONE ?
+		 REAL r|ight_side = editing.Bounds.Left
+		 REAL mice_move = (mouse.X - mouse_down.X) / (editing.Bounds.Right)
+		 REAL new_val|ue = edit_base + mice_move * (edit_to - edit_fr)
+		 CASE ?
+		 [new_val < edit_fr] ? new_val = edit_fr
+		 [new_val > edit_to] ? new_val = edit_to ;
+		 editing.Set_text(new_val.Int.S) 
+	;
+	BASE .
+
+OVERRIDE mouse_up :
+	editing = NONE .
+	
+	
+
+OVERRIDE disabled ==> BOOL :
+    CASE sender_alias ? 
+    ["EDIT_MULTIPLIER", "LABEL_MULTIPLIER"]:
+         RESULT = Post_processing.Text.Int !IN [22, 23]
+    ["INC_DEC_SHIFT", "COPY_BITMAP"]: 
+         RESULT = Main_.Satellite_param.Locked_images
+    ["ITERATIONS_COUNT", "LABEL_ITERATIONS", "ITERATIONS_TO_MIX"]:
+         RESULT = Post_processing.Current < 7
+    ["USE_FILE"]: RESULT = Stamp_type.Current >= 2
+    ; .
+    
+METHOD Hint_set(STR new_h|int) :
+    hint_cur = new_h
+    Hint = new_h
+    P_Hints.Invalidate_all
+    P_Hints.Update .
+    
+STR hint_cur|rent_override
+    
+OVERRIDE prefix_text_hint(
+{Control} c|ontrol_hinting) ==> STR :
+	CASE hint_cur != "" ? RESULT = hint_cur ==> ;
+	CASE c.Alias ? 
+	["COPY_BITMAP"]: RESULT = "Copy current image to clipboard"
+		"/SHIFT: save to file"._Copy_save
+	ELSE RESULT = "Drag mouse over labels to change values smoothly"._Drag
+	; .
+	
+
+OVERRIDE value_change :
+    CASE sender_alias ?
+    ["TRANSPARENCY_PERCENTS"]: Main_.PBox.Invalidate_all
+    ; .
+    
+
+METHOD apply_single(
+INT x_off|set, INT y_off|set, INT shift|_by,
+BOOL create_new|_image)
+    :
+    {Stamp3D} stamp|_temp = {Stamp3D}(Source= Main_.Image, Main_= Main_, 
+    	Stamp_parameters_= THIS)
+    ------------------------------ 'parameters apply'
+    stamp.Offset_X = x_off
+    stamp.Offset_Y = y_off
+    stamp.Shift = shift_by
+    Main_.Save_current_image(create_new)
+    ------------------------------ 'common parameters'
+	STR old_name = Main_.All_img_names[.Current_image]
+    stamp.Value = Value.Text.Real
+    stamp.Convert_dist = Convert_colors.Current
+    stamp.Use_file = Use_file.Checked
+    stamp.Iterations = Iterations_count.Text.Int
+    ------------------------------ 'more parameters'
+    CASE Channel_fix.Current ? 
+    [0]: stamp.Fixed_chan = 'NONE'
+    [1]: stamp.Fixed_chan = 'RED'
+    [2]: stamp.Fixed_chan = 'GREEN'
+    [3]: stamp.Fixed_chan = 'BLUE' ;
+    stamp.Radial = 2 <= Stamp_type.Current <= 3
+    stamp.By_hsv = Stamp_type.Current % 2 == 1
+    stamp.Stepwise = Stamp_type.Current == 4 
+    stamp.Center = Pt(Main_.Image.Width * Main_.Offset_x,
+    				  Main_.Image.Height * Main_.Offset_y)
+    ------------------------------ 'new stamp', REUSED
+    DEBUG: "making stamp, current= " Main_.Current_image #NL ;
+    stamp.Progress = Progress_1
+    		//! OPERATION
+    Main_.Image = stamp.Create
+    ------------------------------ 'recentering'
+    CASE !stamp.Radial && Recenter.Checked ?
+         {Bitmap_direct} b|_TEMPorary = New_bitmap_direct(
+         	Main_.Image.Width, .Height, 24)
+         	
+         Main_.Image.Draw(b.Canvas, Pt(0,0))
+         //DEBUG: {Png}.To_file(b, "before-recenter.png", 100) ;
+         INT dx|_offset = -X_offset.Text.Int/2 
+         INT dy|_offset = -Y_offset.Text.Int/2
+         CASE dx!= 0 || dy != 0 {
+              INT from_y|_line = 0
+              INT to_y|_line = b.Height-1
+              INT by_y|_step = 1
+              CASE dy > 0 ? 
+                   from_y = to_y 
+                   to_y = from_y
+                   by_y = -1 ;
+              ---------------------- 'range for x'
+              INT by_x|_step = 1
+              INT from_x|_pixel = 0
+              INT to_x|_pixel = b.Row_width-by_x
+              CASE dx > 0 ? 
+                   from_x = to_x
+                   to_x = 0 
+                   by_x = -1 ;
+              dx = dx * b.Bpp / 8
+              b.Lock(TRUE)
+              ---------------------- 'loop by lines'
+              INT y|_current_pos = from_y
+              FOR yy IN [0 TO Main_.Image.Height-1] :
+              	  CASE 0 <= y - dy < b.Height {
+              	       INT x_dest|ination_position = y * b.Row_width + from_x
+              	       INT x_src|_position = (y-dy) * b.Row_width + from_x - dx
+                  //DEBUG: "recenter y=" y " xd=" x_dest " xs=" x_src #NL ;
+              	       FOR xx IN [0 TO b.Row_width-1] :
+              	       	   CASE 0 <= xx - dx < b.Row_width ? 
+              	       	        b.Pixels[x_dest] = b.Pixels[x_src] ;
+              	           x_dest += by_x
+              	           x_src += by_x
+              	       ;
+              	  }
+              	  y += by_y
+              ;
+              ---------------------- 'finish loop'
+              b.Unlock(TRUE)
+         }
+         //DEBUG: {Png}.To_file(b, "after-recenter.png", 100) ;
+         Main_.Image = b
+    ;
+    Main_...All_images[.Current_image] = Main_.Image
+    ...Scaled_image = NONE
+    //DEBUG: {Bmp}.To_file(Main_.Image, "resulting-stamp.png") ;
+    ...All_img_names[.Current_image] = 
+    	"stamp-" old_name.Extract_file_name.Change_ext("")
+    ...Update_caption(Main_.All_img_names[.Current_image])
+    ...Invalidate
+    ...Satellite_param.need_invalidate = TRUE
+    -------------------- 'finish'
+    Progress_1.Set_progress(0)
+    .
+    
+BOOL Working_a_serie
+BOOL Cancelling
+
+
+METHOD apply_serie
+    :
+    INT x_off|set = X_offset.Text.Int
+    INT y_off|set = Y_offset.Text.Int
+    Cancelling = FALSE
+    INT cur_image = Main_.Current_image
+    INT step_off|set = Iterations_count.Text.After(" ").Trim.Int
+    PUSH Working_a_serie = TRUE :
+    FOR i IN [0 TO Iterations_count.Text.Int-1] :
+        Hint_set("Iteration #" (i+1).S " from " Iterations_count.Text)
+        apply_single(x_off, y_off, Shift_final.Text.Int, create_new= TRUE)
+        Process
+        CASE Cancelling ? BREAK i ;
+        Main_.All_img_names[.Current_image] = "serie-" (i+1).S     
+        Main_.Satellite_param.Go_to_prev_image
+        ------------------------------ 'change offsets'
+        x_off += step_off
+        y_off += step_off
+        Main_.Invalidate
+        Process
+        Sleep(20)
+    ; 
+    ;
+    Hint_set("")
+    msg_or_cancel("Serie was finished"._Finished_serie)
+    .
+    	
+METHOD apply_in_circle
+    :
+    INT x_off|set = X_offset.Text.Int
+    INT y_off|set = Y_offset.Text.Int
+    STR s_step_radius = Iterations_count.Text.After(" ").Trim
+    REAL radius|_of_circle = s_step_radius.After(" ").Trim.Real
+    PUSH Working_a_serie = TRUE :
+    PUSH Main_.Offset_x :
+    PUSH Main_.Offset_y :
+	     INT iw|idth_image = Main_.Image.Width
+	     INT ih|eight_image = Main_.Image.Height
+         Cancelling = FALSE
+         {point} p_center = Pt(iw * Main_.Offset_x, ih * Main_.Offset_y)
+         INT cur_image = Main_.Current_image
+         INT i_count|_iterations = Iterations_count.Text.Int
+	     FOR i IN [-1 TO i_count-1] :
+	     	 Hint_set("Iteration #" (i+1).S " from " (i_count).S)
+	         REAL a|ngle_current = (i.Max(0) * 360.0 / i_count) * PI / 180
+	         {point} center_cur|rent = Pt(p_center.X + Cos(a) * radius,
+	        							  p_center.Y + Sin(a) * radius)
+	        							  
+	  		 Main_.Offset_x = center_cur.X / iw       
+	  		 Main_.Offset_y = center_cur.Y / ih
+	  		 ----------------------------------------- 'one image'       
+	         apply_single(x_off, y_off, Shift_final.Text.Int, create_new= TRUE)
+	         x_off += s_step_radius.Int
+	         y_off += s_step_radius.Int
+	         Main_.All_img_names[.Current_image] = "serie-" (i+1).S  
+	         CASE Cancelling ? BREAK i ;
+	         ----------------------------------------- 'one image left'     
+	         Main_.Satellite_param.Go_to_prev_image
+	         Main_.Invalidate
+	         Process
+	         Sleep(20)
+	     ; 
+    ;
+    ; 
+    ;
+    Hint_set("")
+    msg_or_cancel("Radial serie was finished"._Finished_radial)
+    .
+    	
+
+METHOD union_2_images(
+REAL v|alue_to_multiply)
+    :
+    INT ci|ndex_current = Main_.Current_image     
+    CASE ci < 1 ? ==> ;
+    ------------------------------------------ 'img2', REUSED     
+    CASE Main_.Image.{Bitmap_direct} != NONE ? 
+         {Bitmap_direct} img2|_second_TEMP = Main_.Image.{Bitmap_direct}
+    ELSE img2 = New_bitmap_direct(Main_.Image.Width, .Height, 24)
+    	 Main_.Image.Draw(img2.Canvas, Pt(0,0)) ;
+    INT bpp2|_bytes_per_pixel = img2.Bpp / 8
+    ------------------------------------------
+    	 
+    Main_.Satellite_param.Delete_current_image
+    CASE Main_.Current_image >= ci ? 
+         Main_.Satellite_param.Go_to_prev_image ;
+    
+    LIKE .................... 'img2', BUT (img2==>img1)*?, (bpp2==>bpp1)
+    INT h_min|imal = img1.Height.Min(img2.Height)
+    INT w_min|imal = img1.Width.Min(img2.Width)
+    ------------------------------ 'union loop'
+    FOR y IN [0 TO h_min-1] :
+    	img1.Lock_rows(y, 1, TRUE)
+    	img2.Lock_rows(y, 1, TRUE)
+    	INT xx1|_position_in_img1_row = 0
+    	INT xx2|_position_in_img2_row = 0
+    	FOR x IN [0 TO w_min-1] :
+    		INT ch|annel_value
+    	    ---------------------- 'handle__B', REUSED
+    	    ch = (img1.Pixels[xx1].Int * 0.5 * v / 100
+                + (255.0 - img2.Pixels[xx2].Int * v / 100) * 0.5).Int
+    	    
+         	img1.Pixels[xx1] = ch.Byte
+         	xx1 += 1
+         	xx2 += 1
+         	----------------------
+         	LIKE ................. 'handle__B'
+         	LIKE ................. 'handle__B'
+         	xx1 += bpp1 - 3
+         	xx2 += bpp2 - 3
+    	;
+    	img1.Unlock(TRUE)
+    	img2.Unlock(FALSE)
+    ;
+	------------------------------ 'replace current image with img1'
+	Main_.Image = img1
+	Main_.Scaled_image = NONE
+	Main_.All_images[.Current_image] = img1
+    .
+
+METHOD union_2_image2(REAL v|alue_to_multiply, {Bitmap_direct} img2|_passed) :
+    INT ci|ndex_current = Main_.Current_image     
+    CASE ci < 1 ? ==> ;
+    ------------------------------------------ 'img2', REUSED     
+    CASE Main_.Image.{Bitmap_direct} != NONE ? 
+         {Bitmap_direct} img1|_first_TEMP = Main_.Image.{Bitmap_direct}
+    ELSE img1 = New_bitmap_direct(Main_.Image.Width, .Height, 24)
+    	 Main_.Image.Draw(img1.Canvas, Pt(0,0)) ;
+    INT bpp1|_bytes_per_pixel = img1.Bpp / 8
+    ------------------------------------------
+    INT bpp2|_bytes_per_pixel = img2.Bpp / 8
+
+    INT h_min|imal = img1.Height.Min(img2.Height)
+    INT w_min|imal = img1.Width.Min(img2.Width)
+    ------------------------------ 'union loop'
+    FOR y IN [0 TO h_min-1] :
+    	img1.Lock_rows(y, 1, TRUE)
+    	img2.Lock_rows(y, 1, TRUE)
+    	INT xx1|_position_in_img1_row = 0
+    	INT xx2|_position_in_img2_row = 0
+    	FOR x IN [0 TO w_min-1] :
+    		INT ch|annel_value
+    	    ---------------------- 'handle__B', REUSED
+    	    ch = (img1.Pixels[xx1].Int * 0.5 * v / 100
+                + (255.0 - img2.Pixels[xx2].Int * v / 100) * 0.5).Int
+    	    
+         	img1.Pixels[xx1] = ch.Byte
+         	xx1 += 1
+         	xx2 += 1
+         	----------------------
+         	LIKE ................. 'handle__B'
+         	LIKE ................. 'handle__B'
+         	xx1 += bpp1 - 3
+         	xx2 += bpp2 - 3
+    	;
+    	img1.Unlock(TRUE)
+    	img2.Unlock(FALSE)
+    ;
+	------------------------------ 'replace current image with img1'
+	Main_.Image = img1
+	Main_.Scaled_image = NONE
+	Main_.All_images[.Current_image] = img1
+    .
+
+
+METHOD sequence_50_50_stamps :
+    INT x_off|set = X_offset.Text.Int
+    INT y_off|set = Y_offset.Text.Int
+    STR s_step_value = Iterations_count.Text.After(" ").Trim
+    REAL final_value = s_step_value.After(" ").Trim.Real
+    CASE final_value < 50 ? final_value *= 100 ;
+    PUSH Working_a_serie = TRUE :
+	     INT iw|idth_image = Main_.Image.Width
+	     INT ih|eight_image = Main_.Image.Height
+         Cancelling = FALSE
+         {point} p_center = Pt(iw * Main_.Offset_x, ih * Main_.Offset_y)
+         INT cur_image = Main_.Current_image
+         INT i_count|_iterations = Iterations_count.Text.Int
+         FOR i IN [0 TO i_count-1] :
+             Hint_set("Step 1 of 2. Iteration #" (i+1).S " from i_count.S")
+             ----------------------------------------- 'one image'
+             apply_single(x_off, y_off, Shift_final.Text.Int, create_new= TRUE)
+             CASE Cancelling ? BREAK i ;
+             Main_.All_img_names[.Current_image] = "serie-" (i+1).S
+             Main_.Satellite_param.Go_to_prev_image
+                  x_off += s_step_value.Int
+                  y_off += s_step_value.Int
+                  DEBUG: "i<0 count=" Main_.All_images[].Count
+                        "cur=" Main_.Current_image
+                        "x_off=" x_off #NL ;
+         ;
+         Main_.Satellite_param.Go_to_next_image
+         //Main_.Save_current_image(TRUE)
+         FOR i IN [0 TO i_count-1] :
+         	 Hint_set("Step 2 of 2. Iteration " (i+1).S " from " i_count.S)
+             ------------------------------ 'duplicate it'
+             Main_.Satellite_param.Go_to_next_image
+             Main_.Save_current_image(TRUE)
+             Main_.Satellite_param.Go_to_prev_image
+             --------------------- 'union 2 images  <-...[2 1] [1 0]'
+             DEBUG: "i=" i " unioning of [" (Main_.Current_image-1).S "]"
+                    "+[" Main_.Current_image.S
+                    "] of " Main_.All_img_names[].Count
+                    " s_step_value=[" s_step_value "] x_off=" x_off
+                    #NL ;
+             union_2_images(final_value) //-i)
+             Main_.Satellite_param.Go_to_next_image
+             CASE Cancelling ? BREAK i ;
+             //Main_.Satellite_param.Go_to_next_image
+             //CASE Cancelling ? BREAK i ;
+             Main_.Invalidate
+             Process
+             Sleep(20)
+         ;
+    ;
+    Hint_set("")
+    msg_or_cancel("Sequence was finished"._Finished_sequence)
+    .
+    
+METHOD sequence2_50_50_stamps(
+BOOL inverted|_base_image, BOOL satur|ate_result)
+    :
+    INT x_off|set = X_offset.Text.Int
+    INT y_off|set = Y_offset.Text.Int
+    STR s_step_value = Iterations_count.Text.After(" ").Trim
+    REAL final_value = s_step_value.After(" ").Trim.Real
+    CASE final_value < 50 ? final_value *= 100 ;
+    PUSH Working_a_serie = TRUE :
+	     INT iw|idth_image = Main_.Image.Width
+	     INT ih|eight_image = Main_.Image.Height
+         Cancelling = FALSE
+         {point} p_center = Pt(iw * Main_.Offset_x, ih * Main_.Offset_y)
+         INT cur_image = Main_.Current_image
+         INT i_count|_iterations = Iterations_count.Text.Int
+         FOR i IN [0 TO i_count-1] :
+             Hint_set("Step 1 of 2. Iteration #" (i+1).S " from " i_count.S)
+             ----------------------------------------- 'one image'
+             apply_single(x_off, y_off, Shift_final.Text.Int, create_new= TRUE)
+             CASE i==0 ? 
+                  {Bitmap_direct} img2|_union_temp = New_bitmap_direct(
+                  	Main_.Image.Width, .Height, 24)
+                  	
+                  Main_.Image.Draw(img2.Canvas, Pt(0,0))
+                  CASE inverted ? 
+	                   FOR y IN [0 TO img2.Height-1] :
+	                       img2.Lock_rows(y, 1, TRUE)
+	                       FOR x IN [0 TO img2.Row_width-1] :
+	                           img2.Pixels[x] = (255 - _.Int).Byte ;
+	                       img2.Unlock(TRUE) 
+	                       ;
+                  ;
+             ;
+             CASE Cancelling ? BREAK i ;
+             Main_.All_img_names[.Current_image] = "serie-" (i+1).S
+             Main_.Satellite_param.Go_to_prev_image
+                  x_off += s_step_value.Int
+                  y_off += s_step_value.Int
+                  //CASE i==i_count-1 ? 
+                  //     x_off = -X_offset.Text.Int
+                  //     y_off = -Y_offset.Text.Int ;
+                  DEBUG: "i<0 count=" Main_.All_images[].Count
+                        "cur=" Main_.Current_image
+                        "x_off=" x_off #NL ;
+         ;
+         FOR i IN [0 TO i_count-1] :
+         	 Hint_set("Step 2 of 2. Iteration #" (i+1).S " from " i_count.S)
+             ------------------------------ 'duplicate it'
+             Main_.Satellite_param.Go_to_next_image
+             --------------------- 'union 2 images  <-...[2 1] [1 0]'
+             DEBUG: "i=" i " unioning of [" (Main_.Current_image-1).S "]"
+                    "+[" Main_.Current_image.S
+                    "] of " Main_.All_img_names[].Count
+                    " s_step_value=[" s_step_value "] x_off=" x_off
+                    #NL ;
+             union_2_image2(final_value, img2) //-i)
+             CASE satur ?
+                  {Bitmap_direct} img1|_resulting = Main_.Image
+                  FOR y IN [0 TO img1.Height-1] <------------------------
+                      img1.Lock_rows(y, 1, TRUE)
+                      INT xx|_positionof_byte = 0
+                      FOR x IN [0 TO img1.Width-1] :
+			    		  {hsv} hsv|_from_rgb = RGB_to_HSV(img1.Pixels[xx].Int
+			    		 	 |img1.Pixels[xx+1].Int.ShiftL(8)
+			    		 	 |img1.Pixels[xx+2].Int.ShiftL(16))
+			    		 	 
+			    		  hsv.S = (_ / 2 + 50).Min(100)
+			    		  INT rgb|_result = HSV_to_RGB(hsv)
+			    		  img1.Pixels[xx] = rgb.Byte
+			    		  img1.Pixels[xx+1] = rgb.ShiftR(8).Byte
+			    		  img1.Pixels[xx+2] = rgb.ShiftR(16).Byte
+                          xx += 3
+                      ;
+                      img1.Unlock(TRUE)
+                  ------------------------------------------------------>
+                  Main_.Scaled_image = NONE
+             ;
+             CASE Cancelling ? BREAK i ;
+             Main_.Invalidate
+             Process
+             Sleep(20)
+         ;
+    ;
+    Hint_set("")
+    msg_or_cancel("Sequence2 was finished"._Finished_sequence2)
+    .
+    
+METHOD dispersion_to_mask(
+{Bitmap_direct} b1|itmap_current)
+    :
+    {Bitmap_direct} b|itmap_current = b1
+	----------------- 'extract parameters'
+	STR param|eters[].Split(
+		Iterations_count.Text.After("^").Replace_all("  ", " ").Trim, " ")
+		
+	REAL d_pow|er_of_dispersion = param[0].Real
+	REAL center_w|eight = param[1].Real
+	REAL cross_p|oints_weight = param[2].Real
+	REAL diagonal_p|oints_and_outer_weight = param[3].Real
+	REAL outer_p|oints_weight_on_corners_of_5x5_square = param[4].Real
+	REAL divider|_calculate_weighted_average 
+	.. = center_w + cross_p*4 + diagonal_p*16 + outer_p*4 
+	--------------------------- 'value scale coefficient'
+	REAL v_scale|_coeff = param[5].After("*").Real
+	CASE v_scale <= 0 ? v_scale = 2 ;
+	--------------------------- 'count pixels around to use in dispersion calc'   
+	INT count_around_p|ixels = param[6].Int  
+	--------------------------- 'create__file__stream for dispersions'
+	STR temp_dir = Get_temp_dir
+	FOR i IN [0 TO MAX_INT-1] :
+		STR file_src|_for_dispersions = temp_dir "disp-" i.S ".tmp" 
+	    CASE !Exists(file_src) ? BREAK i ;
+	;
+	{File_stream} file_disp|ersion_TEMP = Write_file_stream(file_src, TRUE)	
+    ------------------------------------- 'array__of__source__bitmaps'
+    {Bitmap_direct} bb|itmaps_to_handle[]
+    FOR i IN [Main_.Current_image+1 TO Main_.All_images[].Count-1] :
+        {Bitmap_direct} d_d|irect_TEMP = Main_.All_images[i].{Bitmap_direct}
+        CASE d_d==NONE ?
+             d_d = New_bitmap_direct(Main_.All_images[i].Width, .Height, 24)
+             Main_.All_images[i].Draw(d_d.Canvas, Pt(0,0))
+             ;
+        bb[] << d_d ;
+    CASE bb[].Count < 2 ?
+         msg_or_cancel("There are no enough images in sequence to calculate a "
+         "disapersion (total " bb[].Count.S "). Use one of sequence building "
+         "operations first") ==> ;
+    --------------------------- 'calculate min & max of d|ispersion'
+    REAL sum|_of_squares_of_values
+    INT c|ount_items
+    {hsv} b_row|_hsv_values[].Allocate(b.Width * 5)
+    REAL min_d|ispersion = 1000000
+    REAL max_d|ispersion = 0
+    REAL min_V|alue = 100
+    REAL max_V|alue = 0
+    INT xx|_position_in_row
+    {hsv} hsv|_struc
+    INT rgb|_fixed
+    REAL d|ispersion_square_extracted
+    FOR pass IN [0 TO 1] :
+        BOOL find_min_max = pass == 0
+        file_disp.Rewind
+        ---------------------------- 'iterations__on__rows', REUSED
+        FOR y IN [0 TO b.Height-1] <----------------------------------------
+            Hint_set("Row " y.S " from " b.Height.S if(pass==0,
+                    " (find min/max)"))
+
+            Progress_1.Set_progress(y * 100.0 / b.Height * pass / 2)
+            Long_operation.Indicate(TRUE)
+            CASE Cancelling ? BREAK y ;
+            b.Lock_rows((y-2).Max(0).Min(b.Height-4), 5, TRUE)
+            ------------------------------- 'lock__bb__i' //, REUSED
+            CASE pass==0 ? 
+	             FOR i IN [0 TO bb[].Count-1] :
+	                 CASE bb[i].Height-2 <= y ? CONTINUE i ;
+	                 bb[i].Lock_rows((y-2).Max(0), 5, TRUE) ;
+			;	             
+            ------------------------------- 'get hsv values of a row[y] in b'
+            PUSH b :
+                 CASE pass==0 ?
+                      b = bb[0]
+                      BYTE row_disp|ersions[].Allocate(b.Width * 4)
+                 ELSE
+                      row_disp[].Allocate(b.Width * 20)
+                      FOR j IN [0 TO b.Width * 16-1] :
+                          row_disp[j] = row_disp[j + b.Width * 4] ;
+                      CASE y < 100 ? 
+	                       file_disp.Set_pos(
+	                      	 ((y+1) * b.Width * 4).To_long, 'BEGINNING')
+                      ;
+                      NONE = file_disp.Read_bytes(row_disp[b.Width*16 TO *])
+                 ;
+                 FOR j IN [0 TO b.Width * 4 - 1] :
+                     b_row[j] = b_row[j + b.Width].CLONE ;
+	             FOR x IN [0 TO b.Width-1] :
+	                 xx = b.Row_width * 4 + x * b.Bpp / 8
+	                 hsv = RGB_to_HSV(
+	                       b.Pixels[xx].Int
+	                       | b.Pixels[xx+1].Int.ShiftL(8)
+	                       | b.Pixels[xx+2].Int.ShiftL(16) )
+	 
+	                 b_row[x + b.Width * 4] = hsv.CLONE
+	             ;
+            ;
+            ------------------------------- 'handle row'
+            INT dd|ispersion_byte_index_in_row_disp = 0
+            FOR x IN [0 TO b.Width-1] :
+                CASE pass == 0 ? 
+	                 --------------------------------- 'calculate dispersion'
+	                 c = 0
+	                 sum = 0
+	            	 INT from0|_index = 0
+	            	 CASE pass == 0 ? from0 = 1 ;
+	                 FOR i IN [from0 TO bb[].Count-1] :
+	                     CASE x >= bb[i].Width ? CONTINUE i ;
+	                     INT by_pp|_per_pixel = bb[i].Bpp / 8     
+	                     xx = bb[i].Row_width * 2 + x * by_pp
+	                     INT xx0|_base_position = xx
+	                     ------------------- 'account__1__pixel', REUSED
+	                     hsv = RGB_to_HSV(
+	                           bb[i].Pixels[xx].Int
+	                           | bb[i].Pixels[xx+1].Int.ShiftL(8)
+	                           | bb[i].Pixels[xx+2].Int.ShiftL(16))
+	 
+	                     sum += (hsv.V - b_row[x + b.Width * 2].V).qq
+	                     //sum += (hsv.V - b_row[x].V).qq
+	                     c += 1
+	                     CASE hsv.V < min_V ? min_V = hsv.V ;
+	                     CASE hsv.V > max_V ? max_V = hsv.V ;
+	                     -------------------
+	                     FOR j IN [2 TO count_around_p] :
+	                         CASE j ? 
+	                         [2]: xx = xx0 + by_pp 
+	                         [3]: xx = xx0 - by_pp
+	                         [4]: xx = xx0 - bb[i].Row_width
+	                         [5]: xx = xx0 + bb[i].Row_width
+	                         [6]: xx = xx0 - bb[i].Row_width - by_pp
+	                         [7]: xx = xx0 - bb[i].Row_width + by_pp
+	                         [8]: xx = xx0 + bb[i].Row_width - by_pp
+	                         [9]: xx = xx0 + bb[i].Row_width + by_pp
+	                         [10]: xx = xx0 - bb[i].Row_width*2
+	                         [11]: xx = xx0 + bb[i].Row_width*2
+	                         [12]: xx = xx0 - by_pp - by_pp
+	                         [13]: xx = xx0 + by_pp + by_pp
+	                         ELSE BREAK j ;
+	                     ;
+	                     LIKE ........ 'account__1__pixel'
+	                 ;
+	                 CASE c >= 1 {
+	                      d = (sum / c).Sqrt
+	                      CASE find_min_max ?
+	                           CASE d < min_d ? min_d = d ;
+	                           CASE d > max_d ? max_d = d ;
+	                      ;
+	                 ELSE d = -1
+	                 }
+                     -------------- 'store in row_disp'     
+                     INT d_i|nteger_converted = (d * 10_000).Int
+                     row_disp[dd] = d_i.Byte     
+                     row_disp[dd+1] = d_i.ShiftR(8).Byte     
+                     row_disp[dd+2] = d_i.ShiftR(16).Byte     
+                     row_disp[dd+3] = d_i.ShiftR(24).Byte
+                     dd += 4     
+	            ELSE -------------------------- 'load pre-calculated dispersion'
+	            	 dd = b.Width * 8 + x * 4
+	            	 d = 0
+	            	 -------------------------- 'get__d_i', REUSED
+	            	 d_i = row_disp[dd].Int
+	            	 	 | row_disp[dd+1].Int.ShiftL(8)
+	            	 	 | row_disp[dd+2].Int.ShiftL(16)
+	            	 	 | row_disp[dd+3].Int.ShiftL(24)
+	            	 	 
+	            	 d += d_i / 10_000.0 * center_w
+	            	 --------------------------
+	            	 CASE !cross_p.Near(0) ?
+	            	      dd -= 4
+	            	      LIKE ............ 'get__d_i', BUT (center_w==>cross_p)
+	            	      dd += 8
+	            	      LIKE ............ 'get__d_i', BUT (center_w==>cross_p)
+	            	      ------------- 'up & down'
+	            	      dd = _ -4 - b.Width * 4
+	            	      LIKE ............ 'get__d_i', BUT (center_w==>cross_p)
+	            	      dd = _ + b.Width * 8
+	            	      LIKE ............ 'get__d_i', BUT (center_w==>cross_p)
+	            	      dd -= b.Width * 4
+	            	 ;
+	            	 CASE !diagonal_p.Near(0) ?
+	            	 	  dd = _ - 4 - b.Width * 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd = _ + 8
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      ----------------- 'down left & right'
+	            	      dd += b.Width * 8
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd -= 8
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      ----------------- 'down edge'
+	            	      dd = _ + b.Width * 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd += 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd += 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      ----------------- 'right edge'
+	            	      dd = _ + 4 - b.Width * 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd -= b.Width * 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd -= b.Width * 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      ----------------- 'upper edge'
+	            	      dd = _ - b.Width * 4 - 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd -= 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd -= 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      ----------------- 'left edge'
+	            	      dd = _ - 4 + b.Width * 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd += b.Width * 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd += b.Width * 4
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>diagonal_p)
+	            	      dd += -b.Width * 8 + 8
+	            	 ;
+	            	 CASE !outer_p.Near(0)  ?
+	            	      dd = _ -b.Width * 8 - 8
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>outer_p)
+	            	      dd += 16
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>outer_p)
+	            	      ------------- 'bottom right & bottem left corners'
+	            	      dd += b.Width * 16
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>outer_p)
+	            	      dd -= 16
+	            	      LIKE ......... 'get__d_i', BUT (center_w==>outer_p)
+	            	 ;
+	            	 CASE !(divider).Near(0) ? 
+	            	      d = _ / divider ;
+	            	 --------------------- 'multiply to pixel - on pass==1'
+	                 REAL d1|_multiplier = (d - min_d) / (max_d - min_d)
+	                 //d1 = ((_ * 2 - 1).Power(3) + 1) / 2
+	                 //d1 = ((_ * 4 - 3).Power(d_pow) + 3) / 4
+	                 d1 = Sin(_ * PI / 2).Power(d_pow)
+	                 {hsv} h_temp|_hsv
+	                 REAL v|_alue_scaled = b_row[x + b.Width * 2].V
+	                 v = (_ - min_V) * 100 / (max_V - min_V + 1)
+	                 v = v * d1 * v_scale
+	                 h_temp.V = v
+	                 h_temp.S = b_row[x + b.Width * 2].S
+	                 h_temp.H = b_row[x + b.Width * 2].H
+	                 rgb = HSV_to_RGB(h_temp)
+	                 --------------------------- 'update pixel in b'
+	                 xx = b.Row_width * 2 + x * b.Bpp / 8
+	                 b.Pixels[xx] = rgb.Byte
+	                 b.Pixels[xx+1] = rgb.ShiftR(8).Byte
+	                 b.Pixels[xx+2] = rgb.ShiftR(16).Byte
+	            ;
+                DEBUG:
+                   CASE y % 100 == 0 && x % 100 == 0 ?
+                      << "p:" pass " y=" y " x=" x 
+                      	 " d=" d.S_float(2) " d1=" d1.S_float(2)
+                      	 " v=" v.S_float(2) 
+                   	     " min_d=" min_d.S_float(2) " max_d=" max_d.S_float(2) 
+                   	     #NL ;
+                ;
+            ;
+            ------------------------------- 'unlock row'
+            b.Unlock(TRUE)
+            //LIKE ................... 'lock__bb__i',
+            //     BUT('Lock_rows(y, 1, TRUE)'==>'Unlock(FALSE)')
+			CASE pass==0 ? 
+	             FOR i IN [0 TO bb[].Count-1] :
+	                 CASE bb[i].Height-2 <= y ? CONTINUE i ;
+	             	 bb[i].Unlock(FALSE) ;
+				 NONE= file_disp.Save_bytes(row_disp[0 TO *])
+			;	            
+            ----------------------- 'may be update ?'
+            CASE pass > 0 && y > 0 && y % 100 == 0 ?
+                 Main_.All_images[.Current_image] = b
+                 Main_.Image = b
+                 Main_.Scaled_image = NONE
+                 Main_.Cache_image = NONE
+                 Main_.PBox.Invalidate_all
+                 Main_.PBox.Update
+                 Long_operation.Indicate(TRUE)
+            ;
+        ----------------------------------------------------------------->
+    ;
+    Hint_set("")
+    Progress_1.Set_progress(0)
+    Long_operation.Indicate(TRUE)
+    --------------------------- 'remove temp file'
+    file_disp.Close
+    file_disp = NONE
+    Delete_file(file_src)
+    msg_or_cancel("Dispersion was applied!"._Finished_dispersion)
+    .
+    
+
+METHOD msg_or_cancel(STR m|essage_text) :
+    CASE Cancelling ? 
+         message("Operation cancelled"._op_cancelled) 
+    ELSE message(m) ; .
+    
+STR s_alias|_to_run
+STR r_current|_operation_to_run_post_process
+
+METHOD Run_button(INT Operation) :
+	PUSH Main_.Satellite_param.Locked_images = TRUE :
+    PUSH Cancelling = FALSE :
+    	 CASE ?
+    	 [s_alias == "RUN_POST_PROCESS"
+    	  && r_current=="Processing"
+    	  ] ?
+	         {Bitmap_direct} b|_temporary 
+	         b = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
+	         Main_.Image.Draw(b.Canvas, Pt(0,0))
+    	     CASE Operation ?
+    	     [1]: lighten_darken(b, 0) // invert
+    	  	 [2]: grayscale(b)
+    	     [3]: lighten_darken(b, -25)
+    	     [4]: lighten_darken(b, -50)
+    	     [5]: lighten_darken(b, 25)
+    	     [6]: lighten_darken(b, 50)
+    	     [7]: saturate(b, 25)     
+    	     [8]: saturate(b, 50)     
+    	     [9]: do_mix(b, 1)
+    	     [10]: do_mix(b, 2)
+    	     [11]: do_mix(b, 3)
+    	     [12]: apply_serie ==>
+    	     [13]: apply_in_circle ==>
+    	     [14]: union_2_images(Value.Text.Int) ==>
+    	     [15]: sequence_50_50_stamps ==>
+    	     [16]: sequence2_50_50_stamps(FALSE, FALSE) ==>
+    	     [17]: sequence2_50_50_stamps(FALSE, TRUE) ==>
+    	     [18]: sequence2_50_50_stamps(TRUE, FALSE) ==>
+    	     [19]: sequence2_50_50_stamps(TRUE, TRUE) ==>
+    	     [20]: dispersion_to_mask(b)
+    	     [21]: b = dispersion_to_new_image(b)
+    	  	 [22]: curves_rgb(b, 
+    	  	 		(255/Iterations_count.Text.Real.Max(1)).Int.Max(1))
+    	  	 		
+    	  	 [23]: curves_hsv(b, 
+    	  	 		(100/Iterations_count.Text.Real.Max(1)).Int.Max(1))
+    	  	 		
+    	  	 [24]: reverse_colors(b, 0, FALSE)
+    	  	 [25]: reverse_colors(b, -1, FALSE)
+    	  	 [26]: reverse_colors(b, 1, FALSE)
+    	  	 [27]: reverse_colors(b, 0, TRUE)
+    	  	 [28]: b = Downscale(b, 2)
+    	  	 [29]: b = Downscale(b, 3)
+    	  	 [30]: b = Downscale(b, 5)
+    	  	 [31]: b = Build_3Dmap(b)
+    	     ; 
+		     Progress_1.Set_progress(0)
+		     Hint_set("")
+		     Main_.Image = b
+		     Main_.Scaled_image = NONE
+		     Main_.Invalidate ==>
+    	 [Remove_old_stamp.Checked
+	      && Main_.All_img_names[.Current_image].Starting("stamp-") 
+	      && Main_.Current_image > 0
+	      && s_alias != "RUN_POST_PROCESS"] ?
+    	      ------------------------------------- 'release current image'
+	          Main_.Image = New_bitmap(1, 1, 32)
+	          Main_.Scaled_image = New_bitmap(1, 1, 32)
+	          -------------------------------------- 'delete current image'
+	          INT ci|image_current = Main_.Current_image
+	          Main_.All_images[].Delete(ci)
+	    	  Main_.All_scaled[].Delete(ci)
+	    	  Main_.All_img_names[].Delete(ci)
+	    	  Main_.All_scales[].Delete(ci)
+	    	  Main_.All_rotations[].Delete(ci)
+	    	  ---------------------- 'go to previous image'
+	    	  Main_.Current_image -= 1
+	    	  Main_.Image = Main_.All_images[.Current_image]
+	    	  Main_.Scaled_image = NONE
+              //DEBUG: "delete index " ci ", current = " Main_.Current_image
+              //   ", total = " Main_.All_images[].Count #NL 
+              //   {Bmp}.To_file(Main_.Image, "Image.png")
+              //;
+    	 ;
+    	 apply_single(X_offset.Text.Int, Y_offset.Text.Int,
+    	 	 Shift_final.Text.Int,
+    		 create_new= s_alias != "RUN_POST_PROCESS")
+    ;
+    ; .
+    
+METHOD curves_rgb|_levels_for_values(
+{Bitmap_direct} b|itmap_current, INT rang|es_count)
+    :
+    INT mult|iplier = Edit_multiplier.Text.Int
+    FOR y IN [0 TO b.Height-1] :
+        b.Lock_rows(y, 1, TRUE)
+        Progress_1.Set_progress(y * 100.0 / b.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO b.Width-1] :
+    	    INT rgb|_new_value
+			INT d|elta_xx = 0
+			INT chigh|_part
+			INT c_low|_part
+			--------------------- 'one channel, please', REUSED
+			chigh = (b.Pixels[xx+d].Int / rang) * rang
+			c_low = rang - (b.Pixels[xx+d].Int % rang) * mult
+			b.Pixels[xx+d] = (chigh + c_low).range255.Byte
+			d += 1
+			---------------------
+			LIKE ................ 'one channel, please'
+			LIKE ................ 'one channel, please'
+    	    xx += b.Bpp / 8
+    	;
+        b.Unlock(TRUE)
+    ; .
+
+METHOD curves_hsv|_levels_for_values(
+{Bitmap_direct} b|itmap_current, INT rang|es_count)
+    :
+    INT mult|iplier = Edit_multiplier.Text.Int
+    FOR y IN [0 TO b.Height-1] :
+        b.Lock_rows(y, 1, TRUE)
+        Progress_1.Set_progress(y * 100.0 / b.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO b.Width-1] :
+    	    INT rgb|_new_value
+			{hsv} h|sv_value = RGB_to_HSV(
+			    b.Pixels[xx].Int
+			    | b.Pixels[xx+1].Int.ShiftL(8)
+			    | b.Pixels[xx+2].Int.ShiftL(16))
+    	    
+			INT vh|_value_high
+			INT v|_low_part
+			--------------------------------- 'V', REUSED
+			vh = (h.V / rang).Int * rang
+			v = rang - 1 - (h.V.Int % rang) * mult 
+			h.V = (vh + v).Min(100).Max(0)
+			---------------------------------
+			//LIKE .......... 'V', BUT (V==>H)*?
+			LIKE .......... 'V', BUT (V==>S)*?
+			rgb = HSV_to_RGB(h)
+			------------------------- 'update pixel with new value'
+			b.Pixels[xx] = rgb.Byte
+			b.Pixels[xx+1] = rgb.ShiftR(8).Byte
+			b.Pixels[xx+2] = rgb.ShiftR(16).Byte
+    	    xx += b.Bpp / 8
+    	;
+        b.Unlock(TRUE)
+    ; .
+
+METHOD grayscale({Bitmap_direct} b|itmap_handling) :
+    FOR y IN [0 TO b.Height-1] :
+        b.Lock_rows(y, 1, TRUE)
+        Progress_1.Set_progress(y * 100.0 / b.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO b.Width-1] :
+    	    REAL grayscale = b.Pixels[xx+2].Int*0.299
+                                + b.Pixels[xx+1].Int*0.587
+                                + b.Pixels[xx+0].Int*0.114
+                                
+    	    BYTE ch|annel_value_same = (grayscale).Int.range255.Byte
+    	    b.Pixels[xx] = ch
+    	    b.Pixels[xx+1] = ch
+    	    b.Pixels[xx+2] = ch
+    	    xx += b.Bpp / 8
+    	;
+        b.Unlock(TRUE)
+    ; .
+    
+METHOD saturate(
+{Bitmap_direct} r|esult_bitmap_handling, INT by_p|ercents)
+    :
+    {hsv} hsv|_data
+    INT rgb|_after
+    CASE r.Bpp == 32 ? INT final_offset = 1 ;
+    CASE by_p ? 
+    [25]: INT div_by|_divide = 133
+    	  INT increm|ent = 25 
+    ELSE //50
+    	  div_by = 200
+    	  increm = 50	  
+    ;
+    FOR y IN [0 TO r.Height-1] :
+        r.Lock_rows(y, 1, TRUE)
+        Progress_1.Set_progress(y * 100.0 / r.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO r.Width-1] :
+    	  	---------------------------------- 'get__hsv'   	
+    		hsv = RGB_to_HSV(r.Pixels[xx].Int
+    		    |r.Pixels[xx+1].Int.ShiftL(8)
+    		    |r.Pixels[xx+2].Int.ShiftL(16))
+    		---------------------------------- 'saturate'	 
+    		hsv.S = (_ / div_by * 100 + increm).Min(100)
+    		---------------------------------- 'set__hsv'
+    		rgb = HSV_to_RGB(hsv)
+    		r.Pixels[xx] = rgb.Byte
+    		r.Pixels[xx+1] = rgb.ShiftR(8).Byte
+    		r.Pixels[xx+2] = rgb.ShiftR(16).Byte
+    		xx += final_offset + 3
+    	;
+        r.Unlock(TRUE)
+    ; .
+    
+METHOD lighten_darken|_invert(
+{Bitmap_direct} r|esult_bitmap_image,
+INT percents|_plus_lighten_minus_darken_zero_invert)
+    :
+    INT ch|annel_value
+    CASE r.Bpp == 32 ? INT final_offset = 1 ;
+    FOR y IN [0 TO r.Height-1] :
+        r.Lock_rows(y, 1, TRUE)
+        Progress_1.Set_progress(y * 100.0 / r.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO r.Width-1] :
+	    	---------------- 'r__channel', REUSED 
+	    	CASE percents ? 
+	    	[-25]: ch = r.Pixels[xx].Int * 3 / 4  
+	    	[-50]: ch = r.Pixels[xx].Int / 2  
+	    	[+25]: ch = (Sqrt(r.Pixels[xx].Int / 255.0) * 255).Int  
+	    	[+50]: ch = (Power(r.Pixels[xx].Int / 255.0, 1/3.0) * 255).Int
+	    	ELSE ch = 255 - r.Pixels[xx].Int
+	    	;
+	    	r.Pixels[xx] = ch.Byte
+	    	xx += 1
+	    	----------------
+	    	LIKE ........... 'r__channel'
+	    	LIKE ........... 'r__channel'
+	    	xx += final_offset
+    	;
+        r.Unlock(TRUE)
+    ; .
+    
+STR File_src | _full_path
+{File_stream} File_stream
+
+STR Sfile_src|_stamp0 | _full_path
+STR Rfile_src|_result | _full_path
+{File_stream} Sfile_stream
+{File_stream} Rfile_stream
+------------------------ 'only for slow version:'
+STR Tfile_src|_result | _full_path 
+STR Cfile_src|_result | _full_path
+{File_stream} Tfile_stream
+{File_stream} Cfile_stream
+
+METHOD do_mix|_operation(
+{Bitmap_direct} r|esult_image,
+INT mix|_operation_1_2_3)
+    :
+	STR temp_dir
+	--------------------------- 'create__file__stream', REUSED
+	temp_dir = Get_temp_dir
+	FOR i IN [0 TO MAX_INT-1] :
+		File_src = temp_dir "3d-" i.S ".tmp" 
+	    CASE !Exists(File_src) ? BREAK i ;
+	;
+	File_stream = Write_file_stream(File_src, TRUE)
+	------------------------------------------------
+	INT bpp|_bytes_per_pixel = r.Bpp / 8
+	CASE bpp==4 ? INT final_off|set = 1 ;
+	INT off|set_in_source_r = bpp * X_offset.Text.Int
+	Progress_1.Set_progress(0)
+	Hint_set("Prepare to mix")
+	------------------------------ 'save original image to file'
+	FOR y IN [0 TO r.Height-1] :
+	    r.Lock_rows(y, 1, TRUE)
+	    INT xx|_position_in_row = 0
+	    NONE= File_stream.Save_bytes(r.Pixels[0 TO r.Row_width-1])
+		r.Unlock(FALSE)    
+	;
+	File_stream.Rewind
+	DEBUG:
+		  {Png}.To_file(r, "r.png", 100)
+	      {Bitmap_direct} d_temp|_img = New_bitmap_direct(
+	      	r.Width, r.Height, r.Bpp)
+	      
+	      FOR y IN [0 TO r.Height-1] :
+	          d_temp.Lock_rows(y, 1, FALSE) 
+	          NONE = File_stream.Read_bytes(d_temp.Pixels[0 TO *]) 
+	          d_temp.Unlock(TRUE) ;
+	      {Png}.To_file(d_temp, "copy-of-original-image.png", 100)
+	      File_stream.Rewind
+	;
+	------------------------------ 'create base stamp (inverted)'
+	LIKE .......... 'create__file__stream', BUT (File==>Sfile)*?
+	BYTE row_buf|fer[].Allocate(r.Row_width) 
+	INT offset_y = Y_offset.Text.Int
+	INT offset_x = X_offset.Text.Int
+	REAL value|_to_adjust = Value.Text.Real
+	FOR y IN [0 TO r.Height-1] :
+		CASE y + offset_y < 0 || y + offset_y >= r.Height-1 ? CONTINUE y ;
+        Progress_1.Set_progress(y * 100.0 / r.Height * 0.1)
+        Long_operation.Indicate(TRUE) 
+		NONE = File_stream.Read_bytes(row_buf[0 TO r.Row_width-1])
+	    r.Lock_rows(y + offset_y, 1, TRUE)
+	    xx = 0
+	    FOR x IN [0 TO r.Width-1] :
+	        CASE 0 <= x + offset_x < r.Width ?
+	             INT ch|annel_value
+	             ---------------- 'handle__R__channel', REUSED
+	        	 ch = (row_buf[xx].Int* 0.5 * value / 100
+	        	 	 + ((255 - r.Pixels[xx+off].Int * value / 100) * 0.5)).Int
+	        	 
+	        	 row_buf[xx] = (255 - ch.range255).Byte
+	        	 xx += 1
+	        	 --------------------------------------------
+	        	 LIKE ........... 'handle__R__channel'
+	        	 LIKE ........... 'handle__R__channel'
+	        	 xx += final_off
+	        ELSE xx += bpp ;
+	    ;
+	    r.Unlock(FALSE)
+	    NONE= Sfile_stream.Save_bytes(row_buf[0 TO r.Row_width-1])
+	;
+	Sfile_stream.Rewind
+	DEBUG:
+		  {Png}.To_file(r, "r.png", 100)
+	      d_temp = New_bitmap_direct( r.Width, r.Height, r.Bpp)
+	      FOR y IN [0 TO r.Height-1] :
+	          d_temp.Lock_rows(y, 1, FALSE) 
+	          NONE = Sfile_stream.Read_bytes(d_temp.Pixels[0 TO *]) 
+	          d_temp.Unlock(TRUE) ;
+	      {Png}.To_file(d_temp, "stamp0-inverted.png", 100)
+	      Sfile_stream.Rewind
+	;
+	----------------------------- 'prepare resulting image (in file)'
+	CASE mix <= 9 ? 
+	     fast_iterations_implementation(r, mix)
+	ELSE slow_iterations_implementation(r, mix) ;
+	DEBUG: {Png}.To_file(r, "result-mix.png", 100) ;
+	--------------------- 'release__file', REUSED
+	File_stream.Close
+	File_stream = NONE
+	Delete_file(File_src)
+	---------------------
+	LIKE ................ 'release__file', BUT (File==>Sfile)*?
+	LIKE ................ 'release__file', BUT (File==>Rfile)*?
+	.
+    
+METHOD fast_iterations_implementation(
+{Bitmap_direct} r|esulting_bitmap, INT mix|_operation_1_2_3)
+    :
+	INT offset_y = Y_offset.Text.Int
+	INT offset_x = X_offset.Text.Int
+	INT iterations = Iterations_count.Text.Int
+	INT shift|_by = Shift_final.Text.Int
+	REAL value|_to_adjust = Value.Text.Real
+	---------------------------------- 'bitmap --> File_stream'
+    STR temp_dir
+    LIKE do_mix .......... 'create__file__stream', BUT (File==>Rfile)*?
+    BYTE s_buf|fer_of_stamp0_inverted[].Allocate(r.Row_width)
+    INT bpp|_bytes_per_pixel = r.Bpp / 8
+    CASE bpp==4 ? INT final_off|set = 1 ;
+    INT off|set_in_source_r = bpp * offset_x
+    BYTE row_buf|fer[].Allocate(r.Row_width)
+    ---------------------------------------- 'external loop by rows'
+    BOOL geom|etric_average = mix == 2
+    FOR y IN [0 TO r.Height-1] :
+        REAL counters|_for_each_channels[].Allocate(r.Width*bpp)
+        FOR c IN counters[] : counters[c.INDEX] = 0 ;
+        CASE geom ?
+             FOR c IN counters[] : counters[c.INDEX] = 1 ;
+        ;
+        INT total_c|ount_rows_summed = 0
+        INT y_i|teration = y - iterations*2 + shift.Min(iterations*4) - 1
+        ---------------------------------------- 'loop by iterations'
+        Progress_1.Set_progress(y * 100.0 / (r.Height+1) + 10)
+        Long_operation.Indicate(TRUE)
+        FOR i IN [0 TO iterations-1] :
+            Hint_set("y=" y.S " Iteration #" (i+1).S " from " iterations.S)
+            y_i += 1
+            CASE 0 <= y_i < r.Height
+                 && 0 <= y_i+offset_y < r.Height
+                 ?
+                 r.Lock_rows(y_i+offset_y, 1, TRUE)
+
+                 File_stream.Set_position(To_long(r.Row_width*y_i), 'BEGINNING')
+                 NONE= File_stream.Read_bytes(row_buf[0 TO *])
+
+                 Sfile_stream.Set_position(To_long(r.Row_width*y), 'BEGINNING')
+                 NONE= Sfile_stream.Read_bytes(s_buf[0 TO *])
+                 ----------------------- 'handle single line'
+                 INT xx|_position_in_s_buf = 0
+                 INT xx1|_index_in_current_pair = (i - iterations*2
+                        + shift.Min(iterations*4)) * bpp
+
+                 INT max_w|idth_bytes = r.Width * bpp
+                 FOR x IN [0 TO r.Width-1] <-----------------------------
+                     CASE 0 <= xx1 < max_w && 0 <= xx1+off < max_w ?
+                          INT ch|annel_value
+                          --------------------- 'sum__mixes__one__row', REUSED
+                          ch = (row_buf[xx1].Int* 0.5 * value / 100
+                              + ((255 - r.Pixels[xx1+off].Int * value / 100)
+                              * 0.5)).Int.range255
+
+                          ch = (_*0.5 * value / 100
+                                + (255 - s_buf[xx].Int * value / 100) * 0.5).Int
+
+                          CASE geom ?
+                               counters[xx1] *= ch.range255 / 255.0
+                          ELSE counters[xx1] += ch.range255 ;
+                          xx1 += 1
+                          xx += 1
+                          -------
+                          LIKE ................ 'sum__mixes__one__row'
+                          LIKE ................ 'sum__mixes__one__row'
+                          xx1 += final_offset
+                          xx += final_offset
+                     ELSE xx1 += bpp
+                          xx += bpp ;
+                 ------------------------------------------------------->
+                 total_c += 1
+                 r.Unlock(FALSE)
+            ;
+        ;
+        ------------------- 'create mixed row at line y'
+        xx = 0
+        FOR x IN [0 TO r.Width-1] :
+            ------------------------------------- 'mix__one_channel', REUSED
+            CASE total_c > 0 ?
+                 CASE geom ?
+                      s_buf[xx] = ((counters[xx].Power(1.0/total_c))
+                                * 255).Int.Byte
+
+                 ELSE s_buf[xx] = (counters[xx] / total_c).Int.Byte ;
+            ;
+            xx += 1
+            -------
+            LIKE ................................ 'mix__one_channel'
+            LIKE ................................ 'mix__one_channel'
+            xx += final_offset
+        ;
+        NONE= Rfile_stream.Save_bytes(s_buf[0 TO r.Row_width-1])
+    ;
+	---------------------------- 'finally, r <-- Rfile_stream'
+	Rfile_stream.Rewind
+	FOR y IN [0 TO r.Height-1] :
+		Hint_set("y=" y.S " Saving result")
+	    r.Lock_rows(y, 1, FALSE)
+	    NONE= Rfile_stream.Read_bytes(r.Pixels[0 TO r.Row_width-1]) 
+		r.Unlock(TRUE)    
+	; .          
+    
+METHOD slow_iterations_implementation(
+{Bitmap_direct} r|esulting_bitmap, INT mix|_operation_1_2_3)
+    :
+    STR temp_dir
+    LIKE do_mix .......... 'create__file__stream', BUT (File==>Rfile)*?
+    LIKE do_mix .......... 'create__file__stream', BUT (File==>Cfile)*?
+    BYTE s_buf|fer_of_stamp0_inverted[].Allocate(r.Row_width)
+    BYTE c_buf|fer_of_stamp0_inverted[].Allocate(r.Row_width * 2)
+    INT bpp|_bytes_per_pixel = r.Bpp / 8
+    CASE bpp==4 ? INT final_off|set = 1 ;
+    INT off|set_in_source_r = bpp * X_offset.Text.Int
+    BYTE row_buf|fer[].Allocate(r.Row_width)
+    ---------------------------------------- 'external loop by iterations'
+    BOOL geom|etric_average = mix == 2
+    LIKE do_mix .......... 'create__file__stream', BUT (File==>Tfile)*?
+    INT max_w|idth_bytes = r.Width * bpp
+    INT iterations = Iterations_count.Text.Int
+    INT shift|_by = Shift_final.Text.Int
+    INT offset_y = Y_offset.Text.Int
+	REAL value|_to_adjust = Value.Text.Real
+    FOR i IN [0 TO iterations-1] :
+        Hint_set("Iteration #" (i+1).S " from " iterations.S)
+        Tfile_stream.Rewind
+        Progress_1.Set_progress(i * 100.0 / (iterations+1) + 10)
+        Long_operation.Indicate(TRUE)
+        INT y_i|teration = i - iterations*2 + shift.Min(iterations*4) - 1
+	    FOR y IN [0 TO r.Height-1] :
+            y_i += 1
+            CASE 0 <= y_i < r.Height
+                 && 0 <= y_i+offset_y < r.Height
+                 ?
+                 Long_operation.Indicate(TRUE)
+                 r.Lock_rows(y_i+offset_y, 1, TRUE)
+
+                 File_stream.Set_position(To_long(r.Row_width*y_i), 'BEGINNING')
+                 NONE= File_stream.Read_bytes(row_buf[0 TO *])
+
+                 ----------------------- 'handle single line'
+		         INT xx1|_index_in_current_pair = (i - iterations*2
+		                + shift.Min(iterations*4)) * bpp
+
+                 FOR x IN [0 TO r.Width-1] <-----------------------------
+                     CASE 0 <= xx1 < max_w && 0 <= xx1+off < max_w ?
+                          INT ch|annel_value
+                          --------------------- 'sum__mixes__one__row', REUSED
+                          ch = (row_buf[xx1].Int* 0.5 * value / 100
+                              + ((255 - r.Pixels[xx1+off].Int * value / 100)
+                              * 0.5)).Int.range255
+
+                          row_buf[xx1] = ch.Byte
+
+                          xx1 += 1
+                          -------
+                          LIKE ................ 'sum__mixes__one__row'
+                          LIKE ................ 'sum__mixes__one__row'
+                          xx1 += final_offset
+                     ELSE xx1 += bpp ;
+                 ------------------------------------------------------->
+                 r.Unlock(FALSE)
+            ;
+            NONE= Tfile_stream.Save_bytes(row_buf[0 TO *])
+	    ;
+	    Tfile_stream.Rewind
+        DEBUG:
+	         {Bitmap_direct} d_temp|_img = New_bitmap_direct(
+	      	   r.Width, r.Height, r.Bpp)
+	         
+	         FOR yy IN [0 TO r.Height-1] :
+	             d_temp.Lock_rows(yy, 1, FALSE) 
+	             NONE = Tfile_stream.Read_bytes(d_temp.Pixels[0 TO *]) 
+	             d_temp.Unlock(TRUE) ;
+	         {Png}.To_file(d_temp, "iteration" i.S ".png", 100)
+	         Tfile_stream.Rewind                  
+        ;
+        Cfile_stream.Rewind
+        ------------ 'count sums of all pixels from images from all iterations'
+        FOR y IN [0 TO r.Height-1] :
+            INT c_pos|ition_of_row = Cfile_stream.Position.To_int
+            //DEBUG: "y=" y " c_pos=" c_pos #NL ;
+            NONE = Tfile_stream.Read_bytes(row_buf[0 TO *])
+        	CASE !Cfile_stream.EOF ? 
+        	     NONE = Cfile_stream.Read_bytes(c_buf[0 TO *]) 
+        	ELSE 
+        		 FOR x IN [0 TO c_buf[].Count-1] : c_buf[x] = '00' ;
+        	;
+        	
+        	INT xx|_position_in_counters_row = 0
+        	FOR x IN [0 TO r.Row_width-1] :
+        	    INT c_sum|med_value = c_buf[xx].Int 
+        	    	| c_buf[xx+1].Int.ShiftL(8)
+        	    
+        	    c_sum += row_buf[x].Int
+
+        	    c_buf[xx] = c_sum.Byte
+        	    c_buf[xx+1] = c_sum.ShiftR(8).Byte
+        	    xx += 2
+        	;
+        	Cfile_stream.Set_position(c_pos.To_long, 'BEGINNING')
+        	NONE = Cfile_stream.Save_bytes(c_buf[0 TO *])
+        ;
+    ;
+    -------------------------- 'create resulting image from counters file'
+    Cfile_stream.Rewind
+    FOR y IN [0 TO r.Height-1] :
+        Hint_set("y=" y.S " -- store result")
+        r.Lock_rows(y, 1, TRUE)
+     	NONE = Cfile_stream.Read_bytes(c_buf[0 TO *])
+     	xx = 0
+     	xx1= 0
+     	FOR x IN [0 TO r.Row_width-1] :
+     		c_sum = c_buf[xx].Int | c_buf[xx+1].Int.ShiftL(8)   
+     		c_sum /= iterations
+     		r.Pixels[xx1] = c_sum.Byte
+     		xx1 += 1
+     		xx += 2
+     	;
+        r.Unlock(TRUE)
+    ; .
+        
+METHOD dispersion_to_new_image(
+{Bitmap_direct} b1|_source_bitmap_source) ==> {Bitmap_direct}
+    :
+	{Bitmap_direct} b|itmap_source|TEMP = b1
+	STR temp_dir
+	LIKE do_mix ................. 'create__file__stream'
+	File_stream.Rewind
+	INT dxx|_increment = b.Bpp / 8
+	REAL min_d|ispersion = 100_000
+	REAL max_d|ispersion = 0
+    //REAL min_v|alue = 100
+    //REAL max_v|alue = 0
+	-------------------- 'loop by rows -- calculate dispersions for each pixel'
+	FOR y IN [0 TO b.Height-1] :
+	    b.Lock_rows((y-2).Max(0).Min(b.Height-3), 5, TRUE) 
+		Hint_set("Row " y.S " from " b.Height.S)
+		Long_operation.Indicate(TRUE)
+		CASE Cancelling ? BREAK y ;
+		BYTE row_disp|ersions[].Allocate(b.Width*4)
+		------------------------------------------------ 'handle row'     
+		FOR x IN [0 TO b.Width-1] :
+			INT xx|_offset_in_row = x * dxx + b.Row_width*2
+			{hsv} hsv|_value
+			hsv = RGB_to_HSV(b.Pixels[xx].Int
+							|b.Pixels[xx+1].Int.ShiftL(8)
+							|b.Pixels[xx+2].Int.ShiftL(16))
+			
+            //CASE hsv.V < min_v ? min_v = hsv.V ;
+            //CASE hsv.V > max_v ? max_v = hsv.V ;
+			------------------------------------ 'start calculating dispersion'
+			REAL v0|_value_center = hsv.V
+			xx += dxx
+			REAL sum|_of_squares_of_differences = 0
+			INT c|ount_pixels_checked = 0
+			------------------------------------- 'one__pixel__diff', REUSED
+			hsv = RGB_to_HSV(b.Pixels[xx].Int
+							|b.Pixels[xx+1].Int.ShiftL(8)
+							|b.Pixels[xx+2].Int.ShiftL(16))
+							
+			sum += (hsv.V - v0).qq
+			c += 1
+			---------------------- 'right edge'
+			LIKE ........ 'one__pixel__diff', BUT(xx==>xx+b.Row_width)*? 
+			LIKE ........ 'one__pixel__diff', BUT(xx==>xx-b.Row_width)*? 
+			---------------------- 'bottom side'
+			LIKE ........ 'one__pixel__diff', BUT(xx==>xx+b.Row_width-dxx)*?
+			LIKE ........ 'one__pixel__diff', BUT(xx==>xx+b.Row_width-dxx*2)*?
+			---------------------- 'left side'
+			LIKE ........ 'one__pixel__diff', BUT(xx==>xx-dxx*2)*?
+			LIKE ........ 'one__pixel__diff', BUT(xx==>xx-b.Row_width-dxx*2)*?
+		     --------------------- 'upper side'
+			LIKE ........ 'one__pixel__diff', BUT(xx==>xx-b.Row_width-dxx)*?
+			REAL d|ispersion  = (sum / c)
+			CASE d < min_d ? min_d = d ;
+			CASE d > max_d ? max_d = d ;
+			---------------------- 'store dispersion in row_disp'
+			INT i_d|ispersion = (d * 10_000).Int
+			xx = x * 4
+			row_disp[xx] = i_d.Byte 
+			row_disp[xx+1] = i_d.ShiftR(8).Byte 
+			row_disp[xx+2] = i_d.ShiftR(16).Byte 
+			row_disp[xx+3] = i_d.ShiftR(24).Byte 
+		;
+	    b.Unlock(FALSE)
+	    ------------------------------ 'save entire row_disp[] to File_stream'
+	    NONE = File_stream.Save_bytes(row_disp[0 TO *])
+	;
+	Hint_set("")
+	CASE min_d >= max_d ? message("What?")==> ;
+	min_d = _.Sqrt     
+	max_d = _.Sqrt     
+	----------------- 'extract parameters'
+	STR param|eters[].Split(
+		Iterations_count.Text.After("^").Replace_all("  ", " ").Trim, " ")
+		
+	REAL center_w|eight = param[1].Real
+	REAL cross_p|oints_weight = param[2].Real
+	REAL diagonal_p|oints_and_outer_weight = param[3].Real
+	REAL outer_p|oints_weight_on_corners_of_5x5_square = param[4].Real
+	REAL divider|_calculate_weighted_average 
+	.. = center_w + cross_p*4 + diagonal_p*16 + outer_p*4 
+	
+	------------------------------------------- 'pass 2 - creating mask'     
+	Hint_set("Creating mask")
+	CASE Iterations_count.Text.After("*")=="" ? 
+	     REAL scale_value = 1
+	ELSE scale_value = Iterations_count.Text.After("*").Real ;
+	CASE Iterations_count.Text.After("^")=="" ? 
+	     REAL power_v|alur = 2
+	ELSE power_v = Iterations_count.Text.After("^").Real ;
+	
+	CASE Main_.Current_image < .All_images[].Count-1 
+	     && Main_.All_images[.Current_image+1].Width== b.Width 
+	     && Main_.All_images[.Current_image+1].Height== b.Height 
+	     ?
+	     Main_.Satellite_param.Go_to_next_image
+	     Main_.Save_current_image(TRUE)
+	     Main_.Satellite_param.Go_to_prev_image
+	ELSE
+		 Main_.Save_current_image(TRUE) ;
+	
+	b = Main_.Image.{Bitmap_direct}
+	CASE b==NONE ? 
+	     b = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
+	     Main_.Image.Draw(b.Canvas, Pt(0,0))
+	     ;
+	File_stream.Rewind
+	row_disp[].Allocate(b.Width * 20)
+	FOR y IN [0 TO b.Height-1] :
+	    b.Lock_rows(y, 1, TRUE) 
+	    FOR j IN [0 TO b.Width * 16 - 1] :
+	        row_disp[j] = row_disp[j + b.Width * 4] ;
+	    CASE y < 5 ? 
+	         File_stream.Set_position(((y + 2) * b.Width*4).To_long,'BEGINNING')
+	    ;
+	    NONE = File_stream.Read_bytes(row_disp[b.Width * 16 TO *])
+	    Progress_1.Set_progress(y * 100 / b.Height)
+	    Long_operation.Indicate(TRUE)
+	    CASE Cancelling ? BREAK y ;
+
+	    FOR x IN [0 TO b.Width-1] :
+	        xx = x * 4 + b.Width * 8
+			INT dd|ispersion_source = b.Width * 8 + x * 4
+			d = 0
+			INT d_i|nteger_multed_by_10000
+			REAL k|oefficient = center_w
+	        -------------------------- 'get__d_i', REUSED
+	        d_i = row_disp[dd].Int
+	             | row_disp[dd+1].Int.ShiftL(8)
+	             | row_disp[dd+2].Int.ShiftL(16)
+	             | row_disp[dd+3].Int.ShiftL(24)
+	             
+	        d += d_i * k
+	        --------------------------
+	        CASE !cross_p.Near(0) ?
+	             dd -= 4
+	             LIKE ............ 'get__d_i', BUT (k==>cross_p)
+	             dd += 8
+	             LIKE ............ 'get__d_i', BUT (k==>cross_p)
+	             ------------- 'up & down'
+	             dd = _ -4 - b.Width * 4
+	             LIKE ............ 'get__d_i', BUT (k==>cross_p)
+	             dd = _ + b.Width * 8
+	             LIKE ............ 'get__d_i', BUT (k==>cross_p)
+	             dd -= b.Width * 4
+	        ;
+	        CASE !diagonal_p.Near(0) ?
+	             dd = _ - 4 - b.Width * 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd = _ + 8
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             ----------------- 'down left & right'
+	             dd += b.Width * 8
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd -= 8
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             ----------------- 'down edge'
+	             dd = _ + b.Width * 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd += 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd += 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             ----------------- 'right edge'
+	             dd = _ + 4 - b.Width * 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd -= b.Width * 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd -= b.Width * 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             ----------------- 'upper edge'
+	             dd = _ - b.Width * 4 - 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd -= 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd -= 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             ----------------- 'left edge'
+	             dd = _ - 4 + b.Width * 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd += b.Width * 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd += b.Width * 4
+	             LIKE ......... 'get__d_i', BUT (k==>diagonal_p)
+	             dd += -b.Width * 8 + 8
+	        ;
+	        CASE !outer_p.Near(0)  ?
+	             dd = _ -b.Width * 8 - 8
+	             LIKE ......... 'get__d_i', BUT (k==>outer_p)
+	             dd += 16
+	             LIKE ......... 'get__d_i', BUT (k==>outer_p)
+	             ------------- 'bottom right & bottem left corners'
+	             dd += b.Width * 16
+	             LIKE ......... 'get__d_i', BUT (k==>outer_p)
+	             dd -= 16
+	             LIKE ......... 'get__d_i', BUT (k==>outer_p)
+	        ;
+	        CASE !(divider).Near(0) ? 
+	             d = _ / divider ;
+	            	      	        	
+	        d = (_ / 10_000.0).Sqrt
+
+	        xx = x * dxx
+	        INT rgb|_value = b.Pixels[xx].Int
+	        				|b.Pixels[xx+1].Int.ShiftL(8)
+	        				|b.Pixels[xx+2].Int.ShiftL(16)
+	        				
+	        hsv = RGB_to_HSV(rgb)
+	        
+	    	d = (d - min_d) / (max_d - min_d)
+	    	------------------------- 'return hsv to b'
+	    	hsv.V = _ * (d * PI/2).Sin.Power(power_v) * scale_value
+	    	DEBUG:
+	    	      CASE y % 100 == 0 == x % 100 ? 
+	    	           << "y=" y " x=" x " d=" d " min_d=" min_d " max_d=" max_d
+	    	           " >>> V=" hsv.V 
+	    	           #NL
+	    	      ;
+	    	;
+	    	rgb = HSV_to_RGB(hsv)
+	    	b.Pixels[xx] = rgb.Byte 
+	    	b.Pixels[xx+1] = rgb.ShiftR(8).Byte 
+	    	b.Pixels[xx+2] = rgb.ShiftR(16).Byte 
+	    ;
+		b.Unlock(TRUE)    
+		
+		CASE y % 100 == 0 ? 
+             Main_.All_images[.Current_image] = b
+             Main_.Image = b
+             Main_.Scaled_image = NONE
+             Main_.Cache_image = NONE
+             Main_.PBox.Invalidate_all
+             Main_.PBox.Update
+             Long_operation.Indicate(TRUE)
+		;
+	;
+	Hint_set("")
+	RESULT = b 
+	msg_or_cancel("Dispersion map building ended"._Dispersion_map_ended)
+	.
+    
+METHOD reverse_colors(
+{Bitmap_direct} b|itmap_to_reverse,
+INT to_dir|ection_dark_negative_light_positive,
+BOOL use_parameters) 
+    :
+    REAL avg_r|ed_values
+    REAL min_r|ed_value = 255
+    REAL max_r|ed_value
+    
+    REAL avg_g|reen_values
+    REAL min_g|reen_value = 255
+    REAL max_g|reen_value
+    
+    REAL avg_b|lue_values
+    REAL min_b|lue_value = 255
+    REAL max_b|lue_value
+    
+    INT c|ount_values
+    INT bytes_pp = b.Bpp / 8
+    INT ch|annel_value
+    
+    REAL pow_v|alue = Iterations_count.Text.After("^").Real
+    REAL mult_v|alue = Iterations_count.Text.After("*").Real
+	FOR y IN [0 TO b.Height-1] :
+	    Hint_set("y=" y.S " from " b.Height.S)
+	    b.Lock_rows(y, 1, TRUE)
+	    INT xx|_position = 0
+	    FOR x IN [0 TO b.Width-1] :
+	        ------------------------- 'count__b', REUSED
+	    	ch = b.Pixels[xx].Int
+	    	avg_b += ch
+	    	CASE ch > max_b ? max_b = ch ;
+	    	CASE ch < min_b ? min_b = ch ;
+	    	xx += 1
+	    	------------------------
+	    	LIKE .................... 'count__b', BUT(_b==>_g)*5
+	    	LIKE .................... 'count__b', BUT(_b==>_r)*5
+	     	c += 1
+	     	xx += bytes_pp - 3
+	    ;
+		b.Unlock(FALSE)    
+	;
+	------------------- 'calculate average values'
+	avg_b = _ / c
+	avg_g = _ / c
+	avg_r = _ / c
+	REAL new_ch|annel_value
+	
+	Hint_set("Reversing")
+	REAL power_v|alue = Iterations_count.Text.After("^").Real
+	REAL multip|ly_v = Iterations_count.Text.After("*").Real
+	FOR y IN [0 TO b.Height-1] :
+		Hint_set("Reversing: y=" y.S " from " b.Height.S)
+	    b.Lock_rows(y, 1, TRUE)
+	    xx = 0
+	    FOR x IN [0 TO b.Width-1] :
+	    	------------------------------ 'change__b', REUSED
+	    	ch = b.Pixels[xx].Int
+	    	CASE ?
+	    	[ch > avg_b && to_dir >= 0] ? 
+	    	    new_ch = (ch - avg_b) / (max_b - avg_b)
+	    	[ch <= avg_b && to_dir <= 0] ? 
+	    	    new_ch = (avg_b - ch) / (avg_b - min_b)
+	    	ELSE new_ch = ch ;
+	    	CASE use_parameters ? 
+	    	     new_ch = (_.Power(pow_v)) * mult_v ;
+	    	ch = (new_ch * 255).Int.range255
+	    	b.Pixels[xx] = ch.Byte
+	    	xx += 1
+	    	-------------------------------
+	    	LIKE .......................... 'change__b', BUT(_b==>_g)*8
+	    	LIKE .......................... 'change__b', BUT(_b==>_r)*8
+	     	xx += bytes_pp - 3
+	    ;
+		b.Unlock(TRUE)    
+	;
+    .
+    
+METHOD Downscale(
+{Bitmap_direct} B|mp_source, INT N|umber_times) ==> {Bitmap_direct}, NEW
+    :
+    RESULT = New_bitmap_direct(B.Width / N, B.Height / N, 24) 
+    B.Stretch_draw(RESULT.Canvas, {rect}(W=RESULT.Width.Pixels_to_points,
+    	H=RESULT.Height.Pixels_to_points)) 
+    	
+    Main_.Satellite_param.Thumbnails.Invalidate_all .
+    
+METHOD Build_3Dmap(
+{Bitmap_direct} b|itmap_input) ==> {Bitmap_direct}
+    :
+    RESULT = b 
+    STR temp_dir
+	LIKE do_mix .................... 'create__file__stream'
+	REAL row_h|eights[].Allocate(b.Width)
+	INT delta_xb = b.Bpp / 8
+	REAL min_hv|eight
+	REAL max_hv|eight
+	REAL mult_v|alue = Iterations_count.Text.After("*").Real
+	REAL power_v|alue = Iterations_count.Text.After("^").Real
+	REAL sq2|_constant = Sqrt(2.0)
+	FOR y IN [0 TO b.Height-2] :
+	    b.Lock_rows((y-1).Max(0), 3, TRUE)
+	    Hint_set("scan y=" y.S)
+	    Long_operation.Indicate(TRUE)
+	    INT xb|_position = b.Row_width
+	    FOR x IN [0 TO b.Width-1] :
+	    	------------------------------- 'get__hsv', REUSED
+	    	{hsv} $hsv|_value = RGB_to_HSV(
+	    		b.Pixels[xb].Int
+	    		| b.Pixels[xb+1].Int.ShiftL(8)
+	    		| b.Pixels[xb+2].Int.ShiftL(16))
+	    	------------------------------------
+	    	LIKE ............ 'get__hsv', 
+	    		 BUT ($hsv==>hsv1), (xb==>xb-b.Row_width)*3
+	    		
+			LIKE ............ 'get__hsv',
+			     BUT ($hsv==>hsv2), (xb==>xb-b.Row_width-delta_xb)*3
+	    		 
+			LIKE ............ 'get__hsv',
+			     BUT ($hsv==>hsv3), (xb==>xb-b.Row_width+delta_xb)*3
+	    		 
+	    	//CASE ?
+	    	//[hsv1.V <= hsv.V <= hsv2.V || hsv1.V >= hsv.V >= hsv2.V] ? 
+	    	    REAL next_h|eight = ( 
+	    	    	   (row_h[x] + ((hsv.V - hsv1.V)/100)
+	    	    	   * 2)
+	    	    	 + (row_h[x-1] + ((hsv.V - hsv2.V)/100)
+	    	    	   / sq2)
+	    	    	 + (row_h[x+1] + ((hsv.V - hsv3.V)/100)
+	    	    	   / sq2) )/4
+	    	    	 
+	    	//[hsv1.V >= hsv.V >]
+	    	//;
+	    	CASE y==0==x || next_h < min_hv ? min_hv = next_h ;
+	    	CASE y==0==x || next_h > max_hv ? max_hv = next_h ;
+	    	row_h[x] = next_h
+	    		
+	        xb += delta_xb
+	    ;
+		b.Unlock(FALSE)
+		BYTE line_a|rray[].Allocate(b.Width * 4)
+		INT xh|_position = 0
+		FOR x IN [0 TO b.Width-1] :
+		    INT int_v|alue = (row_h[x] * 10_000).Int
+		    line_a[xh] = int_v.Byte 
+			line_a[xh+1] = int_v.ShiftR(8).Byte    
+			line_a[xh+2] = int_v.ShiftR(16).Byte    
+			line_a[xh+3] = int_v.ShiftR(24).Byte
+			xh += 4
+		;
+		NONE = File_stream.Save_bytes(line_a[0 TO *])
+	;
+	File_stream.Rewind
+	------------------------- 'build map'
+	FOR y IN [0 TO b.Height-2] :
+	    NONE = File_stream.Read_bytes(line_a[0 TO *])
+	    xb = 0 
+		xh = 0
+		b.Lock_rows(y, 1, FALSE)
+		Hint_set("build y=" y.S)
+	    Long_operation.Indicate(TRUE)
+		FOR x IN [0 TO b.Width-1] :
+		    int_v = line_a[xh].Int
+		    		| line_a[xh+1].Int.ShiftL(8)
+		    		| line_a[xh+2].Int.ShiftL(16)
+		    		| line_a[xh+3].Int.ShiftL(24) 
+			
+		 	next_h = int_v / 10_000.0
+		 	------------------------------ 'new value'
+		 	INT ch|annel_v = (((next_h - min_hv) / (max_hv - min_hv)
+		 		).Power(power_v) * mult_v * 255).Int.range255
+		 	b.Pixels[xb] = ch.Byte
+		 	b.Pixels[xb+1] = ch.Byte
+		 	b.Pixels[xb+2] = ch.Byte
+		 	xb += delta_xb
+		 	xh += 4 
+		;
+		b.Unlock(TRUE)
+	;
+	-------------------------
+    
+    .
+
+END
+
+*/

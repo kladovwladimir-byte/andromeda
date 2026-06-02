@@ -1,6 +1,7 @@
 /*
 
-CLASS {Calculations_diff|erences}, UNTESTED:
+CLASS {Calculations_diff|erences}, 
+UNTESTED, BITWISE:
 
 IMPORT {Form_common} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
@@ -30,15 +31,19 @@ BASE CLASS: {Form_common} .
 {Edit} Count_check_passed
 {Label} Label_Avg_check_passed
 {Edit} Avg_check_passed
+{Paintbox} Pbox_info
+{Checkbox} Do_calculations
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://2F74E2FE Do not change manually (created by Form Designer)
+CONSTRUCT://593A7BD8 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
-	new_column("", 'CENTER', {Form}.{sizes_col}(Label=-100,Align_right=TRUE))
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=200,Align_right=TRUE))
 
+	------------------ 'DO_CALCULATIONS'
+	Do_calculations = New_checkbox(THIS, "DO_CALCULATIONS", "Do calculations")
 	-------------------- 'LABEL_COUNT_P'
 	Label_count_p = {Label}(Form_=THIS, Alias="LABEL_COUNT_P")
 
@@ -105,6 +110,10 @@ PUSH in_construct = TRUE :
 "All passed areas"
 "All check passed dots"
 "")
+	------------------------ 'PBOX_INFO'
+	Pbox_info = New_paintbox(THIS, "PBOX_INFO", "")
+
+	...Set_height(20)
 	----------------------------------------'form size / position'
 	Set_size(260, 0, 'FIT_TO_DISPLAY')
 	-------------------------- 'TITLE of Form'
@@ -117,7 +126,7 @@ PUSH in_construct = TRUE :
 
 METHOD after_CONSTRUCT: 
 	------------------------ 'bounds', REUSED
-	Restore_bounds("Plasma-tides", "Calculations", "whlt") 
+	Restore_bounds(Main_.App_name, "Calculations", "whlt") 
 	------------------------
 	Diff_threshold.Set_text(Main_.Diff_threshold.S)
 	Step_points.Set_text(Main_.Step_points.S)
@@ -183,6 +192,26 @@ OVERRIDE selection_change :
     ["COMBO_DRAW_ADDITIONALLY"]:
         Main_.PBox.Invalidate_all
     ; .
+
+OVERRIDE paint :
+    CASE sender_alias ?
+    ["PBOX_INFO"]:
+        {Canvas} c|anvas_pbox = Pbox_info.Canvas
+        c.Clear
+        STR text|_to_out = "X=" Main_.Last_mouse_pt.X.Points_to_pixels.S
+        	" Y=" Main_.Last_mouse_pt.Y.Points_to_pixels.S
+        	" RGB=" Main_.Last_RGB.Hex(6)
+        	 
+        c.Text(Pt(1,1), text)
+        {rect} size|_of_text = c.Measure(text)
+        PUSH c.Background = Main_.Last_RGB | 0xFF_000000 :
+        PUSH c.Pen_style = 'CLEAR_PEN' :
+             c.Rect({rect}(Loc= Pt(2+size.W, 0), W=Pbox_info.Width, H=.Height))
+        ;
+        ;
+    ELSE BASE ; .
+    
+    
 END
 
 */

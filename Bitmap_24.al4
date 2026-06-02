@@ -1,0 +1,92 @@
+/*
+
+CLASS {Bitmap_24|_bit_one_channel}, UNTESTED:
+
+IMPORT {Bitmap_direct}, {Png}, {Holder_bitmaps} .
+IMPORT: {{Standard}}, {{Files}}, {{Visual}} .
+
+
+BASE CLASS: {Bitmap_direct} .
+
+{Bitmap_direct} cache_out_|bitmap_
+{Holder_bitmaps} Holder_|caches_, INIT, READ
+
+FUNCTION New_bitmap_24(
+INT W|idth_bitmap, INT H|eight_bitmap, 
+{Holder_bitmaps} Holder_bitmaps) ==> {Bitmap_24}, NEW
+    :
+    RESULT = {Bitmap_24}(initial_bits_per_pixel = 24, Bpp = 24,
+    	Width= W, Height= H, Holder_= Holder_bitmaps) .
+    	
+DESTRUCT:
+	CASE cache_out_ != NONE ? Holder_.Bitmaps[].Remove(cache_out_) ; .
+
+METHOD provide_cache_out :
+	CASE cache_out_==NONE ? 
+		 {Bitmap_24} temp|_24_bitmap = New_bitmap_direct(Width, Height, 24)      
+	     Holder_.Bitmaps[] << temp  
+	     cache_out_ = temp 
+		 INT b_pp|_bytes_per_pixel = Bpp/8     
+		 FOR y IN [0 TO Height-1] :
+		     Lock_rows(y, 1, TRUE)
+		     cache_out_.Lock_rows(y, 1, FALSE)
+		     INT xx|_position = 0
+		     INT xd|estination = 0
+		     FOR x IN [0 TO Width-1] :
+		         cache_out_.Pixels[xd] = Pixels[xx+2] 
+		         cache_out_.Pixels[xd+1] = Pixels[xx+2] 
+		         cache_out_.Pixels[xd+2] = Pixels[xx+2]
+		         xd += 3
+		         xx += b_pp 
+		     ;
+		     cache_out_.Unlock(TRUE)
+		     Unlock(FALSE)
+		 ;
+	     
+	; .
+
+OVERRIDE Draw(
+{Canvas} D|est_canvas_destination, {point} P|oint_to), REPLACE
+    :
+	provide_cache_out
+	cache_out_.Draw(D, P) .
+	
+METHOD Copy_to|_bitmap_as_is(
+{Canvas} C|anvas_of_bitmap_24)
+    :
+    Draw(C, Pt(0,0)) .
+	
+OVERRIDE Stretch_draw(
+{Canvas} D|est_canvas_destination, {rect} R|ect_dest),
+	REPLACE
+    :
+    provide_cache_out 
+    cache_out_.Stretch_draw(D, R) .
+    
+OVERRIDE Lock|_entire_bitmap(BOOL Read|_from_source)
+    :
+    BASE(Read) .    
+    
+OVERRIDE Lock_rows(
+INT Y|_top_row, INT Height_rows, BOOL Read|_from_source) :
+	BASE(Y, Height_rows, Read) .
+    
+OVERRIDE Unlock(BOOL Wr|ite_back) :
+    CASE Wr && cache_out_ != NONE ?
+         Holder_.Bitmaps[].Remove(cache_out_)
+         cache_out_ = NONE ;
+    BASE (Wr)     
+    .
+    
+METHOD To_png|_file(STR Path|_to_save_to) :
+    provide_cache_out
+    {Png}.To_file(cache_out_, Path, 100) .
+    
+OVERRIDE To_clipboard ==> BOOL, REPLACE :
+    provide_cache_out
+    RESULT = cache_out_.To_clipboard .
+    
+
+END
+
+*/

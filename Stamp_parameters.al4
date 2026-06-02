@@ -1,0 +1,1700 @@
+/*
+
+CLASS {Stamp_parameters}, UNTESTED, BITWISE:
+
+IMPORT {Form_common}, {Satellite_param}, {HSV} .
+IMPORT: {{Visual}}, {{Standard}}, {{Files}}, {Stamp3D}, {Main_plasma_tides} .
+IMPORT: {Jpeg}, {Png}, {Localize_str}, {Bitmap_direct}, {Bitmap_24} .
+IMPORT: {Holder_bitmaps} .
+IMPORT, DEBUG: {Bmp} .
+
+BASE CLASS: {Form_common} .
+
+
+{Label} Label_x_offset
+{Label} Label_y_offset
+{Edit} X_offset
+{Edit} Y_offset
+{Label} Label_value
+{Edit} Value|_added_to_each_channel
+{Label} Label_shift
+{Edit} Shift_final|_value
+{Checkbox} Use_file|_scratch
+{Button} Button_stamp|_ctreate
+{Checkbox} Remove_old_stamp
+{Progress} Progress_1
+{Paint_turtle} Copy_bitmap
+{Paint_turtle} Inc_dec_shift
+{Combo} Convert_colors
+{Dialog_file} Dialog_file_save
+{Paintbox} P_Hints|_bottom
+{Label} LabelPostProcess
+{Combo} Post_processing_3
+{Paint_turtle} Run_post_process_3
+{Label} Label_View_transparent
+{Edit} Transparency_percents
+{Checkbox} Scale_transparent
+{Paint_turtle} Transparency_on_off
+{Label} Label_iterations|_to_mix
+{Edit} Iterations_count
+{Paintbox} Paintbox_1
+{Paintbox} Paintbox_2
+{Label} Label_multiplier
+{Edit} Edit_multiplier
+{Label} Label_stamp_type
+{Combo} Stamp_type
+{Checkbox} Recenter|_after_flat_stamp
+{Paint_turtle} Shift_commands
+{Combo} Post_processing_1
+{Paint_turtle} Run_post_process_1
+{Combo} Post_processing_2
+{Paint_turtle} Run_post_process_2
+
+METHOD before_CONSTRUCT: .
+
+CONSTRUCT://0D829EB5 Do not change manually (created by Form Designer)
+	before_CONSTRUCT
+PUSH in_construct = TRUE :
+	------------------------------------------------------------------ 'column '
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=160,Align_right=TRUE))
+
+	---------------------- 'DIALOG_FILE'
+	Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE")
+
+	...Filter = "All images|*.png;*.jpg"
+	...Default_ext = "png"
+	------------------- 'LABEL_X_OFFSET'
+	Label_x_offset = {Label}(Form_=THIS, Alias="LABEL_X_OFFSET")
+
+	...Set_text("X offset"._X_offset)
+	------------------------- 'X_OFFSET'
+	X_offset = New_edit(THIS, "X_OFFSET")
+
+	...Set_text("4")
+	------------------- 'LABEL_Y_OFFSET'
+	Label_y_offset = {Label}(Form_=THIS, Alias="LABEL_Y_OFFSET")
+
+	...Set_text("Y offset"._Y_offset)
+	------------------------- 'Y_OFFSET'
+	Y_offset = New_edit(THIS, "Y_OFFSET")
+
+	...Set_text("4")
+	---------------------- 'LABEL_VALUE'
+	Label_value = {Label}(Form_=THIS, Alias="LABEL_VALUE")
+
+	...Set_text("Value (%):"._Value_percent)
+	---------------------------- 'VALUE'
+	Value = New_edit(THIS, "VALUE")
+
+	...Set_text("1500")
+	---------------------- 'LABEL_SHIFT'
+	Label_shift = {Label}(Form_=THIS, Alias="LABEL_SHIFT")
+
+	...Set_text("Shift final by modulo 255:"._Shift_final)
+	---------------------- 'SHIFT_FINAL'
+	Shift_final = New_edit(THIS, "SHIFT_FINAL")
+
+	...Set_text("0")
+	-------------------- 'INC_DEC_SHIFT'
+	Inc_dec_shift = New_paint_turtle_button(THIS,
+ "INC_DEC_SHIFT",
+ "20R30DLL60B30RR"
+  "30B60 B30RR30 U45 D60")
+, >> grayable[]
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Incr,Decr")
+	----------------- 'LABEL_STAMP_TYPE'
+	Label_stamp_type = {Label}(Form_=THIS, Alias="LABEL_STAMP_TYPE")
+
+	...Set_text("Stamp type:"._Stamp_type)
+	----------------------- 'STAMP_TYPE'
+	Stamp_type = New_combo(THIS, "STAMP_TYPE", @
+"Flat stamp"
+"Radial stamp"
+"Serie of flat stamps"
+"Serie of radial stamps"
+"Square border stamp"
+"Square fill stamp"
+"Circle border stamp"
+"Star rays stamp"
+"Avg square border stamp")
+	------------------- 'CONVERT_COLORS'
+	Convert_colors = New_combo(THIS, "CONVERT_COLORS", @
+"0:Not convert"
+"1:Distance from shift"
+"2:Below shift only"
+"3:Above shift only"
+"4:Anti-distance from shift"
+"5:Inverted anti-distance"
+"6:Anti-qudratic distance"
+"7:Inverted anti-quadratic distance"
+"8:Anti-squared distance"
+"9:Inverted anti-squared distance"
+"10:Distance from shift sin"
+"11:Distance from shift sin-powered-2"
+"12:Distance from shift sin-squared^1/2"
+"13:Gradiental")
+	------------------------- 'USE_FILE'
+	Use_file = New_checkbox(THIS,
+ "USE_FILE",
+ "Use external file (to handle large images)"),
+ >> grayable[]
+	----------------- 'REMOVE_OLD_STAMP'
+	Remove_old_stamp = New_checkbox(THIS,
+ "REMOVE_OLD_STAMP",
+ "Replace previous stamp")
+	...Set_checked(TRUE)
+	------------------------- 'RECENTER'
+	Recenter = New_checkbox(THIS, "RECENTER", "Recenter (after flat samp)")
+	...Set_checked(TRUE)
+	--------------------- 'BUTTON_STAMP'
+	Button_stamp = New_button(THIS, "BUTTON_STAMP", "Create stamp"._Create_stamp)
+	...Make_default
+	---------------------- 'COPY_BITMAP'
+	Copy_bitmap = New_paint_turtle_button(THIS,
+ "COPY_BITMAP",
+ "5RD(60LL)4 UL30 RD("
+  "60LL)4")
+, >> grayable[]
+
+	...Set_width(18)
+
+	...Set_height(16)
+	----------------------- 'PAINTBOX_1'
+	Paintbox_1 = New_paintbox(THIS, "PAINTBOX_1", "")
+
+	...Set_height(10)
+	----------------- 'LABELPOSTPROCESS'
+	LabelPostProcess = {Label}(Form_=THIS, Alias="LABELPOSTPROCESS")
+
+	...Set_text(
+"Post processing operation (always replaces current image):"._Post_processing)
+	---------------- 'POST_PROCESSING_1'
+	Post_processing_1 = New_combo(THIS, "POST_PROCESSING_1", @
+"1: Shift colot by Multiplier"
+"2: Grayscale"
+"3: Darken 25%"
+"4: Darken 50% high part only"
+"5: Lighten 25%"
+"6: Lighten 50%"
+"7: Contrast up 25%"
+"8: Contrast up 50%"
+"9: Contrast down 25%"
+"10: Contrast down 50%"
+"11: Union two images 50/50 (second inverted)"
+"12: curves r,g,b #iterations"
+"13: Downscale 1/2"
+"14: Downscale 1/3"
+"15: Downscale 1/5"
+"16: Blur (d=|Multiplier|)"
+"17: To most dark neighbour"
+"18. Contrast dynamic (d=|Multiplier|)"
+"19: Retouch"
+"20. Average all next from current")
+	--------------- 'RUN_POST_PROCESS_1'
+	Run_post_process_1 = New_paint_turtle_button(THIS,
+ "RUN_POST_PROCESS_1",
+ "10L30"
+  "DFR40RR40BL80NRRU70R15LD50RR50NRRF50RR50 NURR110D DFL15BL30NB15RR30(RR50)2")
+
+
+	...Set_width(54)
+
+	...Set_height(18)
+
+	...Set_multi_button("Processing,Grayscale,Undo")
+
+	...Set_fill(BLACK)
+	---------------- 'POST_PROCESSING_2'
+	Post_processing_2 = New_combo(THIS, "POST_PROCESSING_2", @
+"1: Shift colot by Multiplier"
+"2: Grayscale"
+"3: Darken 25%"
+"4: Darken 50% high part only"
+"5: Lighten 25%"
+"6: Lighten 50%"
+"7: Contrast up 25%"
+"8: Contrast up 50%"
+"9: Contrast down 25%"
+"10: Contrast down 50%"
+"11: Union two images 50/50 (second inverted)"
+"12: curves r,g,b #iterations"
+"13: Downscale 1/2"
+"14: Downscale 1/3"
+"15: Downscale 1/5"
+"16: Blur (d=|Multiplier|)"
+"17: To most dark neighbour"
+"18. Contrast dynamic (d=|Multiplier|)"
+"19: Retouch"
+"20. Average all next from current")
+	--------------- 'RUN_POST_PROCESS_2'
+	Run_post_process_2 = New_paint_turtle_button(THIS,
+ "RUN_POST_PROCESS_2",
+ "10L30"
+  "DFR40RR40BL80NRRU70R15LD50RR50NRRF50RR50 NURR110D DFL15BL30NB15RR30(RR50)2")
+
+
+	...Set_width(54)
+
+	...Set_height(18)
+
+	...Set_multi_button("Processing,Grayscale,Undo")
+
+	...Set_fill(BLACK)
+	---------------- 'POST_PROCESSING_3'
+	Post_processing_3 = New_combo(THIS, "POST_PROCESSING_3", @
+"1: Shift colot by Multiplier"
+"2: Grayscale"
+"3: Darken 25%"
+"4: Darken 50% high part only"
+"5: Lighten 25%"
+"6: Lighten 50%"
+"7: Contrast up 25%"
+"8: Contrast up 50%"
+"9: Contrast down 25%"
+"10: Contrast down 50%"
+"11: Union two images 50/50 (second inverted)"
+"12: curves r,g,b #iterations"
+"13: Downscale 1/2"
+"14: Downscale 1/3"
+"15: Downscale 1/5"
+"16: Blur (d=|Multiplier|)"
+"17: To most dark neighbour"
+"18. Contrast dynamic (d=|Multiplier|)"
+"19: Retouch"
+"20. Average all next from current")
+	--------------- 'RUN_POST_PROCESS_3'
+	Run_post_process_3 = New_paint_turtle_button(THIS,
+ "RUN_POST_PROCESS_3",
+ "10L30"
+  "DFR40RR40BL80NRRU70R15LD50RR50NRRF50RR50 NURR110D DFL15BL30NB15RR30(RR50)2")
+
+
+	...Set_width(54)
+
+	...Set_height(18)
+
+	...Set_multi_button("Processing,Grayscale,Undo")
+
+	...Set_fill(BLACK)
+	----------------- 'LABEL_MULTIPLIER'
+	Label_multiplier = {Label}(Form_=THIS, Alias="LABEL_MULTIPLIER")
+
+	...Set_text("Multiplier:")
+	------------------ 'EDIT_MULTIPLIER'
+	Edit_multiplier = New_edit(THIS, "EDIT_MULTIPLIER")
+
+	...Set_text("2")
+	------------------- 'SHIFT_COMMANDS'
+	Shift_commands = New_paint_turtle_button(THIS,
+ "SHIFT_COMMANDS",
+ "10L60BLD40LL4"
+  "0 UL60D L40LL40BU80 L1LL30DR40RR40 UL20 LL20DBL40LL40")
+
+
+	...Set_width(80)
+
+	...Set_height(20)
+
+	...Set_multi_button("Left,Right,Up,Down")
+	----------------------- 'PAINTBOX_2'
+	Paintbox_2 = New_paintbox(THIS, "PAINTBOX_2", "")
+
+	...Set_height(10)
+	----------------- 'LABEL_ITERATIONS'
+	Label_iterations = {Label}(Form_=THIS, Alias="LABEL_ITERATIONS")
+
+	...Set_text(
+"Iterations count, offset step, circle radius/final value:"._Iterations_count)
+	----------------- 'ITERATIONS_COUNT'
+	Iterations_count = New_edit(THIS, "ITERATIONS_COUNT")
+
+	...Set_text("26 1 1 ^2 3 2 3 8 *2.5 13")
+	----------- 'LABEL_VIEW_TRANSPARENT'
+	Label_View_transparent = {Label}(Form_=THIS, Alias="LABEL_VIEW_TRANSPARENT")
+
+	...Set_text("View transparent over previous:"._Transparent_over_previous)
+	------------ 'TRANSPARENCY_PERCENTS'
+	Transparency_percents = New_edit(THIS, "TRANSPARENCY_PERCENTS")
+
+	...Set_text("0")
+	-------------- 'TRANSPARENCY_ON_OFF'
+	Transparency_on_off = New_paint_turtle_button(THIS,
+ "TRANSPARENCY_ON_OFF",
+ "20L"
+  "D40B20LL40R30B80BLU60D (20R5R8)4")
+
+
+	...Set_width(18)
+
+	...Set_height(18)
+	---------------- 'SCALE_TRANSPARENT'
+	Scale_transparent = New_checkbox(THIS,
+ "SCALE_TRANSPARENT",
+ "Scale transparent underlaying image too"._Scale_transp)
+	----------------------- 'PROGRESS_1'
+	Progress_1 = New_progress(THIS, "PROGRESS_1")
+	-------------------------- 'P_HINTS'
+	P_Hints = New_paintbox(THIS, "P_HINTS", "")
+
+	...Set_height(38)
+	----------------------------------------'form size / position'
+	Set_size(300, 0, 'FIT_TO_DISPLAY')
+	-------------------------- 'TITLE of Form'
+	Set_caption("3D-stamp parameters"._3D_stamp)
+
+	after_CONSTRUCT
+	Auto_height
+; .
+
+{Main_plasma_tides} Main_|form_, INIT, READ
+
+
+METHOD after_CONSTRUCT: 
+	Show_application_button(TRUE)
+	------------------------ 'bounds', REUSED
+	Restore_bounds(Main_.App_name, "Stamp_param", "whlt") 	
+	------------------------
+	Stamp_type.Select(0)
+	//hannel_fix.Select(0)
+	Convert_colors.Select(0)
+	Post_processing_1.Select(4-1)
+	Post_processing_2.Select(7-1)
+	Post_processing_3.Select(17-1)
+	Holder = {Holder_bitmaps}
+	.
+
+OVERRIDE moved :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+
+OVERRIDE resize :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+	
+STR Back_file[]
+BOOL Back_24|_bitmap_is[]
+
+
+OVERRIDE click :
+    CASE sender_alias ?
+    ["SHIFT_COMMANDS"]:
+        {Bitmap_direct} b|_temporary 
+	         b = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
+	         Main_.Image.Draw(b.Canvas, Pt(0,0))
+        CASE Shift_commands.Current ? 
+        ["Left"]: shift_horizontal(b, -Edit_multiplier.Text.Int) 
+        ["Right"]: shift_horizontal(b, Edit_multiplier.Text.Int) 
+        ["Up"]: shift_vertical(b, -Edit_multiplier.Text.Int) 
+        ["Down"]: shift_vertical(b, Edit_multiplier.Text.Int) ;
+        Main_.All_images[.Current_image] = b
+        Main_.Satellite_param.Go_to_another_image
+        Progress_1.Set_progress(0)
+    ["TRANSPARENCY_ON_OFF"]:
+        CASE Transparency_percents.Text.Int ? 
+        [0]: Transparency_percents.Set_text("50")
+        ELSE Transparency_percents.Set_text("0") ;
+    ["INC_DEC_SHIFT"]:
+    	INT was|_value = Shift_final.Text.Int
+        CASE Inc_dec_shift.Current ? 
+        ["Decr"]: Shift_final.Set_text((was - 1).Max(0).S) 
+        ["Incr"]: Shift_final.Set_text((was + 1).Min(255).S) 
+        ;
+    ["BUTTON_STAMP", 
+     "RUN_POST_PROCESS_3", "RUN_POST_PROCESS_1", "RUN_POST_PROCESS_2"]:
+        s_alias = sender_alias
+        r_current = sender.{Paint_turtle}.Current
+        BOOL do_backup = !(Key.Control
+             && s_alias.Starting("RUN_POST_PROCESS") && r_current=="Grayscale")
+             
+        INT i_pp|ost_processing_index_line = s_alias[*].Int
+        DEBUG: "sender_alias:" sender_alias " r_current:" r_current 
+        	 " i_pp=" i_pp  #NL ;
+        CASE i_pp ? 
+        [1]: {Combo} pp|ost_processing_combo = Post_processing_1 
+        [2]: pp = Post_processing_2 
+        [3]: pp = Post_processing_3 
+        ;
+        CASE Back_file[].Count==0 ? 
+             Back_file[].Allocate(4) 
+             Back_24[].Allocate(4) ;
+        CASE Back_file[i_pp] == "" && do_backup ?
+             FOR i IN [0 TO 100] :
+             	 Back_file[i_pp] = Get_special_dir(APPLICATION_DATA) 
+             	 	.Trailing_slash Main_.App_name.Trailing_slash
+             	  
+             	 CASE !Back_file[i_pp].Dir_exists ? 
+             	      Create_dir(Back_file[i_pp]) ;
+             	 Back_file[i_pp] = _ "Backstamp-" i.S ".png"
+                 CASE Back_file[i_pp].Exists ? CONTINUE i ;
+             ;
+             
+        ;
+        CASE r_current != "Undo" && do_backup ? 
+             {Png}.To_file(Main_.Image, Back_file[i_pp], 100) 
+             Back_24[i_pp] = Main_.Image.{Bitmap_24} != NONE
+        ;
+        CASE ?
+        [s_alias.Starting("RUN_POST_PROCESS") && r_current=="Grayscale"] ?
+             r_current = "Processing"
+             CASE Key.Control ? 
+                  Run_button(0)
+             ELSE Run_button(2) ;
+             Main_.Satellite_param.Thumbnails.Invalidate_all
+        [s_alias.Starting("RUN_POST_PROCESS") && r_current=="Undo"] ?
+        	 CASE Back_file[i_pp].Exists ? 
+        	 	  DEBUG: "Undo from: " Back_file[i_pp] ", i_pp=" i_pp #NL ;
+        	 	  {Bitmap} cur|rent_image = Main_.Image
+        	      Main_.All_images[.Current_image] = {Png}.From_file(
+        	      		Back_file[i_pp], {reduce_size}.'FULL')
+        	      		
+        	      CASE Back_24[i_pp]{
+        	      	   DEBUG: "restore (" Main_.Current_image 
+        	      	   		  ") as {Bitmap_24}" #NL ;
+        	      	   {Bitmap} fr|om_bitmap = Main_.All_images[.Current_image]     
+        	      	   {Bitmap_24} temp_b|itmap = New_bitmap_24(
+        	      	   		fr.Width, .Height, Holder)
+        	      	   		
+        	      	   fr.Draw(temp_b.Canvas, Pt(0,0))
+        	      	   Erase_frac(temp_b)
+        	      	   Main_.All_images[.Current_image] = temp_b
+        	      }
+				  DEBUG: "re-save cur " if(cur.{Bitmap_24}!=NONE,
+				        " as {Bitmap_24}") #NL ;
+				  CASE cur.{Bitmap_24} != NONE ?
+				       cur.{Bitmap_24}.To_png(Back_file[i_pp])
+				  ELSE {Png}.To_file(cur, Back_file[i_pp], 100) ;
+				  Back_24[i_pp] = cur.{Bitmap_24} != NONE
+                  
+        	      Holder.Delete(cur)
+        	      Main_.Satellite_param.Go_to_another_image
+        	 ;
+        ELSE Run_button(pp.Current + 1)
+        ;
+        Main_.Satellite_param.Thumbnails.Invalidate_all
+    ["COPY_BITMAP"]:
+        CASE Main_.Satellite_param.Locked_images ? ==> ;
+        {Bitmap} image_s|aving_TEMP = Main_.Image
+        CASE Key.Shift ?
+             CASE !Dialog_file_save.Select_file ? ==> ;
+             CASE Transparency_percents.Text.Real > 0 ? 
+                  {Bitmap} overlay|_temp = Make_scaled_prev2 
+                  image_s = New_bitmap(image_s.Width, .Height, 24)
+                  Main_.Image.Draw(image_s.Canvas, Pt(0,0))
+                  overlay.Draw(image_s.Canvas, Pt(0, 0))
+             ;
+             CASE Dialog_file_save.Filename.Ext.Lower ? 
+             [".jpg"]: 
+                 {Jpeg}.To_file(image_s, Dialog_file_save.Filename, 100)
+             [".png"]:
+                 CASE image_s.{Bitmap_24}!=NONE ? 
+                      image_s.{Bitmap_24}.To_png(Dialog_file_save.Filename) 
+                 ELSE {Png}.To_file(image_s, Dialog_file_save.Filename, 100)
+                 ;
+             ;
+             Main_.Update_caption(Dialog_file_save.Filename
+             	.Extract_file_name.Change_ext(""))
+        ELSE
+        	NONE = image_s.To_clipboard     
+        ;
+    ; 
+    DEBUG: "Holder[]:" Holder.Count #NL ;
+    .
+    
+METHOD Make_scaled_prev2 ==> {Bitmap_direct}, NEW :
+	INT alpha|_tran = Transparency_percents.Text.Int * 255 / 100
+    DEBUG: "making scaled_prev2 Alpha=" alpha
+    	" " Main_.Current_image #NL ;
+    RESULT = New_bitmap_direct(Main_.Image.Width, .Height, 32)
+   	Main_.All_images[.Current_image-1].Draw(RESULT.Canvas, Pt(0, 0))
+   	FOR y IN [0 TO RESULT.Height-1] :
+   	    RESULT.Lock_rows(y, 1, TRUE) 
+   	    INT xb|yte_position_in_pixels_row = 0
+   	    FOR x IN [0 TO RESULT.Width - 1] :
+   	        RESULT.Pixels[xb+3] = alpha.Byte
+   	        xb += 4
+   	    ;
+   		RESULT.Unlock(TRUE)    
+   	; .
+    
+
+OVERRIDE closing ==> {Form}.{action} :
+	RESULT = 'DECLINE'
+	Cancelling = TRUE
+	Hide 
+	-------------------------- 'delete undo file'
+	FOR i IN [0 TO Back_file[].Count-1] :
+		CASE Back_file[i].Exists ? 
+		     Delete_file(Back_file[i])
+		;
+	;
+	Back_file[].Clear .
+	
+{Edit} editing|_control
+INT edit_fr|om_value
+INT edit_to|_value
+INT edit_base|_value
+{point} mouse_down|_position
+	
+
+OVERRIDE mouse_down :
+	CASE Progress_1.Bounds.Contains(mouse) ? Cancelling = TRUE ;
+	CASE sender_alias.Starting("LABEL_") ?
+	     CASE sender_alias ? 
+	     ["LABEL_X_OFFSET"]: editing = X_offset
+	     		INT old_fr|om_edit
+	     		INT old_to|_edit
+	     		------------------------------- 'offset__from__to', REUSED
+	     		edit_fr = 0
+	     		edit_to = (editing.Text.Int.Abs * 2).Max(10)
+	     		CASE edit_to >= 50 ? edit_fr = edit_to / 4 ;
+	     		CASE ?
+	     		[editing.Text.Int == 0] ?
+	     		     edit_fr = -10 
+	     		     edit_to = 10 
+	     		[editing.Text.Int < 0] ?
+	     		     old_fr = edit_fr
+	     		     old_to = edit_to 
+	     		     edit_fr = -old_to
+	     		     edit_to = -old_fr 
+	     		;
+	     		-------------------------------     
+	     ["LABEL_Y_OFFSET"]: editing = Y_offset
+	     		LIKE .......................... 'offset__from__to'
+	     ["LABEL_VALUE"]: editing = Value
+	     		edit_fr = 1
+	     		edit_to = 1500
+	     		CASE editing.Text.Int == 1500 ? 
+	     		     edit_to = 5000 ;
+	     ["LABEL_SHIFT"]: editing = Shift_final
+	     		edit_fr = 0
+	     		edit_to = 255
+	     		CASE editing.Text.Int == 0 ? 
+	     		     edit_fr = -10 
+	     		     edit_to = 10 ;
+    	 ["LABEL_VIEW_TRANSPARENT"]: editing = Transparency_percents
+	     		edit_fr = 0
+	     		edit_to = 100
+    	 ["LABEL_MULTIPLIER"]: editing = Edit_multiplier
+    	 		edit_fr = -10
+    	 		edit_to = 10
+	     ;
+	     edit_base = editing.Text.Int
+	     mouse_down = mouse
+	; .
+
+OVERRIDE mouse_move :
+	CASE editing != NONE ?
+		 REAL r|ight_side = editing.Bounds.Left
+		 REAL mice_move = (mouse.X - mouse_down.X) / (editing.Bounds.Right)
+		 REAL new_val|ue = edit_base + mice_move * (edit_to - edit_fr)
+		 CASE ?
+		 [new_val < edit_fr] ? new_val = edit_fr
+		 [new_val > edit_to] ? new_val = edit_to ;
+		 editing.Set_text(new_val.Int.S) 
+	;
+	BASE .
+
+OVERRIDE mouse_up :
+	editing = NONE .
+	
+	
+
+OVERRIDE disabled ==> BOOL :
+    CASE sender_alias ? 
+    ["INC_DEC_SHIFT", "COPY_BITMAP"]: 
+         RESULT = Main_.Satellite_param.Locked_images
+    ["USE_FILE"]: RESULT = Stamp_type.Current >= 1
+    ; .
+    
+METHOD Hint_set(STR new_h|int) :
+    hint_cur = new_h
+    Hint = new_h
+    P_Hints.Invalidate_all
+    P_Hints.Update .
+    
+STR hint_cur|rent_override
+    
+OVERRIDE prefix_text_hint(
+{Control} c|ontrol_hinting) ==> STR :
+	CASE hint_cur != "" ? RESULT = hint_cur ==> ;
+	CASE c.Alias ? 
+	["COPY_BITMAP"]: RESULT = "Copy current image to clipboard"
+		"/SHIFT: save to file"._Copy_save
+	ELSE RESULT = "Drag mouse over labels to change values smoothly"._Drag
+	; .
+	
+
+OVERRIDE value_change :
+    CASE sender_alias ?
+    ["TRANSPARENCY_PERCENTS"]: Main_.PBox.Invalidate_all
+    ; .
+    
+
+METHOD apply_single(
+INT x_off|set, INT y_off|set, INT shift|_by,
+BOOL create_new|_image)
+    :
+    {Stamp3D} stamp|_temp = {Stamp3D}(//Source= Main_.Image.{Bitmap_24}, 
+    	Main_= Main_, 
+    	Stamp_parameters_= THIS,
+    	Bitmaps_24 = Main_.Satellite_param.Use_bitmaps_24)
+    	
+    //CASE stamp.Source == NONE ?      
+         CASE stamp.Bitmaps_24 || Main_.Image.{Bitmap_24} != NONE ? 
+	          stamp.Source = New_bitmap_24(Main_.Image.Width, .Height, Holder) 
+	          CASE Main_.Image.{Bitmap_24} != NONE ? 
+	               Main_.Image.{Bitmap_24}.Copy_to(stamp.Source.Canvas)
+	          ELSE 
+	          		{Bitmap_direct} bd|irect_temp = Main_.Image.{Bitmap_direct}
+	          		CASE bd == NONE ? 
+	          		     bd = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
+	          		     Main_.Image.Draw(bd.Canvas, Pt(0, 0))
+	          		;
+	          		stamp.Source = grayscale(bd) 
+	          ;
+         ELSE stamp.Source = New_bitmap_direct(Main_.Image.Width, .Height, 24)
+	    	  Main_.Image.Draw(stamp.Source.Canvas, Pt(0,0))
+         ;
+    //;
+    ------------------------------ 'parameters apply'
+    stamp.Offset_X = x_off
+    stamp.Offset_Y = y_off
+    stamp.Shift = shift_by
+    Main_.Save_current_image(create_new)
+    ------------------------------ 'common parameters'
+	STR old_name = Main_.All_img_names[.Current_image]
+    stamp.Value = Value.Text.Int
+    stamp.Convert_dist = Convert_colors.Current
+    stamp.Use_file = Use_file.Checked
+    stamp.Iterations = Iterations_count.Text.Int
+    ------------------------------ 'more parameters'
+    stamp.Radial = Stamp_type.Current IN [1, 3]
+    stamp.Experimental = Stamp_type.Current
+    CASE stamp.Experimental < 4 ? stamp.Experimental = 0 ;
+    stamp.Center = Pt(Main_.Image.Width * Main_.Offset_x,
+    				  Main_.Image.Height * Main_.Offset_y)
+    ------------------------------ 'new stamp', REUSED
+    DEBUG: "making stamp, current= " Main_.Current_image #NL ;
+    stamp.Progress = Progress_1
+    		//! OPERATION
+    Main_.Image = stamp.Create
+    DEBUG:
+          CASE ?
+          [stamp.Bitmaps_24 && Main_.Image.{Bitmap_24} == NONE] ?
+               message("stamp is created not {Bitmap_24}") 
+          [!stamp.Bitmaps_24 && Main_.Image.{Bitmap_24} != NONE] ?
+               message("stamp is created {Bitmap_24} "
+               "(though waiting for {Bitmap_direct})") 
+          ;
+    ;
+    ------------------------------ 'recentering'
+    CASE !stamp.Radial && Recenter.Checked ?
+         shift_horizontal(Main_.Image.{Bitmap_direct}, -X_offset.Text.Int/2)
+         shift_vertical(Main_.Image.{Bitmap_direct}, -Y_offset.Text.Int/2)
+    ;
+    Main_...All_images[.Current_image] = Main_.Image
+    ...Scaled_image = NONE
+    //DEBUG: {Bmp}.To_file(Main_.Image, "resulting-stamp.png") ;
+    ...All_img_names[.Current_image] = 
+    	"stamp-" old_name.Extract_file_name.Change_ext("")
+    ...Update_caption(Main_.All_img_names[.Current_image])
+    ...Invalidate
+    ...Satellite_param.need_invalidate = TRUE
+    -------------------- 'finish'
+    Progress_1.Set_progress(0)
+    .
+    
+BOOL Working_a_serie
+BOOL Cancelling
+
+    	
+    	
+
+METHOD union_2_images(
+REAL v|alue_to_multiply)
+    :
+    INT ci|ndex_current = Main_.Current_image     
+    CASE ci < 1 ? ==> ;
+    Main_.Satellite_param.Go_to_prev_image     
+    ------------------------------------------ 'img2', REUSED     
+    CASE Main_.Image.{Bitmap_direct} != NONE ? 
+         {Bitmap_direct} img2|_second_TEMP = Main_.Image.{Bitmap_direct}
+    ELSE img2 = New_bitmap_direct(Main_.Image.Width, .Height, 24)
+    	 Main_.Image.Draw(img2.Canvas, Pt(0,0)) ;
+    INT bpp2|_bytes_per_pixel = img2.Bpp / 8
+    ------------------------------------------
+    Main_.Satellite_param.Go_to_next_image
+    //Main_.Satellite_param.Delete_current_image
+    //CASE Main_.Current_image >= ci ?
+    //     Main_.Satellite_param.Go_to_prev_image ;
+    
+    LIKE .................... 'img2', BUT (img2==>img1)*?, (bpp2==>bpp1)
+    INT h_min|imal = img1.Height.Min(img2.Height)
+    INT w_min|imal = img1.Width.Min(img2.Width)
+    ------------------------------ 'union loop'
+    FOR y IN [0 TO h_min-1] :
+    	img1.Lock_rows(y, 1, TRUE)
+    	img2.Lock_rows(y, 1, TRUE)
+    	INT xx1|_position_in_img1_row = 0
+    	INT xx2|_position_in_img2_row = 0
+    	FOR x IN [0 TO w_min-1] :
+    		INT ch|annel_value
+    	    ---------------------- 'handle__B', REUSED
+    	    ch = (img1.Pixels[xx1].Int * 0.5 * v / 100
+                + (255.0 - img2.Pixels[xx2].Int * v / 100) * 0.5).Int
+    	    
+         	img1.Pixels[xx1] = ch.Byte
+         	xx1 += 1
+         	xx2 += 1
+         	----------------------
+         	LIKE ................. 'handle__B'
+         	LIKE ................. 'handle__B'
+         	xx1 += bpp1 - 3
+         	xx2 += bpp2 - 3
+    	;
+    	img1.Unlock(TRUE)
+    	img2.Unlock(FALSE)
+    ;
+	------------------------------ 'replace current image with img1'
+	Main_.Image = img1
+	Main_.Scaled_image = NONE
+	Main_.All_images[.Current_image] = img1
+    .
+
+METHOD union_2_image2(REAL v|alue_to_multiply, {Bitmap_direct} img2|_passed) :
+    INT ci|ndex_current = Main_.Current_image     
+    CASE ci < 1 ? ==> ;
+    ------------------------------------------ 'img2', REUSED     
+    CASE Main_.Image.{Bitmap_direct} != NONE ? 
+         {Bitmap_direct} img1|_first_TEMP = Main_.Image.{Bitmap_direct}
+    ELSE img1 = New_bitmap_direct(Main_.Image.Width, .Height, 24)
+    	 Main_.Image.Draw(img1.Canvas, Pt(0,0)) ;
+    INT bpp1|_bytes_per_pixel = img1.Bpp / 8
+    ------------------------------------------
+    INT bpp2|_bytes_per_pixel = img2.Bpp / 8
+
+    INT h_min|imal = img1.Height.Min(img2.Height)
+    INT w_min|imal = img1.Width.Min(img2.Width)
+    ------------------------------ 'union loop'
+    FOR y IN [0 TO h_min-1] :
+    	img1.Lock_rows(y, 1, TRUE)
+    	img2.Lock_rows(y, 1, TRUE)
+    	INT xx1|_position_in_img1_row = 0
+    	INT xx2|_position_in_img2_row = 0
+    	FOR x IN [0 TO w_min-1] :
+    		INT ch|annel_value
+    	    ---------------------- 'handle__B', REUSED
+    	    ch = (img1.Pixels[xx1].Int * 0.5 * v / 100
+                + (255.0 - img2.Pixels[xx2].Int * v / 100) * 0.5).Int
+    	    
+         	img1.Pixels[xx1] = ch.Byte
+         	xx1 += 1
+         	xx2 += 1
+         	----------------------
+         	LIKE ................. 'handle__B'
+         	LIKE ................. 'handle__B'
+         	xx1 += bpp1 - 3
+         	xx2 += bpp2 - 3
+    	;
+    	img1.Unlock(TRUE)
+    	img2.Unlock(FALSE)
+    ;
+	------------------------------ 'replace current image with img1'
+	Main_.Image = img1
+	Main_.Scaled_image = NONE
+	Main_.All_images[.Current_image] = img1
+    .
+
+
+    
+
+METHOD msg_or_cancel(STR m|essage_text) :
+    CASE Cancelling ? 
+         message("Operation cancelled"._op_cancelled) 
+    ELSE message(m) ; .
+    
+STR s_alias|_to_run
+STR r_current|_operation_to_run_post_process
+
+{Holder_bitmaps} Holder|_bitmaps
+
+METHOD Run_button(INT Operation) :
+	PUSH Main_.Satellite_param.Locked_images = TRUE :
+    PUSH Cancelling = FALSE :
+    	 CASE ?
+    	 [s_alias.Starting("RUN_POST_PROCESS")
+    	  && r_current=="Processing"
+    	  ] ?
+    	  	 CASE Main_.Satellite_param.Use_bitmaps_24 ? 
+		          {Bitmap_24} t|emporary 
+		          t = New_bitmap_24(Main_.Image.Width, .Height, Holder) 
+		          Main_.Image.Draw(t.Canvas, Pt(0,0))
+		          Erase_frac(t)
+		          {Bitmap_direct} b|itmap_to_handle_TEMP = t
+		          Main_.All_images[.Current_image] = t
+    	  	 ELSE b = New_bitmap_direct(Main_.Image.Width, .Height, 24)
+		          Main_.Image.Draw(b.Canvas, Pt(0,0)) ;
+    	     CASE Operation ?
+    	     [0]: lighten_darken(b, 0)
+    	     [1]: shift_color(b)
+    	  	 [2]: b = grayscale(b)
+    	     [3]: lighten_darken(b, -25)
+    	     [4]: lighten_darken(b, -50)
+    	     [5]: lighten_darken(b, 25)
+    	     [6]: lighten_darken(b, 50)
+    	  	 [7]: contrast_up_down(b, 25) 
+    	  	 [8]: contrast_up_down(b, 50) 
+    	  	 [9]: contrast_up_down(b, -25) 
+    	  	 [10]: contrast_up_down(b, -50) 
+    	     [11]: union_2_images(Value.Text.Int) //! TODO : {Bitmap_24} 
+    	     		==>
+    	  	 [12]: curves_rgb(b, 
+    	  	 		(255/Iterations_count.Text.Real.Max(1)).Int.Max(1))
+    	  	 		//! TODO : {Bitmap_24}
+    	  	 [13]: b = Downscale(b, 2) //! TODO : {Bitmap_24} 
+    	  	 [14]: b = Downscale(b, 3) //! TODO : {Bitmap_24} 
+    	  	 [15]: b = Downscale(b, 5) //! TODO : {Bitmap_24} 
+    	  	 [16]: b = blur(b, FALSE)
+    	  	 [17]: b = blur(b, TRUE)
+    	  	 [18]: b = dynamic_contrast(b)
+    	  	 [19]: b = retouch(b)
+    	  	 [20]: b = avg_of_next_stamps(b) //-only 24
+    	     ; 
+		     Progress_1.Set_progress(0)
+		     Hint_set("")
+		     --------------------- 'release__file', REUSED
+		     CASE File_stream != NONE ? 
+				  File_stream.Close
+				  File_stream = NONE
+				  Delete_file(File_src) ;
+		     ---------------------
+		     LIKE .......... 'release__file', BUT (File_==>Tfile_)*?
+		     LIKE .......... 'release__file', BUT (File_==>Tfile_)*?
+		     LIKE .......... 'release__file', BUT (File_==>Sfile_)*?
+		     LIKE .......... 'release__file', BUT (File_==>Cfile_)*?
+		     LIKE .......... 'release__file', BUT (File_==>Rfile_)*?
+			 ---------------------
+		     Main_.All_images[.Current_image] = b
+		     Main_.Satellite_param.Go_to_another_image ==>
+		     
+    	 [Remove_old_stamp.Checked
+	      && Main_.All_img_names[.Current_image].Starting("stamp-") 
+	      && Main_.Current_image > 0
+	      && !s_alias.Starting("RUN_POST_PROCESS")
+	      && Stamp_type.Current !IN [2,3]] ?
+    	      ------------------------------------- 'release current image'
+	          Main_.Image = New_bitmap(1, 1, 32)
+	          Main_.Scaled_image = New_bitmap(1, 1, 32)
+	          -------------------------------------- 'delete current image'
+	          INT ci|image_current = Main_.Current_image
+	          Main_.All_images[].Delete(ci)
+	    	  Main_.All_scaled[].Delete(ci)
+	    	  Main_.All_img_names[].Delete(ci)
+	    	  Main_.All_scales[].Delete(ci)
+	    	  Main_.All_rotations[].Delete(ci)
+	    	  ---------------------- 'go to previous image'
+	    	  Main_.Current_image -= 1
+	    	  Main_.Image = Main_.All_images[.Current_image]
+	    	  Main_.Scaled_image = NONE
+              //DEBUG: "delete index " ci ", current = " Main_.Current_image
+              //   ", total = " Main_.All_images[].Count #NL 
+              //   {Bmp}.To_file(Main_.Image, "Image.png")
+              //;
+    	 ;
+    	 CASE Stamp_type.Current ? 
+    	 [0, 1, 4, 5, 6 ,7, 8, 9]:
+	    	 apply_single(X_offset.Text.Int, Y_offset.Text.Int,
+	    	 	 Shift_final.Text.Int,
+	    		 create_new= !s_alias.Starting("RUN_POST_PROCESS"))
+    	 [2, 3]: //! serie of flat stamps
+    	     INT x_off|set_current = X_offset.Text.Int
+    	     INT y_off|set_current = Y_offset.Text.Int
+    	     INT dx|_offset = -x_off.Sign
+    	     INT dy|_offset = -y_off.Sign
+    	     FOR i IN [1 TO 10] :
+    	     	 Hint_set("Creating a sequence: " i.S " from 10")
+    	     	 Main_.Satellite_param.Thumbnails.Invalidate_all
+    	     	 Long_operation.Indicate(TRUE)
+    	     	 ---------------------------- 'create__stamp'
+    	         apply_single(x_off, y_off, 
+    	         	Shift_final.Text.Int, create_new = TRUE)
+    	         	
+    	         x_off += dx
+    	         y_off += dy
+    	         CASE x_off==0 || y_off==0 || i==10 ? BREAK i ;
+    	         Main_.Satellite_param.Go_to_prev_image     
+    	     ;
+    	     Hint_set("")
+    	 ;
+    ;
+    ; .
+    
+METHOD curves_rgb|_levels_for_values(
+{Bitmap_direct} b|itmap_current, INT rang|es_count)
+    :
+	DEBUG: "operation CURVES " rang #NL ;
+    INT mult|iplier = Edit_multiplier.Text.Int
+    FOR y IN [0 TO b.Height-1] :
+        b.Lock_rows(y, 1, TRUE)
+        Progress_1.Set_progress(y * 100.0 / b.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO b.Width-1] :
+    	    INT rgb|_new_value
+			INT d|elta_xx = 0
+			INT chigh|_part
+			INT c_low|_part
+			--------------------- 'one channel, please', REUSED
+			chigh = (b.Pixels[xx+d].Int / rang) * rang
+			c_low = rang - (b.Pixels[xx+d].Int % rang) * mult
+			b.Pixels[xx+d] = (chigh + c_low).range255.Byte
+			d += 1
+			---------------------
+			LIKE ................ 'one channel, please'
+			LIKE ................ 'one channel, please'
+    	    xx += b.Bpp / 8
+    	;
+        b.Unlock(TRUE)
+    ; .
+
+
+METHOD grayscale({Bitmap_direct} b|itmap_handling) ==> {Bitmap_direct}, NEW :
+	CASE b.{Bitmap_24} != NONE ? 
+	     RESULT = b ==> ;
+	DEBUG: "operation GRAYSCALE"#NL ;
+	CASE Main_.Satellite_param.Use_bitmaps_24 || b.{Bitmap_24} != NONE ? 
+	     RESULT = New_bitmap_24(b.Width, b.Height, Holder)
+	ELSE RESULT = New_bitmap_direct(b.Width, .Height, 24) ;
+	BOOL is_24|_bitmap = RESULT.{Bitmap_24} != NONE
+	INT b_bpp|_bytes_per_pixel = b.Bpp / 8
+	INT r_bpp|_bytes_per_pixel = RESULT.Bpp / 8
+	------------------------------------------- 'loop on rows'
+    FOR y IN [0 TO RESULT.Height-1] :
+        RESULT.Lock_rows(y, 1, FALSE)
+        b.Lock_rows(y, 1, TRUE)
+        
+        Progress_1.Set_progress(y * 100.0 / RESULT.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_RESULT = 0
+        INT xb|_position_in_b = 0
+        -------------------------------------- 'loop on pixels in a row'
+    	FOR x IN [0 TO RESULT.Width-1] :
+    	    REAL grayscale = b.Pixels[xb+2].Int*0.299
+                                + b.Pixels[xb+1].Int*0.587
+                                + b.Pixels[xb+0].Int*0.114
+    	    CASE is_24 ? 
+	    	     RESULT.Pixels[xx] = (grayscale / 65536).Int.Byte
+	    	     RESULT.Pixels[xx+1] = (grayscale / 256).Int.Byte
+	    	     RESULT.Pixels[xx+2] = (grayscale).Int.Byte
+    	    ELSE
+    	    	 INT g|_inted_value = grayscale.Round.Int
+    	    	 RESULT.Pixels[xx] = g.Byte
+    	    	 RESULT.Pixels[xx+1] = g.Byte
+    	    	 RESULT.Pixels[xx+2] = g.Byte
+    	    ;
+    	    xx += r_bpp
+    	    xb += b_bpp
+    	;
+        b.Unlock(FALSE)
+        RESULT.Unlock(TRUE)
+    ; .
+    
+METHOD Erase_frac|tionals_of_bitmap_24({Bitmap_24} b|itmap_handling) :
+	DEBUG: "operation Erase FRACTIONAL"#NL ;
+    FOR y IN [0 TO b.Height-1] :
+        b.Lock_rows(y, 1, TRUE)
+        //Progress_1.Set_progress(y * 100.0 / RESULT.Height)
+        //Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO b.Width-1] :
+    	    b.Pixels[xx] = '00'
+    	    b.Pixels[xx+1] = '00'
+    	    xx += 3
+    	;
+        b.Unlock(TRUE)
+    ; .
+    
+METHOD shift_color({Bitmap_direct} b|itmap_handling) :
+	DEBUG: "operation Shift color"#NL ;
+	INT sh|ift_value = Edit_multiplier.Text.Int
+	BOOL is_24|_bitmap = b.{Bitmap_24} != NONE
+	INT bpp|er_pixel_bytes = b.Bpp/ 8 
+    FOR y IN [0 TO b.Height-1] :
+        b.Lock_rows(y, 1, TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO b.Width-1] :
+    	    b.Pixels[xx+2] = (_.Int + sh).Byte
+    	    CASE !is_24 ? 
+    	         b.Pixels[xx+1] = (_.Int + sh).Byte 
+    	         b.Pixels[xx] = (_.Int + sh).Byte 
+    	    ;
+    	    xx += bpp
+    	;
+        b.Unlock(TRUE)
+    ; .
+    
+
+    
+METHOD lighten_darken|_invert(
+{Bitmap_direct} r|esult_bitmap_image,
+INT percents|_plus_lighten_minus_darken_zero_invert)
+    :
+	DEBUG: 
+	      CASE percents > 0 ? 
+	           << "operation LIGHTEN " percents 
+	      ELSE << "operation DARKEN " percents ;
+	;
+    BOOL is_24|_bitmap = r.{Bitmap_24} != NONE
+    INT bpp|_bitmap = r.Bpp / 8
+    FOR y IN [0 TO r.Height-1] :
+        r.Lock_rows(y, 1, TRUE)
+        Progress_1.Set_progress(y * 100.0 / r.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO r.Width-1] :
+    	    CASE is_24 ?
+    	         LOCAL :
+    	         REAL ch|annel_value
+	    	     ch = r.Pixels[xx+2].Int + r.Pixels[xx+1].Int/256.0 
+	    	    	  + r.Pixels[xx].Int/65536.0
+	             CASE percents ?
+		    	 [+25]:
+		    	     CASE ch < 120 ? ch = ch/3*4
+		    	     ELSE ch = (ch - 120) / 136 * 96 + 160 ;     
+		    	 [+50]: 
+		    	     CASE ch < 100 ? ch = ((ch - 128)*2 + 128)
+		    	     ELSE ch = (ch - 100) / 156 * 56 + 200 ;     
+	             [-25]: ch = _ * 3 / 4
+				 [-50]:
+				        CASE ch > 127 ? ch =  (_ - 128) / 2 + 128 ;
+		    	 ELSE ch = 256 - _
+		    	 ;
+		    	 r.Pixels[xx] = (ch * 65536).Int.Byte
+		    	 r.Pixels[xx+1] = (ch * 256).Int.Byte
+		    	 r.Pixels[xx+2] = (ch).Int.range255.Byte
+		    	 xx += 3
+		    	 ;
+    	    ELSE
+    	    	 LOCAL :
+		    	 INT v|alue_r_g_b 
+		    	 ---------------- 'r__channel', REUSED
+		    	 v = r.Pixels[xx].Int
+		    	 CASE percents ? 
+		    	 [+25]:
+		    	     CASE v < 120 ? v = v/3*4
+		    	     ELSE v = (v - 120) / 136 * 96 + 160 ;     
+		    	 [+50]: 
+		    	     CASE v < 100 ? v = ((v - 128)*2 + 128)
+		    	     ELSE v = (v - 100) / 156 * 56 + 200 ;     
+	             [-25]: v = _ * 3 / 4
+				 [-50]:
+				        CASE v > 127 ? v =  (_ - 128) / 2 + 128 ;
+		    	 ELSE v = 256 - _
+		    	 ;
+		    	 r.Pixels[xx] = (v.range255).Byte
+		    	 xx+=1
+		    	 ---------------------------------
+		    	 LIKE ........... 'r__channel'
+		    	 LIKE ........... 'r__channel'
+		    	 xx += bpp - 3
+		    	 ;
+    	    ;
+    	;
+        r.Unlock(TRUE)
+    ; .
+
+METHOD contrast_up_down(
+{Bitmap_direct} r|esult_bitmap_image,
+INT percents|_plus_up_minus_down)
+    :
+	DEBUG: "operation CONTRAST " percents #NL ;
+    BOOL is_24|_bitmap = r.{Bitmap_24} != NONE
+    INT bpp|_bytes_per_pixel = r.Bpp / 8
+    FOR y IN [0 TO r.Height-1] :
+        r.Lock_rows(y, 1, TRUE)
+        Progress_1.Set_progress(y * 100.0 / r.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row = 0
+    	FOR x IN [0 TO r.Width-1] :
+    		CASE is_24 ?
+    		     LOCAL:
+		    		REAL ch|annel_value
+			    	ch = r.Pixels[xx+2].Int + r.Pixels[xx+1].Int/256.0 
+		    	    	 + r.Pixels[xx].Int/65536.0 
+			    	CASE percents ? 
+			    	[+25]: ch = _ - 128
+			    	    CASE ?
+			    	    [-60 < ch < 60 ] ? ch = ch/3*4 + 128
+			    	    [ch >= 60] ? 
+			    	        ch = (ch - 60) * (128 - 80) / (128 - 60) + 80 + 128
+			    	    ELSE 
+			    	    	ch = (ch + 60) * (128 - 80) / (128 - 60) - 80 + 128 
+			    	    ;
+			    	[+50]: ch = _ - 128 
+			    	    CASE ?
+			    	    [-50 < ch < 50 ] ? ch = ch * 2 + 128
+			    	    [ch >= 50] ? 
+			    	       ch = (ch - 50) * (128 - 100) / (128 - 50) +100 +128
+			    	    ELSE 
+			    	       ch = (ch + 50) * (128 - 100) / (128 - 50) - 100 + 128
+			    	    ;
+			    	[-25]: ch = (((ch - 128)/4)*3 + 128) 
+			    	[-50]: ch = ((ch - 128)/2 + 128)
+			    	;
+			    	CASE ch < 0 ? ch = 0 ;
+			    	CASE ch >= 256 ? ch = 255.999999 ;
+			    	r.Pixels[xx] = (ch * 65536).Int.Byte
+			    	r.Pixels[xx+1] = (ch * 256).Int.Byte
+			    	r.Pixels[xx+2] = (ch).Int.Byte
+			    	xx += 3
+    		     ;
+	    	ELSE
+	    		 LOCAL :
+	    		 	INT v|alue_r_g_b
+			    	---------------- 'r__channel', REUSED
+			    	v = r.Pixels[xx].Int
+			    	CASE percents ? 
+			    	[+25]: v = _ - 128
+			    	    CASE ?
+			    	    [-60 < v < 60 ] ? v = v/3*4 + 128
+			    	    [v >= 60] ? 
+			    	        v = (v - 60) * (128 - 80) / (128 - 60) + 80 + 128
+			    	    ELSE 
+			    	    	v = (v + 60) * (128 - 80) / (128 - 60) - 80 + 128 
+			    	    ;
+			    	[+50]: v = _ - 128 
+			    	    CASE ?
+			    	    [-50 < v < 50 ] ? v = v * 2 + 128
+			    	    [v >= 50] ? 
+			    	       v = (v - 50) * (128 - 100) / (128 - 50) +100 +128
+			    	    ELSE 
+			    	       v = (v + 50) * (128 - 100) / (128 - 50) - 100 + 128
+			    	    ;
+			    	[-25]: v = (((v - 128)/4)*3 + 128) 
+			    	[-50]: v = ((v - 128)/2 + 128)
+			    	;
+			    	r.Pixels[xx] = (v.range255).Byte
+			    	xx += 1
+			    	----------------------
+			    	LIKE ................. 'r__channel'
+			    	LIKE ................. 'r__channel'
+			    	xx += bpp - 3
+	    		 ;
+	    	;
+    	;
+        r.Unlock(TRUE)
+    ; .
+
+METHOD blur|_on_base_of_around_pixels(
+{Bitmap_direct} b|itmap_image, 
+BOOL dark_n|eighbors_only) ==> {Bitmap_direct}, NEW
+    :
+    INT max_d|istance = Edit_multiplier.Text.Int.Abs.Min(5).Max(1)
+	DEBUG: "operation blur " max_d #NL ;
+	BOOL is_24|_bitmap = b.{Bitmap_24} != NONE
+	CASE ?
+	[is_24] ? RESULT = New_bitmap_24(b.Width, b.Height, Holder)
+    //[!dark_n] ?
+    //     {Bitmap_direct} temp|_bmp
+    //     temp = New_bitmap_direct(b.Width / max_d, b.Height / max_d, 24)
+    //     b.Stretch_draw(temp.Canvas, {rect}(W= temp.Width.Pixels_to_points,
+    //        H= temp.Height.Pixels_to_points))
+		 	
+    //     RESULT = New_bitmap_direct(b.Width, b.Height, 24)
+    //     temp.Stretch_draw(RESULT.Canvas, {rect}(W= b.Width.Pixels_to_points,
+    //        H= b.Height.Pixels_to_points)) ==>
+	ELSE RESULT = New_bitmap_direct(b.Width, b.Height, 24)
+	;
+	{Bitmap_direct} r|_bitmap_result = RESULT
+    INT delta_b|_bytes = b.Bpp / 8     
+    INT delta_r|_bytes = r.Bpp / 8     
+    -------------------------- 'main loop'
+    b.Lock(TRUE)
+    FOR y IN [0 TO r.Height-1] :
+        Hint_set("calculating averages y:" y.S " from " r.Height.S)
+        Progress_1.Set_progress(y * 100.0 / r.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row
+        r.Lock_rows(y, 1, FALSE)
+    	FOR x IN [0 TO r.Width-1] <-----------------------------------------
+    	    INT c|ount_items = 0
+    	    CASE is_24 ? 
+	    	     LOCAL :
+		    	     REAL avg|_value = 0
+		    	     CASE dark_n ? 
+		    	          xx = y * b.Row_width + x * delta_b
+			    	      REAL old|_value = b.Pixels[xx+2].Int 
+				    	            	   + b.Pixels[xx+1].Int/256.0
+				    	            	   + b.Pixels[xx].Int/65536.0
+		    	     ;
+		    	     FOR y2 IN [(y-max_d).Max(0) TO (y+max_d).Min(b.Height-1)] :
+		    	         FOR x2 IN [
+		    	         	 (x-max_d).Max(0) TO (x+max_d).Min(b.Width-1)] 
+		    	         	 :
+		    	             xx = y2 * b.Row_width + x2 * delta_b
+		    	             REAL ch|annel_value = b.Pixels[xx+2].Int 
+		    	            	 + b.Pixels[xx+1].Int/256.0
+		    	            	 + b.Pixels[xx].Int/65536.0 
+		    	            	 
+		    	             CASE dark_n && ch > old ? CONTINUE x2 ;
+		    	             avg += ch 
+		    	             c += 1 
+		    	         ;
+		    	     ;
+		    	     xx = x * delta_r
+		    	     CASE c > 0 ? 
+	    	    	      avg = _ / c
+		    	     ELSE avg = old ;
+		    	     r.Pixels[xx+2] = (avg).Int.Byte
+		    	     r.Pixels[xx+1] = (avg * 256).Int.Byte
+		    	     r.Pixels[xx] = (avg * 65536).Int.Byte
+	    	     ;
+    	    ELSE
+    	    	 LOCAL:
+	    	    	 INT iold|_value
+	    	    	 INT i_avg|_value
+	    	    	 INT v|alue_channel
+		    	     INT xd|estination = x * delta_r
+		    	     INT d_1|_offset_in_pixel = 0
+	    	    	 ----------------------- 'channel__r', REUSED
+	    	    	 i_avg = 0
+		    	     CASE dark_n ? 
+		    	          xx = y * b.Row_width + x * delta_b + d_1
+			    	      iold = b.Pixels[xx].Int 
+		    	     ;
+		    	     c = 0
+		    	     FOR y_2 IN [(y-max_d).Max(0) TO (y+max_d).Min(b.Height-1)] :
+		    	         FOR x_2 IN [
+		    	         	 (x-max_d).Max(0) TO (x+max_d).Min(b.Width-1)] :
+		    	             xx = y_2 * b.Row_width + x_2 * delta_b + d_1
+		    	             v = b.Pixels[xx].Int
+		    	             CASE dark_n && v > iold ? CONTINUE x_2 ;
+		    	             i_avg += v 
+		    	             c += 1 
+                             //DEBUG:
+                             //CASE y%100==0==x%100 ? 
+                             //     << "y2=" y_2 " x_2=" x_2 " d_1=" d_1 " v=" v
+                             //     << " i_avg=" i_avg " c=" c #NL ;
+                             //;
+		    	         ;
+		    	     ;
+		    	     CASE c > 0 ? i_avg = _ / c
+		    	     ELSE i_avg = iold ;     
+		    	     r.Pixels[xd] = (i_avg).Byte
+                     //DEBUG:
+                     //      CASE y%100==0==x%100 ? 
+                     //           << "x=" x " y=" y " d_1=" d_1 " xd=" xd
+                     //           << " iold=" iold " i_avg=" i_avg
+                     //           CASE d_1==2 ? 
+                     //                << " pixels: " r.Pixels[xd-2].Int.Hex(2) 
+                     //                << r.Pixels[xd-1].Int.Hex(2)
+                     //                << r.Pixels[xd].Int.Hex(2)
+                     //                ;
+                     //           << #NL ;
+                     //;
+		    	     xd += 1
+		    	     d_1 += 1
+		    	     --------------------------
+		    	     LIKE ...................... 'channel__r'
+		    	     LIKE ...................... 'channel__r'
+	    	     ;
+    	    ;
+    	------------------------------------------------------------------>
+    	r.Unlock(TRUE)
+    ;
+    b.Unlock(FALSE)
+    //DEBUG:
+    //      {Png}.To_file(r, "after-blur.png", 100)
+    //      {Png}.To_file(b, "before-blur.png", 100)
+    //;
+    .
+    
+METHOD dynamic_contrast(
+{Bitmap_direct} b|itmap_image) ==> {Bitmap_direct}, NEW
+    :
+	DEBUG: "operation Dynamic CONTRAST"#NL ;
+	BOOL is_24|_bitmap = b.{Bitmap_24} != NONE
+	CASE is_24 ? 
+	     RESULT = New_bitmap_24(b.Width, b.Height, Holder)
+	ELSE RESULT = New_bitmap_direct(b.Width, b.Height, 24) ; 
+    {Bitmap_direct} r|_bitmap_result = RESULT  
+    -------------------------------- 'delta + min/max'
+    INT delta_b|_bytes = b.Bpp / 8     
+    INT delta_r|_bytes = r.Bpp / 8     
+    REAL max_v|alue = 0
+    REAL min_v|alue = 256
+    INT imax_v|alue = 0
+    INT imin_v|alue = 255
+    -------------------------- 'main loop'
+    INT max_d|istance = Edit_multiplier.Text.Int.Abs.Min(5).Max(1)
+    b.Lock(TRUE)
+    FOR y IN [0 TO r.Height-1] :
+        Hint_set("calculating averages y:" y.S " from " r.Height.S)
+        Progress_1.Set_progress(y * 100.0 / r.Height)
+        Long_operation.Indicate(TRUE)
+        INT xx|_position_in_row
+        r.Lock_rows(y, 1, FALSE)
+    	FOR x IN [0 TO r.Width-1] <--------------------------------------------
+    	    INT c|ount_items = 0
+    	    CASE is_24 ? 
+    	         LOCAL :
+	    	     REAL avg|_value = 0
+	    	     FOR y2 IN [(y-max_d).Max(0) TO (y+max_d).Min(b.Height-1)] :
+	    	         FOR x2 IN [(x-max_d).Max(0) TO (x+max_d).Min(b.Width-1)] :
+	    	             xx = y2 * b.Row_width + x2 * delta_b
+	    	             REAL ch|annel_value = b.Pixels[xx+2].Int 
+	    	            	 + b.Pixels[xx+1].Int/256.0
+	    	            	 + b.Pixels[xx].Int/65536.0 
+	    	            	 
+	    	             avg += ch 
+	    	             CASE ch < min_v ? min_v = ch ;
+	    	             CASE ch > max_v ? max_v = ch ;
+	    	             c += 1 
+	    	         ;
+	    	     ;
+	    	     avg = _ / c
+	    	     xx = y * b.Row_width + x * delta_r
+	    	     REAL old|_value = b.Pixels[xx+2].Int 
+	    	            	 + b.Pixels[xx+1].Int/256.0
+	    	            	 + b.Pixels[xx].Int/65536.0 
+	    	     ----------------------- 'get new value'        	
+	    	     CASE ?
+	    	     [avg < old < (256 - avg)/2] ?
+	    	         REAL new|_value = old + (old - avg) * 2
+	    	     [avg/2 < old <= avg] ?
+	    	         new = old - (avg - old) * 2
+	    	     [avg < old < 256] ?
+	    	         REAL from|_below_value = (old + 256) / 2
+	    	         REAL to|_below_value = 3 * from - 2 * old
+	    	         new = avg + (old - avg) * (256 - from) / (256 - avg)
+	    	        		 + 256 * (1 - (256 - from) / (256 - avg))
+	    	     [0 < avg < old] ?
+	    	         from = avg / 2
+	    	         to = 3 * from - 2 * avg
+	    	         new = old * to / from
+	    	     ELSE new = old
+	    	     ;
+	    	     CASE ?
+	    	     [new > 256] ? new = 255.9999 
+	    	     [new < 0] ? new = 0
+	    	     ;
+	    	     xx = x * delta_r
+	    	     r.Pixels[xx+2] = (new).Int.Byte
+	    	     r.Pixels[xx+1] = (new * 256).Int.Byte
+	    	     r.Pixels[xx] = (new * 65536).Int.Byte
+	    	     ;
+    	    ELSE
+    	    	LOCAL:
+	    	     INT i_avg|_value
+	    	     INT v|alue_channel
+	    	     INT iold|_value
+	    	     INT inew|_value
+	    	     INT ifrom|_below_value
+	    	     INT ito|_below_value
+	    	     INT xd|estination = x * delta_r
+	    	     INT xs|ource_pos = y * b.Row_width + x * delta_b 
+	    	     --------------------------- 'channel__r', REUSED 
+	    	     i_avg = 0
+	    	     FOR y_2 IN [(y-max_d).Max(0) TO (y+max_d).Min(b.Height-1)] :
+	    	         FOR x_2 IN [(x-max_d).Max(0) TO (x+max_d).Min(b.Width-1)] :
+	    	             xx = y_2 * b.Row_width + x_2 * delta_b
+	    	         	 v = b.Pixels[xx].Int
+	    	             i_avg += v 
+	    	             CASE v < imin_v ? imin_v = v ;
+	    	             CASE v > imax_v ? imax_v = v ;
+	    	             c += 1 
+	    	         ;
+	    	     ;
+	    	     i_avg = _ / c
+	    	     iold = b.Pixels[xs].Int
+	    	     //----------------------- 'get new value'        	
+	    	     CASE ?
+	    	     [i_avg < iold < (256 - i_avg)/2] ?
+	    	         inew = iold + (iold - i_avg) * 2
+	    	     [i_avg/2 < iold <= i_avg] ?
+	    	         inew = iold - (i_avg - iold) * 2
+	    	     [i_avg < iold < 256] ?
+	    	         ifrom = (iold + 256) / 2
+	    	         ito = 3 * ifrom - 2 * iold
+	    	         inew = i_avg 
+	    	         		+ (iold - i_avg) * (256 - ifrom) / (256 - i_avg)
+	    	         		+ 256 * (1 - (256 - ifrom) / (256 - i_avg))
+	    	     [0 < i_avg < iold] ?
+	    	         ifrom = i_avg / 2
+	    	         ito = 3 * ifrom - 2 * i_avg
+	    	         inew = iold * ito / ifrom
+	    	     ELSE inew = iold
+	    	     ;
+	    	     r.Pixels[xd] = (inew).Byte
+	    	     xd += 1
+	    	     xs += 1
+	    	     ----------------------------------
+	    	     LIKE ...................... 'channel__r'
+	    	     LIKE ...................... 'channel__r'
+    	    	;
+    	    ;
+    	-------------------------------------------------------------------->
+    	r.Unlock(TRUE)
+    ;
+    b.Unlock(FALSE)
+    .
+    
+//METHOD to_most_dark_neighbour(
+//{Bitmap_24} g|rayscale_bitmap) ==> {Bitmap_24}, NEW
+//    :
+//    DEBUG: "opration TO MOST DARK"#NL ;
+//    RESULT = New_bitmap_24(g.Width, g.Height, Holder)
+//    {Bitmap_24} r|_bitmap_result = RESULT
+//    REAL ch|annel_value
+//    INT delta_g|_bytes = g.Bpp / 8     
+//    INT delta_r|_bytes = r.Bpp / 8     
+//    g.Lock(TRUE)
+//    FOR y IN [0 TO r.Height-1] :
+//        Hint_set("darkening y:" y.S " from " r.Height.S)
+//        Progress_1.Set_progress(y * 100.0 / r.Height)
+//        Long_operation.Indicate(TRUE)
+//        INT xx|_position_in_row
+//        r.Lock_rows(y, 1, FALSE)
+//        FOR x IN [0 TO r.Width-1] :
+//            INT c|ount_items = 0
+//            REAL avg|_value = 0
+//            xx = y * r.Row_width + x * delta_g
+//            REAL old|_value = g.Pixels[xx+2].Int + g.Pixels[xx+1].Int/256.0
+//                + g.Pixels[xx].Int/65536.0
+//                
+//            FOR y2 IN [(y-1).Max(0) TO (y+1).Min(g.Height-1)] :
+//                FOR x2 IN [(x-1).Max(0) TO (x+1).Min(g.Width-1)] <--------
+//                    xx = y2 * g.Row_width + x2 * delta_g
+//                    ch = g.Pixels[xx+2].Int + g.Pixels[xx+1].Int/256.0
+//                        + g.Pixels[xx].Int/65536.0
+//                          
+//                    CASE ch < old ? 
+//                         avg += ch 
+//                         c += 1 ;
+//                --------------------------------------------------------->
+//            ;
+//            CASE c > 0 ? 
+//                 avg = avg / c
+//            ELSE avg = old ;
+//            --------------------------- 'assign new value'
+//            xx = x * delta_r
+//            r.Pixels[xx+2] = (avg).Int.Byte 
+//            r.Pixels[xx+1] = (avg*256).Int.Byte 
+//            r.Pixels[xx] = (avg*65536).Int.Byte 
+//        ;
+//        r.Unlock(TRUE)
+//    ;
+//    g.Unlock(FALSE)
+//    .
+    
+    
+    
+STR File_src | _full_path
+{File_stream} File_stream
+
+STR Sfile_src|_stamp0 | _full_path
+STR Rfile_src|_result | _full_path
+{File_stream} Sfile_stream
+{File_stream} Rfile_stream
+------------------------ 'only for slow version:'
+STR Tfile_src|_result | _full_path 
+STR Cfile_src|_result | _full_path
+{File_stream} Tfile_stream
+{File_stream} Cfile_stream
+
+METHOD need_bitmap_24(
+{Bitmap} in_b|itmap) ==> {Bitmap_24}, NEW
+    :
+    RESULT = in_b.{Bitmap_24} 
+    CASE RESULT != NONE ? ==> ;
+    RESULT = New_bitmap_24(in_b.Width, .Height, Holder)
+    in_b.Draw(RESULT.Canvas, Pt(0,0))
+    Erase_frac(RESULT) .
+
+    
+METHOD Downscale(
+{Bitmap_direct} B|mp_source, INT N|umber_times) ==> {Bitmap_direct}, NEW
+    :
+	CASE B.{Bitmap_24} != NONE ? 
+		 {Bitmap_24} b|24_bitmap_B = B.{Bitmap_24}     
+	     RESULT = New_bitmap_24(B.Width / N, B.Height / N, Holder)
+	     {Bitmap_24} r|24_bitmap_RESULT = RESULT.{Bitmap_24}
+    	 FOR y IN [0 TO RESULT.Height-1] :
+    	     r.Lock_rows(y, 1, FALSE)
+    	     b.Lock_rows(y * N, N, TRUE) 
+    	 	 INT to|_RESULT_position = 0
+    	 	 FOR x IN [0 TO RESULT.Width-1] <--------------------------
+    	 	     REAL avg|_from_NxN_values = 0
+    	 	     FOR yy IN [0 TO N-1] :
+    	 	         INT fr|rom_byte_position = yy * b.Row_width + x * N * 3
+	    	 	     FOR xx IN [0 TO N - 1] :
+	    	 	         avg += b.Pixels[fr+2].Int
+	    	 	         		+ b.Pixels[fr+1].Int/256.0
+	    	 	         		+ b.Pixels[fr].Int/65536.0 ;
+    	 	     ;
+    	 	     avg = _ / (N * N)
+    	 	     //CASE avg >= 255.999 ? avg = 255.999 ;
+    	 	     r.Pixels[to+2] = avg.Int.Byte
+    	 	     r.Pixels[to+1] = (avg*256).Int.Byte
+    	 	     r.Pixels[to] = (avg*65536).Int.Byte
+    	 	     to += 3
+    	 	 ---------------------------------------------------------->
+    	 	 b.Unlock(FALSE)
+    	 	 r.Unlock(TRUE)
+    	 ;
+	ELSE RESULT = New_bitmap_direct(B.Width / N, B.Height / N, 24) 
+	     B.Stretch_draw(RESULT.Canvas, {rect}(W=RESULT.Width.Pixels_to_points,
+	    	 H=RESULT.Height.Pixels_to_points)) 
+	; 
+    Main_.Satellite_param.Thumbnails.Invalidate_all .
+    
+
+METHOD retouch|_by_rescale(
+{Bitmap_direct} b|itmap_input) ==> {Bitmap_direct}, NEW :
+	{Bitmap} temp|_bitmap = New_bitmap(b.Width * 111 / 100, b.Height * 111 / 100,
+		24)
+		
+	b.Stretch_draw(temp.Canvas, {rect}(W= temp.Width.Pixels_to_points,
+		H= temp.Height.Pixels_to_points))
+		
+	RESULT = New_bitmap_direct(b.Width, b.Height, 24)
+		
+    temp.Stretch_draw(RESULT.Canvas, {rect}(W= b.Width.Pixels_to_points,
+        H= b.Height.Pixels_to_points)) .
+
+METHOD shift_horizontal(
+{Bitmap_direct} b|itmpap_bitmap_image,
+INT delta|_pixels)
+    :
+    INT bytes_pp|ixel = b.Bpp/8
+    BYTE sav|e_pixel0[].Allocate(3)     
+    FOR y IN [0 TO b.Height-1] :
+    	CASE y % 10 == 0 ? 
+    	     Progress_1.Set_progress(70 + y * 30.0 / b.Height)
+    	     Long_operation.Indicate(TRUE) ;
+        b.Lock_rows(y, 1, TRUE)
+        INT xx|_position_in_row = 0
+        INT x_s|ource = xx - delta * bytes_pp
+        sav[0] = b.Pixels[0]
+        sav[1] = b.Pixels[1]
+        sav[2] = b.Pixels[2]
+    	FOR x IN [b.Width-1 DOWNTO 0] :
+    	    ---------------------------- 'fix__x_s', REUSED
+	        CASE ?
+	        [x_s < 0 ] ? x_s += b.Row_width 
+	        [x_s >= b.Row_width] ? x_s -= b.Row_width ;
+	        ----------------------------
+    		CASE x != 0 ? 
+	    		 b.Pixels[xx] = b.Pixels[x_s]
+	    		 b.Pixels[xx+1] = b.Pixels[x_s+1]
+	    		 b.Pixels[xx+2] = b.Pixels[x_s+2]
+    		ELSE b.Pixels[xx] = sav[0]
+    			 b.Pixels[xx+1] = sav[1]
+    			 b.Pixels[xx+2] = sav[2]
+    		;
+    		CASE delta > 0 ? 
+    		     xx -= bytes_pp 
+    		     x_s -= bytes_pp 
+    		ELSE 
+    		     xx += bytes_pp 
+    		     x_s += bytes_pp 
+    		;
+    		LIKE ......... 'fix__x_s', BUT (x_s==>xx)*?
+    	;
+        b.Unlock(TRUE)
+    ; .
+
+METHOD shift_vertical(
+{Bitmap_direct} b|itmpap_bitmap_image,
+INT delta|_pixels)
+    :
+	INT bytes_pp|ixel = b.Bpp/8
+    BYTE buf|er_row[].Allocate(b.Width * bytes_pp)
+    INT y_d|estination = 0
+    INT y_s|ource = y_d - delta
+    ------------------------------- 'save row 0'
+    BYTE sav|e_buffer[].Allocate(b.Width * bytes_pp)
+    b.Lock_rows(0, 1, TRUE)
+    FOR i IN [0 TO b.Row_width-1] : sav[i] = b.Pixels[i] ;
+    b.Unlock(FALSE)
+    FOR j IN [b.Height-1 DOWNTO 0] :
+        CASE j % 10 == 0 ? 
+    	     Progress_1.Set_progress(90 + (b.Height - j) * 10.0 / b.Height)
+    	     Long_operation.Indicate(TRUE) ;
+    	-------------------------------------- 'fix__y_s', REUSED
+        CASE ?
+        [y_s < 0 ] ? y_s += b.Height 
+        [y_s >= b.Height] ? y_s -= b.Height ;
+        -------------------------------------
+        CASE j != 0 ? 
+	         b.Lock_rows(y_s, 1, TRUE)
+	         FOR i IN [0 TO b.Row_width-1] : buf[i] = b.Pixels[i] ;
+	         b.Unlock(FALSE)
+	         b.Lock_rows(y_d, 1, FALSE)
+	         FOR i IN [0 TO b.Row_width-1] : b.Pixels[i] = buf[i] ;
+	         b.Unlock(TRUE)
+        ELSE
+	         b.Lock_rows(y_d, 1, FALSE)
+	         FOR i IN [0 TO b.Row_width-1] : b.Pixels[i] = sav[i] ;
+	         b.Unlock(TRUE)
+        ;
+		CASE delta > 0 ? 
+		     y_d -= 1 
+		     y_s -= 1
+		ELSE y_d += 1
+			 y_s +=1
+		;
+		LIKE ......... 'fix__y_s', BUT (y_s==>y_d)*?
+        //DEBUG: "j=" j " y_s=" y_s  " y_d=" y_d " buf[]:" buf[].Count
+        //        " Row_width=" b.Row_width " Height=" b.Height #NL ;
+    ; .
+
+METHOD avg_of_next_stamps(
+{Bitmap_direct} in_b|itmpap_bitmap_image) ==> {Bitmap_direct}
+	:
+	{Bitmap_24} b|itmap_in|TEMP = need_bitmap_24(in_b)
+	RESULT = b
+	{Bitmap_24} seq|uence_TEMP[]
+	FOR i IN [Main_.Current_image TO Main_.All_images[].Count-1] :
+	    {Bitmap} b_i|mage_to_checj_size = Main_.All_images[i] 
+		CASE b_i.Width != b.Width || b_i.Height != b.Height ?
+		     DEBUG: "size of image " i " is different, stop on seq[]: "
+		     	"" seq[].Count #NL ;
+		     BREAK i ;
+	    {Bitmap_24} img_i|_from_all_TEMP = need_bitmap_24(b_i) 
+		seq[] << img_i     
+	;
+	CASE seq[].Count <= 0 ? 
+	     message("not enough images to average from current!") ==> ;
+	FOR y IN [0 TO b.Height-1] :
+		Progress_1.Set_progress(y * 100 / b.Height)
+		Long_operation.Indicate(TRUE)
+	    b.Lock_rows(y, 1, TRUE)
+		FOR i IN [1 TO seq[].Count-1] : seq[i].Lock_rows(y, 1, TRUE) ;
+		INT xx|_position = 0
+		FOR x IN [0 TO b.Width-1] :
+		    REAL avg|_value = b.Pixels[xx+2].Int + b.Pixels[xx+1].Int/256.0
+		    				+ b.Pixels[xx].Int/65536.0
+		    				
+		    FOR i IN [1 TO seq[].Count-1] :
+		        avg += seq[i].Pixels[xx+2].Int + seq[i].Pixels[xx+1].Int/256.0
+		        		+ seq[i].Pixels[xx].Int/65536.0 ;
+		    avg = _ / seq[].Count
+			-------------------------- 'store avg value'
+			b.Pixels[xx+2] = avg.Int.Byte
+			b.Pixels[xx+1] = (avg * 256).Int.Byte
+			b.Pixels[xx] = (avg * 65536).Int.Byte
+		    xx += 3
+		;
+		FOR i IN [1 TO seq[].Count-1] : seq[i].Unlock(FALSE) ;
+	    b.Unlock(TRUE) 
+	;
+	.
+
+
+END
+
+*/

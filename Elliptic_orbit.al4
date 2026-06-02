@@ -13,6 +13,8 @@ IMPORT: {{Standard}}, {{Files}}, {{Visual}} .
 IMPORT: {Main_plasma_tides} . //-> qq
 
 REAL Eccentric|ity, INIT, READ
+REAL Maximal_speed|_meters_per_second, READ
+INT Want_points
 
 CONST REAL : 
 	G|ravitation_constant = 6.6743e-11
@@ -40,7 +42,12 @@ REAL Q_min|imal_radius
 REAL Q_max|imal_radius 
     
 CONSTRUCT:
-	Points[].Allocate(360)
+	CASE ?
+	[Want_points > 0] ? INT n|_points = Want_points     
+	[Eccentricity >= 0.999 ] ? n = 1440
+	[Eccentricity > 0.9 ] ? n = 720
+	ELSE n = 360 ;
+	Points[].Allocate(n + 1)
 	REAL t|_parameter_radian = 0
 	-------------------------------- 'a, b, Q_min, Q_max'
 	REAL a|_big_semiaxis_Meters = G * Mass_BH0 * (T0 * YEAR).qq / 4 / PI.qq
@@ -50,7 +57,7 @@ CONSTRUCT:
     //DEBUG: "{Elliptic_orbit}.a=" a #NL ;
 	REAL b|_small_semiax = a * Sqrt(1 - Eccentricity.qq)
 	{e_point} prev|ious_point
-	FOR i IN [0 TO Points[].Count-1] :
+	FOR i IN [0 TO n] :
 		{e_point} p|oint_of_i = {e_point}(
 			X= a * (Cos(t) - Eccentricity), Y= b * Sin(t),
 			R= (a.qq * (Cos(t) - Eccentricity).qq + b.qq * Sin(t).qq).Sqrt)
@@ -64,6 +71,7 @@ CONSTRUCT:
 		p.Dir = Pt(p.X/dist, p.Y/dist)
 		----------------- 'speed'
 		p.V = (G * Mass_BH0 * (2/p.R - 1/a)).Sqrt
+		CASE p.V > Maximal_speed ? Maximal_speed = p.V ;
 		CASE i > 0 ? 
 			 REAL d|istance = ((p.X - prev.X).qq + (p.Y - prev.Y).qq).Sqrt     
 		     p.T = prev.T + d / p.V 
@@ -74,14 +82,33 @@ CONSTRUCT:
 		...X = p.X
 		...Y = p.Y
 	    ---------------------------- 'next t'
-	    t += 2 * PI / Points[].Count 
+	    t += 2 * PI / n
 	; 
-	FOR i IN [0 TO Points[].Count-1] :
-	    Points[i].T /= YEAR
-	    REAL last_time = Points[i].T 
+	FOR i IN [0 TO n] :
+		p = Points[i].CLONE
+	    p.T /= YEAR
+	    Points[i] = p.CLONE
+	    //REAL last_time = Points[i].T 
 	;
+	---------------------- 'correct systematic error'
+	CASE TRUE ? 
+		 REAL delta_T|_to_correct = Points[n].T - Points[0].T
+		 REAL k_t|ime_koefficient = T0 / delta_T
+		 DEBUG: "k_t=" k_t " delta_T=" delta_T  #NL ;
+		 FOR i IN [0 TO n] :
+			 p = Points[i].CLONE
+		     p.T *= k_t 
+		     p.V *= k_t
+		     Points[i] = p.CLONE 
+		 ;
+	;
+	---------------------- 'remove extra point'
+	Total_time = Points[*].T
+	Points[].Delete(n)
     //DEBUG: "T= "#TAB (T0) #NL"l_t="#TAB last_time " ***************" #NL ;
 	.
+	
+REAL Total_time
 
 
 END

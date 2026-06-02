@@ -1,0 +1,577 @@
+/*
+
+CLASS {Stamp3D|_image}, UNTESTED, BITWISE:
+
+IMPORT: {{Standard}}, {{Files}}, {{Visual}}, {Bitmap_direct}, {Bitmap_24} .
+IMPORT: {File_stream}, {Stream}, {HSV} . 
+IMPORT: {Stamp_parameters}, {Main_plasma_tides} .
+IMPORT, DEBUG: {Bmp}, {Png} .
+
+INT Offset_X = 3
+INT Offset_Y = 3
+INT Value|_percents = 100
+INT Iterations|_to_mix
+BOOL Stepwise
+BOOL Radial|_stamp
+INT Experimental
+BOOL Bitmaps_24|_only
+
+{point} Center|_point
+INT Shift|_final_value = 128
+INT Convert_dist|ances_colors
+{Bitmap_direct} Source|_bitmap
+{Progress} Progress
+
+BOOL Use_file|_to_store_source_bitmap_copy
+
+ENUM {channel|s} :
+    'NONE|_CHANNELS_NOT_FIXED',
+    'RED|_CHANNEL',
+    'GREEN|_CHANNEL',
+    'BLUE|_CHANNEL' .
+    
+{Stamp_parameters} Stamp_parameters_, INIT, READ
+{Main_plasma_tides} Main_|form_, INIT, READ
+
+METHOD Create|_3Dstamp ==> {Bitmap_direct}, NEW :
+	CASE Bitmaps_24 ? 
+		 {Bitmap_direct} r|esult_TEMP = New_bitmap_24(Source.Width, .Height, 
+			 Stamp_parameters_.Holder)
+	ELSE r = New_bitmap_direct(Source.Width, .Height, 24) ;
+		
+	Source.Draw(r.Canvas, Pt(0, 0))
+	CASE Use_file && !Radial && !Stepwise ? 
+	     bitmap_to_file(r)
+	ELSE
+		 Use_file = FALSE
+		 CASE Bitmaps_24 ? 
+		      {Bitmap_direct} src|_temp = New_bitmap_24(Source.Width, .Height, 
+		     	 Stamp_parameters_.Holder)
+		      CASE Source.{Bitmap_24} != NONE ? 
+		           Source.{Bitmap_24}.Copy_to(src.Canvas) 
+		      ELSE Source.Draw(src.Canvas, Pt(0, 0)) 
+		      ;
+		 ELSE src= New_bitmap_direct(Source.Width, .Height, 24)
+		      Source.Draw(src.Canvas, Pt(0, 0))
+		 ;
+	     	 
+	;
+    DEBUG: 
+          {Png}.To_file(r, "bmp-before.png", 100)
+          {Png}.To_file(src, "src-before.png", 100)
+    ;
+	CASE ?
+	[Use_file && !Radial && Experimental < 4] ?
+	     offset_stamp_via_file(r)
+	[Radial || Experimental >= 4] ?
+	     radial_stamp(r, src) 
+	ELSE offset_stamp(r, src) ;
+	CASE Use_file ? 
+		 File_stream.Close
+		 File_stream = NONE     
+	     Delete_file(File_src) ;
+	-------------------------------- 'apply result'
+    RESULT = r
+    //DEBUG: 
+    //      {Bmp}.To_file(r, "stamp-result.bmp") 
+    //      //{Bmp}.To_file(Source, "Source.png") 
+    //;
+	.
+	
+STR File_src | _full_path
+{File_stream} File_stream
+	
+METHOD bitmap_to_file(
+{Bitmap_direct} bmp|_to_store_in_file)
+    :
+	STR temp_dir
+	--------------------------- 'create__file__stream', REUSED
+	temp_dir = Get_temp_dir
+	FOR i IN [0 TO MAX_INT-1] :
+		File_src = temp_dir "3d-" i.S ".tmp" 
+	    CASE !Exists(File_src) ? BREAK i ;
+	;
+	File_stream = Write_file_stream(File_src, TRUE)
+	------------------------------------------------
+	FOR y IN [0 TO bmp.Height-1] :
+	    bmp.Lock_rows(y, 1, TRUE)
+	    NONE= File_stream.Save_bytes(bmp.Pixels[0 TO *]) 
+		bmp.Unlock(FALSE)    
+	; .
+	
+FUN range255(INT value|_to_range) ==> INT, PUBLIC :
+    CASE ?
+    [value < 0 ] ? RESULT = 0 
+    [value > 255]? RESULT = 255 
+    ELSE RESULT = value ; .
+	
+METHOD offset_stamp(
+{Bitmap_direct} bmp|_result, {Bitmap_direct} src|_source_bitmap)
+    :
+    INT bmp_bpp|_bytes_per_pixel = bmp.Bpp / 8
+    INT src_bpp|_bytes_per_pixel = src.Bpp / 8
+    CASE Progress <> NONE ? Progress.Set_progress(0) ;
+    REAL sh|ift_to_100 = Shift/255.0*100     
+    FOR y IN [0 TO bmp.Height-1] :
+        bmp.Lock_rows(y, 1, TRUE)
+        INT ys|_ource = y + Offset_Y
+        CASE ys < 0 || ys >= bmp.Height ? CONTINUE y ;
+        src.Lock_rows(ys, 1, TRUE)
+        --------------------------------- 'do not forget to unlock!'
+        CASE Progress <> NONE ?
+             Progress.Set_progress(y * 100.0 / bmp.Height)
+             Progress.Form_.Long_operation.Indicate(TRUE)
+        ;
+        FOR x IN [0 TO bmp.Width-1] <----------------------------------------
+            INT xd|source_position = x * bmp_bpp
+            INT xs|source_position = (x + Offset_X) * src_bpp
+            REAL ch|annel_value
+            CASE Bitmaps_24 ? 
+				 REAL s_ch|hannel = src.Pixels[xs+2].Int
+					 + src.Pixels[xs+1].Int/256.0 + src.Pixels[xs].Int/65536.0
+				 ------------------------------------- 'operation__24', REUSED
+				 ch = bmp.Pixels[xd+2].Int
+					 + bmp.Pixels[xd+1].Int/256.0 + bmp.Pixels[xd].Int/65536.0
+					 
+	             ch = _ * Value / 100 * 0.5 + (256 - s_ch * Value / 100) * 0.5
+	 
+	             CASE Convert_dist ?
+	             [1]: //Distance from shift
+	                  CASE ch < Shift ? ch = Shift - ch
+	                  ELSE ch = ch - Shift
+	                  ;
+	                  //ch = _.range255
+	             [2]: //Below shift only
+	                  CASE ch < Shift ? ch = Shift - ch;
+	                  //ch = _.range255
+	             [3]: //Above shift only
+	                  CASE ch > Shift ? ch = ch - Shift;
+	                  //ch = _.range255
+	             [4, 5]:
+					  //Anti-distance from shift
+					  //Inverted anti-distance
+	                 CASE Shift > 0 { 
+	                  CASE ch < Shift ? 
+	                       ch = (Shift*1.0/(Shift - ch))
+	                  ELSE ch = (((256.0-Shift)/(ch - Shift + 1)))
+	                  ;
+	                  //ch = _.range255
+	                 ELSE ch = (256.0/(ch+1) - 1)
+	                 }
+	                 CASE Convert_dist==5 ? 
+	                      ch = 256 - _ ;
+	             [6, 7]:
+					 //Anti-quadratic distance
+					 //Inverted anti-quadratic distance
+	                 CASE Shift > 0 {
+	                  CASE ch < Shift ?
+	                       ch = (Shift * Sqrt((Shift - ch)*1.0/Shift))
+	                  ELSE ch = ((256-Shift) * Sqrt((ch - Shift)/(256.0-Shift)))
+	                  ;
+	                 ELSE ch = (Sqrt(_ / 256.0) * 256)
+	                 }
+	                 CASE Convert_dist==7 ?
+	                      ch = 256 - _ ;
+	             [8, 9]:
+					 //Anti-squared distance
+					 //Inverted anti-squared distance
+	                 CASE Shift > 0 {
+	                  CASE ch < Shift ?
+	                       ch = ((1 - ch*1.0/Shift).qq*Shift)
+	                  ELSE ch = ((ch*1.0/(256 - Shift)).qq * (256 - Shift))
+	                  ;
+	                 ELSE ch = (Sqrt(_ / 256.0) * 256)
+	                 }
+	                 CASE Convert_dist==9 ?
+	                      ch = ((_*1.0/Shift).qq * Shift) ;
+	             [10]:
+	                 CASE ch < Shift ? 
+	                      ch = (Sin((Shift - ch + 0.0)/Shift * PI/2) * Shift)
+	                		      
+	                  ELSE ch = (Sin((ch - Shift)/(256.0 - Shift) * PI/2) 
+	                 	 * (256 - Shift))
+	                  ;
+	             [11]:
+	                 CASE ch < Shift ? 
+	                      ch = (Sin((Shift - ch + 0.0)/Shift * PI/2).qq * Shift)
+	                		      
+	                  ELSE ch = (Sin((ch - Shift)/(256.0 - Shift) * PI/2).qq 
+	                 	 * (256 - Shift))
+	                  ;
+	             [12]:
+	                 CASE ch < Shift ? 
+	                      ch = (Sin((Shift - ch + 0.0)/Shift * PI/2).Sqrt 
+	                     	 * Shift)
+	                		      
+	                  ELSE ch = (Sin((ch - Shift)/(256.0 - Shift) * PI/2).Sqrt 
+	                 	 * (256 - Shift))
+	                  ;
+	             [13]: ch = (_ + Shift).Int.Byte.Int
+	             ELSE ch = (_ + Shift).Int.range255
+                      //CASE ?
+                      //[Shift==0] ? NONE     
+                      //[ch >= 256 ] ? ch -= 256 
+                      //[ch < 0] ? ch += 256 ;
+	             ;
+	             CASE ?
+	             [ch >= 256] ? ch = 255.9999
+	             [ch < 0] ? ch = 0 ;
+	             //----------------------------- 'store value 24 bits'
+	             bmp.Pixels[xd+2] = ch.Int.Byte
+	             bmp.Pixels[xd+1] = (ch*256).Int.Byte
+	             bmp.Pixels[xd] = (ch*65536).Int.Byte
+	             ------------------------------------ 'end operation'
+            ELSE
+				 INT s|rc_channel 
+				 INT v|alue_channel
+				 INT ic|hannel
+				 s = src.Pixels[xs].Int 
+				 ------------------------------------- 'operation__8', REUSED
+				 v = bmp.Pixels[xd].Int
+	             ch = (v * Value * 0.5 / 100 + (256 - s * Value / 100.0) * 0.5)
+	             		//.Int
+	 
+	             CASE Convert_dist ?
+	             [1]: //Distance from shift
+	                  CASE ch < Shift ? ch = Shift - ch
+	                  ELSE ch = ch - Shift
+	                  ;
+	             [2]: //Below shift only
+	                  CASE ch < Shift ? ch = Shift - ch;
+	                  //ch = _.range255
+	             [3]: //Above shift only
+	                  CASE ch > Shift ? ch = ch - Shift;
+	                  //ch = _.range255
+	             [4, 5]:
+					  //Anti-distance from shift
+					  //Inverted anti-distance
+	                 CASE Shift > 0 { 
+	                  CASE ch < Shift ? 
+	                       ch = (Shift*1.0/(Shift - ch))
+	                  ELSE ch = (((256.0-Shift)/(ch - Shift + 1)))
+	                  ;
+	                  //ch = _.range255
+	                 ELSE ch = (256.0/(ch+1) - 1)
+	                 }
+	                 CASE Convert_dist==5 ? 
+	                      ch = 256 - _ ;
+	             [6, 7]:
+					 //Anti-quadratic distance
+					 //Inverted anti-quadratic distance
+	                 CASE Shift > 0 {
+	                  CASE ch < Shift ?
+	                       ch = (Shift * Sqrt((Shift - ch)*1.0/Shift))
+	                  ELSE ch = ((256-Shift) * Sqrt((ch-Shift)/(256-Shift)))
+	                  ;
+	                 ELSE ch = (Sqrt(_ / 256.0) * 256)
+	                 }
+	                 CASE Convert_dist==7 ?
+	                      ch = 256 - _ ;
+	             [8, 9]:
+					 //Anti-squared distance
+					 //Inverted anti-squared distance
+	                 CASE Shift > 0 {
+	                  CASE ch < Shift ?
+	                       ch = ((1 - ch*1.0/Shift).qq*Shift)
+	                  ELSE ch = ((ch*1.0/(256 - Shift)).qq * (256 - Shift))
+	                  ;
+	                 ELSE ch = (Sqrt(_ / 256.0) * 256)
+	                 }
+	                 CASE Convert_dist==9 ?
+	                      ch = ((_*1.0/Shift).qq * Shift) 
+	                 ;
+	             [10]:
+	                 CASE ch < Shift ? 
+	                      ch = (Sin((Shift - ch + 0.0)/Shift * PI/2) * Shift)
+	                		      
+	                 ELSE ch = (Sin((ch - Shift)/(256.0 - Shift) * PI/2)
+	                 	 * (256 - Shift))
+	                 ;
+	             [11]:
+	                  CASE ch < Shift ? 
+	                      ch = (Sin((Shift - ch + 0.0)/Shift * PI/2).qq * Shift)
+	                      
+	                		      
+	                  ELSE ch = (Sin((ch - Shift)/(256.0 - Shift) * PI/2).qq 
+	                 	 * (256 - Shift)).Int
+	                  ;
+	             [12]:
+	                 CASE ch < Shift ? 
+	                      ch = (Sin((Shift - ch + 0.0)/Shift * PI/2).Sqrt 
+	                     	 * Shift)
+	                		      
+	                  ELSE ch = (Sin((ch - Shift)/(256.0 - Shift) * PI/2).Sqrt 
+	                 	 * (256 - Shift))
+	                  ;
+	             [13]: ch = (_ + Shift).Int.Byte.Int
+	             ELSE ch = (_ + Shift)
+	             ;
+	             ic = ch.Int.range255
+	             //----------------------------- 'store value 1 channel'
+	             bmp.Pixels[xd] = ic.Byte
+	             xd += 1
+	             xs += 1
+	             ------------------------ 
+	             s = src.Pixels[xs].Int
+	             LIKE ................... 'operation__8'
+	             s = src.Pixels[xs].Int
+	             LIKE ................... 'operation__8'
+            ;
+        ---------------------------------------------------------------->
+        -------------------------------- 'remember to unlock'
+        bmp.Unlock(TRUE)
+        src.Unlock(FALSE)
+    ;
+    CASE Progress <> NONE ?
+         Progress.Set_progress(100) ;
+    .
+    
+    
+        
+METHOD offset_stamp_via_file(
+{Bitmap_direct} bmp|_result)
+    :
+	INT dxs|_delta_source = 1
+    INT bmp_bpp|_bytes_per_pixel = bmp.Bpp / 8
+    INT src_bpp|_bytes_per_pixel = bmp.Bpp / 8
+    BYTE src_pixels[].Allocate(bmp.Row_width)
+    CASE Progress <> NONE ? Progress.Set_progress(0) ;
+    REAL sh|ift_to_100 = Shift/255.0*100
+   
+    FOR y IN [0 TO bmp.Height-1] :
+        CASE Stamp_parameters_.Cancelling ? BREAK y ;
+        bmp.Lock_rows(y, 1, TRUE)
+        INT ys|_ource = y + Offset_Y
+        CASE ys < 0 || ys >= bmp.Height ? CONTINUE y ;
+
+        ys = _ * bmp.Row_width
+        File_stream.Set_position(ys.To_long, 'BEGINNING')
+        NONE= File_stream.Read_bytes(src_pixels[0 TO *])
+        --------------------------------- 'do not forget to unlock!'
+        
+        INT yd|estination = 0
+        CASE Progress <> NONE ?
+             Progress.Set_progress(y * 100.0 / bmp.Height)
+             Progress.Form_.Long_operation.Indicate(TRUE)
+        ;
+        FOR x IN [0 TO bmp.Width-1] :
+            INT xd|source_position = yd + x * bmp_bpp
+            INT xs|source_position = (x + Offset_X) * src_bpp 
+            CASE Bitmaps_24 ? 
+	             REAL s_ch|annel_source = src_pixels[xs+2].Int 
+	            			 + src_pixels[xs+1].Int/256.0
+	            			 + src_pixels[xs].Int/65536.0
+	            			 
+	             REAL ch|annel_value
+	             LIKE offset_stamp ..................... 'operation__24'
+            ELSE 
+                 INT s|rc_channel
+				 INT v|alue_channel
+				 INT ic|hannel
+				 --------------------------- 'handle r, g, b sequentionally'
+				 s = src_pixels[xs].Int
+				 LIKE offset_stamp ..................... 'operation__8'
+				 s = src_pixels[xs].Int
+				 LIKE offset_stamp ..................... 'operation__8'
+				 s = src_pixels[xs].Int
+				 LIKE offset_stamp ..................... 'operation__8'
+			;
+		;
+        -------------------------------- 'remember to unlock'
+        bmp.Unlock(TRUE)
+    ;
+
+    CASE Progress <> NONE ?
+         Progress.Set_progress(100) ;
+    .
+    
+METHOD radial_stamp(
+{Bitmap_direct} bmp|_result, {Bitmap_direct} src|_source_bitmap) 
+    :
+	INT dxs|_delta_source = 1
+	INT bmp_bpp|_bytes_per_pixel = bmp.Bpp / 8
+	INT src_bpp|_bytes_per_pixel = src.Bpp / 8 
+	REAL d|istance = ((Offset_X + Offset_Y)/2.0)
+	CASE d.Abs < 1 ? d = 1 ;
+	CASE Progress <> NONE ? Progress.Set_progress(0) ;
+	REAL sh|ift_to_100 = Shift/255.0*100         
+	src.Lock(TRUE)
+    FOR y IN [0 TO bmp.Height-1] :
+    	CASE Stamp_parameters_.Cancelling ? BREAK y ;
+    	bmp.Lock_rows(y, 1, TRUE)
+    	------------------------------ 'do not forget to unlock!'
+        CASE Progress <> NONE ? 
+             Progress.Set_progress(y * 100.0 / bmp.Height)
+             Progress.Form_.Long_operation.Indicate(TRUE) 
+        ;
+        FOR x IN [0 TO bmp.Width-1] :
+            INT xd|estination_byte_position = x * bmp_bpp //+ yy
+            {point} vec|tor_from_center = Pt(x - Center.X, y - Center.Y)
+            REAL size_v|ector = Distance(vec, Pt(0, 0))
+            {point} norm|alized_v|ector = Pt(vec.X/size_v, vec.Y/size_v)
+            {point} shifted_pos|ition = Pt(x + norm.X * d, y + norm.Y * d)
+            INT ys|ource_row = shifted_pos.Y.Int * src.Row_width 
+            INT xs|ource_position = ys + shifted_pos.X.Int * src_bpp //+ from_ch
+            ------------------ 'second source point'
+			{point} sh2|_pos_2 = Pt(x + norm.X * (d + 1), y + norm.Y * (d + 1))
+			INT ys2|ource_row = sh2.Y.Int * src.Row_width
+			INT xs2|ource_position = ys2 + sh2.X.Int * src_bpp
+			REAL s_ch|annel_souce
+			REAL ch|annel_value
+            REAL ch1|annel_value
+            REAL ch2|_averaged
+            CASE ?
+            [Experimental == 4] ?
+            	 ------------------------ 'square__border', REUSED
+                 xs = y * src.Row_width + x * src_bpp
+                 ch = src.Pixels[xs+2].Int
+					 + src.Pixels[xs+1].Int/256.0 + src.Pixels[xs].Int/65536.0
+					 
+                 ch1 = ch
+                 FOR y_d IN [y-d.Int TO y+d.Int] <-----------------------
+                     FOR x_d IN [x-d.Int TO x+d.Int] :
+                         xs2 = y_d * src.Row_width + x_d * src_bpp 
+                     	 ch2 = src.Pixels[xs2+2].Int
+			            	 + src.Pixels[xs2+1].Int/256.0
+			            	 + src.Pixels[xs2].Int/65536.0
+			            	 
+                     	 CASE (ch2 - ch).Abs > (ch1 - ch).Abs ? 
+                     	      ch1 = ch2 ;
+                     	      
+                     	 CASE y-d.Int < y_d < y+d.Int ? 
+                     	      NEXT x_d += 2*d.Int-1
+                     	 ELSE NEXT x_d += 1 ;
+                     ;
+                 ------------------------------------------------------>
+                 
+                 s_ch = ch * (d - d.Int) + ch1 * (1 - d + d.Int)
+                 ------------------------------------------------
+                 LIKE offset_stamp ..................... 'operation__24'
+            [Experimental == 5] ?
+                LIKE .............. 'square__border',
+                	BUT (y-d.Int < y_d < y+d.Int==>FALSE)
+                	
+                 LIKE offset_stamp ..................... 'operation__24'
+            [Experimental == 6] ?
+                 xs = y * src.Row_width + x * src_bpp
+                 ch = src.Pixels[xs+2].Int
+					 + src.Pixels[xs+1].Int/256.0 + src.Pixels[xs].Int/65536.0
+					 
+                 ch1 = ch
+                 FOR y_d IN [y-d.Int-1 TO y+d.Int+1] <-----------------------
+                     FOR x_d IN [x-d.Int-1 TO x+d.Int+1] :
+                         CASE ((x_d-x).qq+(y_d-y).qq).Int != d.qq.Int ?
+                              CONTINUE x_d ;
+                         xs2 = y_d * src.Row_width + x_d * src_bpp 
+                     	 ch2 = src.Pixels[xs2+2].Int
+			            	 + src.Pixels[xs2+1].Int/256.0
+			            	 + src.Pixels[xs2].Int/65536.0
+			            	 
+                     	 CASE (ch2 - ch).Abs > (ch1 - ch).Abs ? 
+                     	      ch1 = ch2 ;
+                     ;
+                 ------------------------------------------------------>
+                 
+                 s_ch = ch * (d - d.Int) + ch1 * (1 - d + d.Int)
+                 ------------------------------------------------
+                 LIKE offset_stamp ..................... 'operation__24'
+            [Experimental == 7] ?
+                 xs = y * src.Row_width + x * src_bpp
+                 ch = src.Pixels[xs+2].Int
+					 + src.Pixels[xs+1].Int/256.0 + src.Pixels[xs].Int/65536.0
+					 
+                 ch1 = ch
+                 INT x_dd|epending
+                 -------------------------------- 'one__y', REUSED
+                 FOR $y_d IN [y-d.Int TO y+d.Int] <-----------------------
+                 	 x_dd = $x
+                     xs2 = y_d * src.Row_width + x_dd * src_bpp 
+                 	 ch2 = src.Pixels[xs2+2].Int
+		            	 + src.Pixels[xs2+1].Int/256.0
+		            	 + src.Pixels[xs2].Int/65536.0
+		            	 
+                 	 CASE (ch2 - ch).Abs > (ch1 - ch).Abs ? 
+                 	      ch1 = ch2 ;
+                 ------------------------------------------------------>
+            	 --------------------------------
+            	 LIKE ..... 'one__y', BUT($x==>$x+y_d-y)
+            	 LIKE ..... 'one__y', BUT($x==>$x+y-y_d)
+                 FOR $xx_d IN [x-d.Int TO x+d.Int] <-----------------------
+                     xs2 = y * src.Row_width + xx_d * src_bpp 
+                 	 ch2 = src.Pixels[xs2+2].Int
+		            	 + src.Pixels[xs2+1].Int/256.0
+		            	 + src.Pixels[xs2].Int/65536.0
+		            	 
+                 	 CASE (ch2 - ch).Abs > (ch1 - ch).Abs ? 
+                 	      ch1 = ch2 ;
+                 ------------------------------------------------------>
+                 s_ch = ch * (d - d.Int) + ch1 * (1 - d + d.Int)
+                 ------------------------------------------------
+                 LIKE offset_stamp ..................... 'operation__24'
+            [Experimental == 8] ?
+                 xs = y * src.Row_width + x * src_bpp
+                 ch = src.Pixels[xs+2].Int
+					 + src.Pixels[xs+1].Int/256.0 + src.Pixels[xs].Int/65536.0
+					 
+                 ch1 = ch
+                 ch2 = 0
+                 INT count_ch|annels_added = 0
+                 FOR y_d IN [y-d.Int TO y+d.Int] <-----------------------
+                     FOR x_d IN [x-d.Int TO x+d.Int] :
+                         xs2 = y_d * src.Row_width + x_d * src_bpp 
+                     	 ch2 += src.Pixels[xs2+2].Int
+			            	 + src.Pixels[xs2+1].Int/256.0
+			            	 + src.Pixels[xs2].Int/65536.0
+			            	 
+                     	 count_ch += 1
+                     	 CASE y-d.Int < y_d < y+d.Int ? 
+                     	      NEXT x_d += 2*d.Int-1
+                     	 ELSE NEXT x_d += 1 ;
+                     ;
+                 ------------------------------------------------------>
+                 CASE count_ch > 0 ? ch1 = ch2 / count_ch ;
+                 s_ch = ch * (d - d.Int) + ch1 * (1 - d + d.Int)
+                 LIKE offset_stamp ..................... 'operation__24'
+            [Bitmaps_24] ?
+	             ch2 = src.Pixels[xs2+2].Int
+	            	 + src.Pixels[xs2+1].Int/256.0
+	            	 + src.Pixels[xs2].Int/65536.0
+	            	 
+	             ch1 = src.Pixels[xs+2].Int
+	            	 + src.Pixels[xs+1].Int/256.0
+	            	 + src.Pixels[xs].Int/65536.0
+	            	 
+	             s_ch = ch1 * (d - d.Int) + ch2 * (1 - d + d.Int)
+	 
+				 LIKE offset_stamp ..................... 'operation__24'
+            ELSE
+				 INT v|alue_channel
+				 INT ic|hannel
+            	 INT ic1|_channel
+            	 INT ic2|_channel
+            	 REAL s|ource_channel_value
+            	 -------------------------------- 'next__in__8', REUSED
+            	 ic1 = src.Pixels[xs2].Int
+            	 ic2 = src.Pixels[xs].Int
+            	 s = ic1 * (d - d.Int) + ic2 * (1 - d + d.Int) 
+            	 --------------------------------
+            	 LIKE offset_stamp ..................... 'operation__8'
+            	 LIKE ........................... 'next__in__8'
+            	 LIKE offset_stamp ..................... 'operation__8'
+            	 LIKE ........................... 'next__in__8'
+            	 LIKE offset_stamp ..................... 'operation__8'
+            ;
+        ;
+        --------------------------- 'unlock!'
+        bmp.Unlock(TRUE)
+    ;
+    src.Unlock(FALSE)
+    CASE Progress <> NONE ? 
+         Progress.Set_progress(100) ;
+    .
+    
+    
+
+END
+
+*/
