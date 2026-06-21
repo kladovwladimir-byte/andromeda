@@ -10,7 +10,7 @@ IMPORT, DEBUG: {Bmp}, {Png} .
 INT Offset_X = 3
 INT Offset_Y = 3
 INT Value|_percents = 100
-INT Iterations|_to_mix
+//INT Iterations|_to_mix
 BOOL Stepwise
 BOOL Radial|_stamp
 INT Experimental

@@ -36,7 +36,7 @@ BASE CLASS: {Form_common} .
 {Checkbox} Scale_transparent
 {Paint_turtle} Transparency_on_off
 {Label} Label_iterations|_to_mix
-{Edit} Iterations_count
+{Edit} Iterations_count1
 {Paintbox} Paintbox_1
 {Paintbox} Paintbox_2
 {Label} Label_multiplier
@@ -49,10 +49,12 @@ BASE CLASS: {Form_common} .
 {Paint_turtle} Run_post_process_1
 {Combo} Post_processing_2
 {Paint_turtle} Run_post_process_2
+{Combo} Downscale_first
+{Label} Label_1 | _86755_726243
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://0D829EB5 Do not change manually (created by Form Designer)
+CONSTRUCT://40468133 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -86,7 +88,7 @@ PUSH in_construct = TRUE :
 	---------------------------- 'VALUE'
 	Value = New_edit(THIS, "VALUE")
 
-	...Set_text("1500")
+	...Set_text("5000")
 	---------------------- 'LABEL_SHIFT'
 	Label_shift = {Label}(Form_=THIS, Alias="LABEL_SHIFT")
 
@@ -151,6 +153,16 @@ PUSH in_construct = TRUE :
 	------------------------- 'RECENTER'
 	Recenter = New_checkbox(THIS, "RECENTER", "Recenter (after flat samp)")
 	...Set_checked(TRUE)
+	-------------------------- 'LABEL_1'
+	Label_1 = {Label}(Form_=THIS, Alias="LABEL_1")
+
+	...Set_text("First downscale:")
+	------------------ 'DOWNSCALE_FIRST'
+	Downscale_first = New_combo(THIS, "DOWNSCALE_FIRST", @
+"No"
+"1/2"
+"1/3"
+"1/4")
 	--------------------- 'BUTTON_STAMP'
 	Button_stamp = New_button(THIS, "BUTTON_STAMP", "Create stamp"._Create_stamp)
 	...Make_default
@@ -263,7 +275,7 @@ PUSH in_construct = TRUE :
 "14: Downscale 1/3"
 "15: Downscale 1/5"
 "16: Blur (d=|Multiplier|)"
-"17: To most dark neighbour"
+"17: To most dark neighbor"
 "18. Contrast dynamic (d=|Multiplier|)"
 "19: Retouch"
 "20. Average all next from current")
@@ -310,8 +322,8 @@ PUSH in_construct = TRUE :
 
 	...Set_text(
 "Iterations count, offset step, circle radius/final value:"._Iterations_count)
-	----------------- 'ITERATIONS_COUNT'
-	Iterations_count = New_edit(THIS, "ITERATIONS_COUNT")
+	---------------- 'ITERATIONS_COUNT1'
+	Iterations_count1 = New_edit(THIS, "ITERATIONS_COUNT1")
 
 	...Set_text("26 1 1 ^2 3 2 3 8 *2.5 13")
 	----------- 'LABEL_VIEW_TRANSPARENT'
@@ -360,6 +372,7 @@ METHOD after_CONSTRUCT:
 	Restore_bounds(Main_.App_name, "Stamp_param", "whlt") 	
 	------------------------
 	Stamp_type.Select(0)
+	Downscale_first.Select(0)
 	//hannel_fix.Select(0)
 	Convert_colors.Select(0)
 	Post_processing_1.Select(4-1)
@@ -392,6 +405,13 @@ OVERRIDE click :
         Main_.All_images[.Current_image] = b
         Main_.Satellite_param.Go_to_another_image
         Progress_1.Set_progress(0)
+        ----------------------------- 'also Commands_s[]<<... ?'
+        CASE Main_.Satellite_param.Commands_s[*]=="" ? 
+             INT last|_empty_command = Main_.Satellite_param.Commands_s[].Count
+             Main_.Satellite_param.Commands_s[].Delete(last-1) ;
+        Main_.Satellite_param.Commands_s[] << "SHIFT;" Shift_commands.Current 
+        	";M=" Edit_multiplier.Text
+        	
     ["TRANSPARENCY_ON_OFF"]:
         CASE Transparency_percents.Text.Int ? 
         [0]: Transparency_percents.Set_text("50")
@@ -405,18 +425,58 @@ OVERRIDE click :
     ["BUTTON_STAMP", 
      "RUN_POST_PROCESS_3", "RUN_POST_PROCESS_1", "RUN_POST_PROCESS_2"]:
         s_alias = sender_alias
+        --------------------------------- 'prepare__to__stamp', REUSED
+        CASE s_alias=="BUTTON_STAMP" ? 
+             Main_.Satellite_param.Commands_s[].Clear ;
         r_current = sender.{Paint_turtle}.Current
         BOOL do_backup = !(Key.Control
              && s_alias.Starting("RUN_POST_PROCESS") && r_current=="Grayscale")
              
-        INT i_pp|ost_processing_index_line = s_alias[*].Int
+        INT i_pp|ost_processing_index_line = s_alias.[*].Int
         DEBUG: "sender_alias:" sender_alias " r_current:" r_current 
         	 " i_pp=" i_pp  #NL ;
         CASE i_pp ? 
+        [0]: 
+        	 CASE !Executing ? 
+             	Main_.Satellite_param.Commands_s[] << "" 
+             	"CREATE;X=" X_offset.Text ";Y=" Y_offset.Text
+        		";V=" Value.Text ";S=" Shift_final.Text 
+        		";T=" Stamp_type.Current.S ";C=" Convert_colors.Current.S
+        		";U=" Use_file.Checked.S ";R=" Remove_old_stamp.Checked.S
+        		";r=" Recenter.Checked.S 
+        		";24=" Main_.Satellite_param.Use_bitmaps_24.S
+        		";D=" Downscale_first.Current.S
+             ;
+        		     
         [1]: {Combo} pp|ost_processing_combo = Post_processing_1 
         [2]: pp = Post_processing_2 
         [3]: pp = Post_processing_3 
         ;
+        -------------------- 'Commands_s[]<--Processing/Grayscale'
+        CASE pp != NONE ? 
+             CASE r_current == "Undo" ?
+                  FOR jj IN [Main_.Satellite_param.Commands_s[]
+                      .Count-1 DOWNTO 1]
+                  	  :
+                      CASE !Main_.Satellite_param.Commands_s[jj].Starting(
+                           i_pp.S ";") 
+                           ? CONTINUE jj ;
+                      DONE
+                      	FOR kk IN [Main_.Satellite_param.Commands_s[]
+                      		.Count-1 DOWNTO jj]
+                      		:
+                      	    Main_.Satellite_param.Commands_s[].Delete(kk) ;
+                      	BREAK jj
+                  ;
+             ELSE
+	              Main_.Satellite_param.Commands_s[] << i_pp.S ";" pp.Text 
+	              	";M=" Edit_multiplier.Text ";" r_current 
+             ;
+        ;
+        {Bitmap} cur|rent_image
+        {Bitmap} fr|om_bitmap
+        {Bitmap_24} temp_b|itmap
+        -------------------------- 'do__stamp', REUSED
         CASE Back_file[].Count==0 ? 
              Back_file[].Allocate(4) 
              Back_24[].Allocate(4) ;
@@ -436,6 +496,7 @@ OVERRIDE click :
              {Png}.To_file(Main_.Image, Back_file[i_pp], 100) 
              Back_24[i_pp] = Main_.Image.{Bitmap_24} != NONE
         ;
+        DEBUG: "s_alias=" s_alias " pp: " pp.Text #NL ;
         CASE ?
         [s_alias.Starting("RUN_POST_PROCESS") && r_current=="Grayscale"] ?
              r_current = "Processing"
@@ -446,15 +507,15 @@ OVERRIDE click :
         [s_alias.Starting("RUN_POST_PROCESS") && r_current=="Undo"] ?
         	 CASE Back_file[i_pp].Exists ? 
         	 	  DEBUG: "Undo from: " Back_file[i_pp] ", i_pp=" i_pp #NL ;
-        	 	  {Bitmap} cur|rent_image = Main_.Image
+        	 	  cur = Main_.Image
         	      Main_.All_images[.Current_image] = {Png}.From_file(
         	      		Back_file[i_pp], {reduce_size}.'FULL')
         	      		
         	      CASE Back_24[i_pp]{
         	      	   DEBUG: "restore (" Main_.Current_image 
         	      	   		  ") as {Bitmap_24}" #NL ;
-        	      	   {Bitmap} fr|om_bitmap = Main_.All_images[.Current_image]     
-        	      	   {Bitmap_24} temp_b|itmap = New_bitmap_24(
+        	      	   fr = Main_.All_images[.Current_image]     
+        	      	   temp_b = New_bitmap_24(
         	      	   		fr.Width, .Height, Holder)
         	      	   		
         	      	   fr.Draw(temp_b.Canvas, Pt(0,0))
@@ -474,6 +535,7 @@ OVERRIDE click :
         ELSE Run_button(pp.Current + 1)
         ;
         Main_.Satellite_param.Thumbnails.Invalidate_all
+        ----------------------------------
     ["COPY_BITMAP"]:
         CASE Main_.Satellite_param.Locked_images ? ==> ;
         {Bitmap} image_s|aving_TEMP = Main_.Image
@@ -500,7 +562,8 @@ OVERRIDE click :
         	NONE = image_s.To_clipboard     
         ;
     ; 
-    DEBUG: "Holder[]:" Holder.Count #NL ;
+    DEBUG: "Holder[]:" Holder.Count 
+    	 " Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
     .
     
 METHOD Make_scaled_prev2 ==> {Bitmap_direct}, NEW :
@@ -669,7 +732,7 @@ BOOL create_new|_image)
     stamp.Value = Value.Text.Int
     stamp.Convert_dist = Convert_colors.Current
     stamp.Use_file = Use_file.Checked
-    stamp.Iterations = Iterations_count.Text.Int
+    //stamp.Iterations = Iterations_count.Text.Int
     ------------------------------ 'more parameters'
     stamp.Radial = Stamp_type.Current IN [1, 3]
     stamp.Experimental = Stamp_type.Current
@@ -852,7 +915,7 @@ METHOD Run_button(INT Operation) :
     	     [11]: union_2_images(Value.Text.Int) //! TODO : {Bitmap_24} 
     	     		==>
     	  	 [12]: curves_rgb(b, 
-    	  	 		(255/Iterations_count.Text.Real.Max(1)).Int.Max(1))
+    	  	 		(255/Iterations_count1.Text.Real.Max(1)).Int.Max(1))
     	  	 		//! TODO : {Bitmap_24}
     	  	 [13]: b = Downscale(b, 2) //! TODO : {Bitmap_24} 
     	  	 [14]: b = Downscale(b, 3) //! TODO : {Bitmap_24} 
@@ -903,6 +966,23 @@ METHOD Run_button(INT Operation) :
               //   ", total = " Main_.All_images[].Count #NL 
               //   {Bmp}.To_file(Main_.Image, "Image.png")
               //;
+    	 ;
+    	 CASE Downscale_first.Current > 0 ? 
+    	      DEBUG: "downscaling to " Downscale_first.Text #NL ;
+    	      CASE Main_.Image.{Bitmap_direct} != NONE ? 
+    	           b = Main_.Image
+    	      ELSE b = New_bitmap_direct(Main_.Image.Width, .Height, 24)
+    	           Main_.Image.Draw(b.Canvas, Pt(0,0)) ;
+    	      PUSH Main_.Satellite_param.Use_bitmaps_24 = FALSE :
+    	           CASE Downscale_first.Current ? 
+    	           [1]: b = Downscale(b, 2) 
+    	           [2]: b = Downscale(b, 3) 
+    	           [3]: b = Downscale(b, 4) ;
+    	           Main_.Image = b
+    	           Main_.All_images[.Current_image] = b
+    	           Main_.All_scales[.Current_image] = NONE
+    	           Main_.Satellite_param.Thumbnails.Invalidate_all
+    	      ;
     	 ;
     	 CASE Stamp_type.Current ? 
     	 [0, 1, 4, 5, 6 ,7, 8, 9]:
@@ -1693,6 +1773,59 @@ METHOD avg_of_next_stamps(
 	    b.Unlock(TRUE) 
 	;
 	.
+
+BOOL Executing|_commands_stored
+	
+METHOD Execute_commands|_stored_earlier(STR Commands_s|equence[]) :
+	PUSH Executing = TRUE :
+	     FOR i_c|ommand IN [0 TO Commands_s[].Count-1] :
+	         STR instr|uctions[].Split(Commands_s[i_c], ";") 
+	    	 CASE instr[0] ? 
+	    	 ["CREATE"]:
+	    	     FOR j IN [1 TO instr[].Count-1] :
+	    	         STR key|_name = instr[j].[0]
+	    	         STR val|ue_of_key = instr[j].After("=")
+	    	         CASE key ? 
+	    	         ["X"]: X_offset.Set_text(val) 
+	    	         ["Y"]: Y_offset.Set_text(val) 
+	    	         ["V"]: Value.Set_text(val) 
+	    	         ["S"]: Shift_final.Set_text(val) 
+	    	         ["T"]: Stamp_type.Select(val.Int) 
+	    	         ["C"]: Convert_colors.Select(val.Int) 
+	    	         ["M"]: Edit_multiplier.Set_text(val) 
+	    	         ["U"]: Use_file.Set_checked(val=="TRUE")
+	    	         ["R"]: Remove_old_stamp.Set_checked(val=="TRUE")
+	    	         ["r"]: Recenter.Set_checked(val=="TRUE")
+	    	         ["2"]: Main_.Satellite_param.Use_bitmaps_24 = val=="TRUE"
+	    	         ["D"]: Downscale_first.Select(val.Int)
+	    	         ;
+	    	     ;
+	    	     //STR r_current = ""
+	    	     {Bitmap} cur|rent_image
+		         {Bitmap} fr|om_bitmap
+		         {Bitmap_24} temp_b|itmap
+	    	     LIKE click .............. 'prepare__to__stamp'
+	    	     LIKE click .............. 'do__stamp'
+	    	 ["1", "2", "3"]:
+	    	 	 CASE instr[0].Int ? 
+	    	 	 [1]: pp = Post_processing_1
+		         [2]: pp = Post_processing_2 
+		         [3]: pp = Post_processing_3  ;
+		         r_current = instr[*]
+		         pp.Select(instr[1].Int-1)
+		         CASE instr[2].Starting("M=") ?
+		              val = instr[1].After("=")
+		              Edit_multiplier.Set_text(val) ;
+		         s_alias = "RUN_POST_PROCESS_" instr[0]
+		         LIKE click .............. 'do__stamp'
+	    	 ;
+	    	 ---------------------- 're-paint'
+	    	 Main_.Satellite_param.Thumbnails.Invalidate_all
+	    	 Main_.Satellite_param.Process
+	    	 Main_.PBox.Invalidate_all
+	    	 Main_.Process
+	     ;
+    ; .
 
 
 END

@@ -1,6 +1,7 @@
 /*
 
-CLASS {Satellite_param|eters}, UNTESTED:
+CLASS {Satellite_param|eters}, 
+UNTESTED, BITWISE:
 
 IMPORT {Form_common}, {Main_plasma_tides}, {Localize_str},  {Form} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
@@ -8,6 +9,7 @@ IMPORT: {Bmp}, {Gif}, {Jpeg}, {Png}, {Tiff} .
 IMPORT: {Elliptic_orbit}, {Calculations_diff}, 
 		{Stamp_parameters}, {Bitmap_direct}, {Holder_bitmaps} ,
 		{Matrix}, {Vector} .
+IMPORT: {Transform_model} .
 
 
 BASE CLASS: {Form_common} .
@@ -30,10 +32,10 @@ BASE CLASS: {Form_common} .
 {Label} Label_starting_a|ngle
 {Label} LabelArmColors
 {Label} Label_activity_time
-{Dialog_file} Dialog_file
+{Dialog_file} Dialog_file_save
 {Dialog_file} Dialog_load
-{Button} Load_under_image
 {Dialog_file} Dialog_image
+{Button} Load_under_image
 {Combo} Show_spirals
 {Paint_turtle} Save_load
 {Paint_turtle} Add_spiral|_button
@@ -63,8 +65,6 @@ BASE CLASS: {Form_common} .
 {Edit} Mass_BH|ole
 {Button} Make_screenshot
 {Checkbox} Time_distortion
-{Edit} Filter_sat|ellites
-{Label} Label_Filter
 {Paint_turtle} Add_to_activity|_or_subtract
 {Timer} Timer_activate_filter
 {Label} LabelName
@@ -73,7 +73,6 @@ BASE CLASS: {Form_common} .
 {Paint_turtle} Back_direction
 {Label} Label_speed_filter
 {Edit} Filter_speed
-{Paint_turtle} Star_filter
 {Paint_turtle} BH_mass_change
 {Label} Label_max_dist|ance
 {Edit} Max_dist|ance_from_core
@@ -96,12 +95,16 @@ BASE CLASS: {Form_common} .
 {Paint_turtle} Change_scale
 {Edit} Edit_tilt
 {Label} Label_tilt
+{Label} Label_Filter
+{Edit} Filter_sat|ellites
+{Paint_turtle} Star_filter
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
+STR Url_loaded
 
-CONSTRUCT://518C0953 Do not change manually (created by Form Designer)
+CONSTRUCT://1D8F9E35 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -146,6 +149,22 @@ PUSH in_construct = TRUE :
 	...Set_height(18)
 
 	...Set_multi_button("Add,Also")
+	--------------------- 'LABEL_FILTER'
+	Label_Filter = {Label}(Form_=THIS, Alias="LABEL_FILTER")
+
+	...Set_text("Filter satellites:")
+	----------------------- 'FILTER_SAT'
+	Filter_sat = New_edit(THIS, "FILTER_SAT"), >> grayable[]
+
+	...Set_text("*")
+	---------------------- 'STAR_FILTER'
+	Star_filter = New_paint_turtle_button(THIS,
+ "STAR_FILTER",
+ "20R30LLD(30BL30B)8")
+
+	...Set_width(18)
+
+	...Set_height(18)
 	------------------------ 'LABELNAME'
 	LabelName = {Label}(Form_=THIS, Alias="LABELNAME")
 
@@ -157,8 +176,8 @@ PUSH in_construct = TRUE :
 
 	...Filter = "Galaxy settings (*.gal)|*.gal"
 	...Default_ext = "gal"
-	---------------------- 'DIALOG_FILE'
-	Dialog_file = New_dialog_save(THIS, "DIALOG_FILE")
+	----------------- 'DIALOG_FILE_SAVE'
+	Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE_SAVE")
 
 	...Filter = "Galaxy settings (*.gal)|*.gal"
 	...Default_ext = "gal"
@@ -239,8 +258,10 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
-"#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS,
+ "FINAL_PLASMA_SPEED",
+ "#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -454,22 +475,6 @@ PUSH in_construct = TRUE :
 "Line around of the spiral, 100 pt wide, with lines"
 "Line around of the spiral, 200 pt wide, no lines"
 "Line around of the spiral, 200 pt wide, with lines")
-	--------------------- 'LABEL_FILTER'
-	Label_Filter = {Label}(Form_=THIS, Alias="LABEL_FILTER")
-
-	...Set_text("Filter satellites:")
-	----------------------- 'FILTER_SAT'
-	Filter_sat = New_edit(THIS, "FILTER_SAT"), >> grayable[]
-
-	...Set_text("*")
-	---------------------- 'STAR_FILTER'
-	Star_filter = New_paint_turtle_button(THIS,
- "STAR_FILTER",
- "20R30LLD(30BL30B)8")
-
-	...Set_width(18)
-
-	...Set_height(18)
 	--------------- 'LABEL_SPEED_FILTER'
 	Label_speed_filter = {Label}(Form_=THIS, Alias="LABEL_SPEED_FILTER")
 
@@ -598,6 +603,8 @@ PUSH in_construct = TRUE :
 
 	after_CONSTRUCT
 ; .
+
+STR Images_path
 
 
 METHOD button_colors :
@@ -1163,7 +1170,7 @@ OVERRIDE click :
 	         	(Main_.PBox.Width * k).Points_to_pixels,
 	         	(Main_.PBox.Height * k).Points_to_pixels, 32)
 	        	 
-	         Main_.Box_size = Pt(bmp.Width.Pixels_to_points,
+	         Main_.View_size = Pt(bmp.Width.Pixels_to_points,
 	          					 bmp.Height.Pixels_to_points)
 	         DEBUG: "created bitmap " bmp.Width " x " bmp.Height #NL ;
 	        	 
@@ -1357,13 +1364,22 @@ OVERRIDE click :
     ["LOAD_UNDER_IMAGE"]:
         CASE Locked_images ? ==> ;
     	Main_.Scaled_image = NONE
+    	CASE Images_path != "" ? 
+    	     Dialog_image.Initial_path = Images_path ;
         CASE !Dialog_image.Select_file ? 
+             CASE Main_.All_images[].Count==0 ? ==> ;
              CASE !ask("Remove all images?"._Remove_all_img) ? ==> ;
              Main_.Clear_images
              Thumbnails.Invalidate_all
              Main_.Invalidate ==> ;
+        Images_path = Dialog_image.Filename.Extract_path
         Main_.Save_current_image(TRUE)
         STR f|ilename = Dialog_image.Filename  
+        INT ch|ecksum = Calculate_checksum(f)
+        DEBUG:
+        	CASE ch==0 ? 
+        	     << "could not clalculate checksum!" #NL ;
+        ;
         CASE f.Ext.Lower ? 
         [".png"]: Main_.Image = {Png}.From_file(f, 'FULL')
         [".bmp"]: .. = {Bmp}.From_file(f)
@@ -1371,10 +1387,39 @@ OVERRIDE click :
         [".jpg", ".jpeg"]: .. = {Jpeg}.From_file(f, 'FULL')
         [".tif", ".tiff"]: .. = {Tiff}.From_file(f) ;
         //DEBUG: "loaded: =" Main_.Image.Width " x " .Height #NL ;
+        ------------------- 'loaded image'
         Main_.Update_caption(f.Extract_file_name)
+        Main_.Checksums_of_images[.Current_image] = ch
+        CASE Main_.Image.Width * .Height > 13_000_000 ? 
+             CASE ask("Image size is very big. Downscale it to fit 10M pixels ?"
+                  ) 
+                  ?
+                  FOR r IN [2 TO Main_.Image.Width] :
+                      CASE Main_.Image.Width * .Height / r / r <= 10_000_000 ? 
+                           Main_.Image = Downscale(_, r)
+                           BREAK r ;
+                  ;
+             ;
+        ;
+        DEBUG:
+              FOR i IN [0 TO Main_.All_images[].Count-1] :
+                  << i.S #TAB 
+                  << Main_.All_img_names[i] #TAB 
+                  << Main_.Checksums_of_images[i].Hex(8) #NL 
+              ;
+              ;
         Main_.Invalidate
         button_colors
         Thumbnails.Invalidate_all
+        CASE Url_loaded != "" ? 
+             CASE !ask("Assign the URL stored with the model to the image "
+                  "just loaded?"#NL Url_loaded) 
+                  ? 
+                  Url_loaded = "" ==> ;
+             Main_.All_img_URLs[.Current_image] = Url_loaded
+             Url_loaded = ""
+        ;
+        Auto_stamp
     ["OP_IMAGE"]:
         CASE Locked_images ? ==> ;
         Thumbnails.Invalidate_all     
@@ -1382,14 +1427,12 @@ OVERRIDE click :
         CASE Op_image.Current ? 
         ["Prev"]:
 		      CASE Main_.Current_image > 0 ? 
-		           CASE Key.Control ? 
-		                Exchange_img(Main_.Current_image-1) ;
+		           Exchange_img(Main_.Current_image-1)
 		           Go_to_prev_image ==>
 		      ELSE ==> ;
         ["Next"]:
 		 	  CASE Main_.Current_image < Main_.All_images[].Count-1 ?
-		           CASE Key.Control ? 
-		                Exchange_img(Main_.Current_image) ;
+		           Exchange_img(Main_.Current_image)
 		 	       Go_to_next_image ==>
 		 	  ELSE ==> ;
         ["Delete"]:
@@ -1404,12 +1447,17 @@ OVERRIDE click :
                  ;
                  Main_.Protected_img = -1 ;     
             Delete_current_image 
-            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count #NL ;
+            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count
+            	" Checksums: " Main_.Checksums_of_images[].Merge(",") 
+            	#NL ;
             ==>
         ["Dup"]:
             CASE Main_.All_images[].Count==0 ? ==> ;
             Main_.Save_current_image(TRUE) 
-            Main_.Update_caption(Main_.All_img_names[.Current_image])
+            Main_.Update_caption(Main_.All_img_names[.Current_image]
+              "" if(.All_img_URLs[.Current_image] != "",
+              " URL: " .All_img_URLs[.Current_image]))
+              
             CASE Key.Control ? 
                  Main_.All_images[.Current_image] = Main_.Image.Inverse_colors
                  Main_.All_scaled[.Current_image] = NONE
@@ -1417,14 +1465,15 @@ OVERRIDE click :
                  CASE Main_.Protected_img >= 0 ? 
                       Main_.Protected_img += 1 ;
                  ;
-            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count #NL ;
+        	------------------------
+            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
+            		" Checksums: " Main_.Checksums_of_images[].Merge(",")#NL ;
             ==>
         ["Stamp"]:
-        	CASE Stamp_param==NONE ? 
-            	 Stamp_param = {Stamp_parameters}(Main_= Main_, Screen_=Screen_)
-        	;
+            Provide_stamp_param
         	Stamp_param.Show
-            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count #NL ;
+            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
+            		" Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
             ==>
         ;
         Go_to_another_image
@@ -1441,7 +1490,11 @@ OVERRIDE click :
 	        ;
         	CASE Key.Shift ? 
         	     Satellite_num.Select(.Current+1)
-        	ELSE Satellite_num.Select(.Count-1) ;
+        	ELSE Satellite_num.Select(.Count-1)
+        		 s.Name = ""
+        		 Edit_name.Set_text("")
+        		 All_satellites[*] = s.CLONE 
+        	;
 	        Main_.Rescale
 	        Main_.Invalidate
         ELSE 
@@ -1527,10 +1580,21 @@ OVERRIDE click :
     ["SAVE_LOAD"]:
         CASE Save_load.Current ? 
         ["Save"]:
+            CASE Transform_model.Visible 
+                 && (Transform_model.Rotation.Text != "" 
+                 	|| Transform_model.Scaleing.Text !IN ["", "100"]
+                 	|| !((Transform_model.X_offset-0.5)*(.Y_offset-0.5)).Near(0)) 
+                 	?
+                    //DEBUG: "Rot=" Transform_model.Rotation.Text
+                    //    " Scale=" Transform_model.Scaleing.Text
+                    //    " X=" Transform_model.X_offset
+                    //    " Y=" Transform_model.Y_offset ;
+                 	message("Transformations did not applied. Either apply "
+                 	"them first or close Trasform model window.") ==> ;
     	    {In_file_config} c|onfiguration_temp
     		----------------------- 'select', REUSED     
-    	    CASE !Dialog_file.Select_file ? ==> ;
-    	    c = New_write_in_file_config(Dialog_file.Filename, "")
+    	    CASE !Dialog_file_save.Select_file ? ==> ;
+    	    c = New_write_in_file_config(Dialog_file_save.Filename, "")
     	    -----------------------
     	    PUSH c.No_write = TRUE :
 	    	     ----------------------- 'common parameters'
@@ -1541,9 +1605,9 @@ OVERRIDE click :
 	    	     c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
 	    	     c.Set_r("Offset_x", Main_.Offset_x)	
 	    	     c.Set_r("Offset_y", Main_.Offset_y)
-	    	     CASE !Scale_up_shift ? 
+	    	     //CASE !Scale_up_shift ? 
 		    	      c.Set_r("Image_rotate", Rotate_image.Text.Real)
-		    	      c.Set_r("Image_scale", Scale_image.Text.Real) ;
+		    	      c.Set_r("Image_scale", Scale_image.Text.Real) //;
 	    	     ----------------------- 'loop on all spirals'
 	    	     FOR i IN [0 TO Satellite_num.Count-1] :
 	    	         PUSH c.Section = (i+1).S :
@@ -1571,18 +1635,53 @@ OVERRIDE click :
 		    	           ...Set_b("LAST", i == Satellite_num.Count-1)
 	    	         ;
 	    	     ;
+	    	     CASE Commands_s[].Count > 0 ?
+	    	     	  DEBUG: "storing with commands (" Commands_s[].Count 
+	    	     	  		 ")"#NL ;
+	    	          FOR i IN [0 TO Main_.All_images[].Count-1] :
+                          //CASE Main_.All_img_names[i].Lower.Starting("st") ? 
+                          //     CONTINUE i ;
+	    	              ch = Main_.Checksums_of_images[i]
+	    	              CASE ch != 0 ? BREAK i ;
+	    	          ;
+	    	          DEBUG: "checksum=" ch #NL ;
+	    	          FOR i IN [0 TO Commands_s[].Count] :
+	    	              CASE ch==0 ? BREAK i ;
+	    	              CASE i==0 ? c.Set_s("Checksum", ch.Hex(8)) ;
+	    	              c.Set_s("Command" i.S, Commands_s[i])     
+	    	          ;
+	    	     ;
+	    	     ----------------------- 'store URL if it is single'
+	    	     STR url|_assigned = ""
+	    	     FOR u IN Main_.All_img_URLs[] :
+	    	     	 DEBUG: "i=" u.INDEX " u=" u " url=" url #NL ;
+	    	         CASE u=="" ? CONTINUE u ;
+	    	         CASE url != u  ? INT count_u|rls += 1 ;
+	    	         CASE count_u > 1 ? BREAK u ;
+	    	         url = u     
+	    	     ;
+	    	     c.Section = ""
+	    	     DEBUG: "count_u=" count_u " URL=" url #NL ;
+	    	     CASE count_u == 1 ? 
+	    	          c.Set_s("URL", url) 
+	    	          BOOL url_saved = TRUE
+	    	     ELSE c.Set_s("URL", "");
     	    ;
     	    c.Update
     	    ------------------ 'update__caption', REUSED
-    	    Label_file.Set_text(Dialog_file.Filename.Extract_file_name
+    	    Label_file.Set_text(Dialog_file_save.Filename.Extract_file_name
     	    	.Change_ext(""))
     	    ------------------
+    	    CASE url_saved ? 
+    	         message("Saved togeher with URL: " url) ;
         ["Load"]: 
+            Url_loaded = ""
         	INT was_cur|rent_spiral = Satellite_num.Current
         	LIKE .................. 'select', 
-        		 BUT(_write_==>_read_), (Dialog_file==>Dialog_load)*2
+        		 BUT(_write_==>_read_), (Dialog_file_save==>Dialog_load)*2
         		 
-        	Dialog_file.Filename = Dialog_load.Filename
+        	//SE Dialog_file_save.Filename == "" ? 
+        	     Dialog_file_save.Filename = Dialog_load.Filename //;
         	c.Section = ""
         	----------------------- 'renumber satellites sections'
         	STR sec|tions_list[]
@@ -1641,10 +1740,40 @@ OVERRIDE click :
         	;
         	CASE was_cur >= Satellite_num.Count ? was_cur = 0 ;
         	Satellite_num.Select(was_cur)
-        	LIKE ................ 'update__caption', BUT (g_file==>g_load)*?
+        	LIKE ............. 'update__caption', BUT (g_file_save==>g_load)*?
         	Main_.Invalidate     
         	Main_.Stack_undo[].Clear
         	Main_.Stack_redo[].Clear
+        	------------------ 'load URL'
+        	c.Section = ""
+        	url = c.Str("URL")
+        	CASE url != "" ? 
+        	     FOR u IN Main_.All_img_URLs[] :
+        	         CASE u==url ? 
+        	              url = "" 
+        	              BREAK u ;
+        	     ;
+        	;
+        	CASE url != "" 
+        	     && ask("URL was found been stored with the model loaded. "
+        		 " Copy it to the clipboard? "#NL url) 
+        		 ? 
+	        	 Url_loaded = url
+	        	 Text_to_clipboard(url)
+        	;
+        	--------------------------- 'load comands ?'
+        	Checksum_img_loaded = 0
+        	CASE c.Present("Checksum") ? 
+        	     ch = c.Str("Checksum").From_hex 
+        	     Checksum_img_loaded = ch ;
+			Provide_stamp_param
+        	Commands_s[].Clear
+    		FOR i IN [0 TO MAX_INT-1] :
+    		 	STR sc|ommand = c.Str("Command" i.S)
+    		 	CASE sc=="" ? BREAK i ;
+    		    Commands_s[] << sc
+    		;
+        	Auto_stamp
         ["Additionally"]:
             popup_menu(
 
@@ -2122,6 +2251,10 @@ OVERRIDE click :
 		Calc_bright_diff
 		)
 
+	""	Item(	"TRANSORM_MODEL",
+				"Transform model form"
+		)
+
 	""	Separator
 
 	""	Item(	"COPY_TABLE",
@@ -2144,7 +2277,8 @@ OVERRIDE click :
 
         ;
     ; 
-    DEBUG: "Holder[]:" Stamp_parameters.Holder.Count #NL ;
+    DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
+    		" Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
     .
     
 METHOD List_saved_positions ==> STR :
@@ -2193,7 +2327,35 @@ BOOL Control_to_change|_while_dragging_over_main_window = TRUE
 BOOL Auto_final_speed = FALSE
 BOOL Same_max_dist
 INT Show_speed
-    
+
+METHOD Provide_stamp_param :
+	CASE Stamp_param==NONE ?
+    	 Stamp_param = {Stamp_parameters}(Main_= Main_, Screen_=Screen_)
+	; .
+
+METHOD Auto_stamp :
+	CASE Main_.All_images[].Count==1 
+	     && Checksum_img_loaded 
+	     == Main_.Checksums_of_images[.Current_image]  
+	     && Commands_s[].Count > 0
+	     ?
+	     DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
+	       " ~ " Main_.Checksums_of_images[0 TO *].Merge(",")  #NL ;
+		 CASE !ask("The image loaded is single and it is the "
+		      "same as it was used to create the model loading. "
+		      "Create stamp now ?"._Image_detected_ask_create_stamp) 
+		      ? ==> ;
+		 Stamp_param.Close
+		 Stamp_param = NONE
+		 Provide_stamp_param
+		 Stamp_param.Show_no_activate
+		 Stamp_param.Execute_commands(Commands_s[])
+	; .
+	
+INT Checksum_img_loaded	
+STR Commands_s|equence[]
+
+
 METHOD caption_loc|alizable ==> STR :
 	= "Satellite /galaxy parameters"._CAPTION .
 
@@ -2201,6 +2363,17 @@ OVERRIDE mouse_down :
 	Main_.lmb_down = mouse_button == 'LMB'
 	CASE ?
 	[sender_alias == "THUMBNAILS"] ?
+		CASE mouse_button=='RMB' ?
+		     ----------------------------- 'menu on thumbnail'
+		     popup_menu(
+
+	""	Item(	"SET_URL",
+				"Set URL (from clipboard)"
+		))
+
+
+
+		;
 		Main_.Save_current_image(FALSE)
 	    FOR i IN [1 TO Main_.All_images[].Count-1] :
 	        CASE mouse.Y - Thumbnails.Bounds.Top > Y_starting_thumb[i] ?
@@ -2225,8 +2398,12 @@ OVERRIDE mouse_down :
 		 Start_program("explorer.exe", "/e,/n,"
 			 		"/select, "#QU save_scr #QU) ==> 
 	[sender_alias == "LOAD_UNDER_IMAGE" && mouse_button=='RMB'] ?
+		 DEBUG: "show explorer on [" Main_.All_img_names[.Current_image] 
+		 "]"#NL ;
 		 Start_program("explorer.exe", "/e,/n,"
-			 		"/select, "#QU Main_.All_img_names[.Current_image] #QU) ==> 
+			 		"/select, "#QU 
+			 		"" Images_path.Trailing_slash 
+			 		"" Main_.All_img_names[.Current_image] #QU) ==> 
 	;
 	CASE sender_alias.Starting("LABEL_") ? 
 	     dragging = sender 
@@ -2608,9 +2785,23 @@ METHOD paste_from_table :
 BOOL Use_bitmaps_24 = TRUE
 {point} Center_copied
 
+{Transform_model} Transform_model
+
 
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["TRANSORM_MODEL"]: 
+    	CASE Transform_model == NONE ? 
+    	     Transform_model = {Transform_model}(Main_= Main_, Screen_=Screen_)
+    	;
+    	Transform_model.Show
+    ["SET_URL"]: STR url|_to_set = Text_from_clipboard
+    		CASE !url.Lower.Starting("http")
+    		     && !url.Lower.Starting("ftp")
+    		     || ":" !IN url?
+    		     message("URL must start from 'http' or 'ftp' and contain ':'!") 
+    		     ==> ;
+    		Main_.All_img_URLs[.Current_image] = url
     ["SCREENSHOT_1024"]: Screenshot_scale = 1024
     ["SCREENSHOT_50"]: Screenshot_scale = 50
     ["SCREENSHOT_100"]: Screenshot_scale = 100
@@ -2973,21 +3164,25 @@ METHOD Go_to_prev_image :
 	Main_.Save_current_image(FALSE)
 	CASE Main_.Current_image <= 0 ? ==> ;
 	Main_.Current_image -= 1
-	Main_.Update_caption(.All_img_names[.Current_image]) 
-	Go_to_another_image .
+	----------------------------- 'update__caption', REUSED
+	Main_.Update_caption(.All_img_names[.Current_image]
+	  "" if(.All_img_URLs[.Current_image] != "", 
+	  " URL: " .All_img_URLs[.Current_image]))
+	-----------------------------
+	Go_to_another_image . 
 	
 METHOD Go_to_next_image :
     Main_.Save_current_image(FALSE)
     CASE Main_.Current_image >= Main_.All_images[].Count-1 ? ==> ;
     Main_.Current_image += 1
-    Main_.Update_caption(.All_img_names[.Current_image])
-    Go_to_another_image .
-	
+    LIKE Go_to_prev_image ............ 'update__caption'
+	Go_to_another_image . 
+
 METHOD Go_to_another_image :
 	-------------------------- 'go to another image'
 	Main_.Image = Main_.All_images[.Current_image]
 	Main_.Scaled_image = Main_.All_scaled[.Current_image]
-	Main_.Update_caption(.All_img_names[.Current_image])
+    LIKE Go_to_prev_image ............ 'update__caption'
 	Main_.Invalidate
     //DEBUG: ">>> " Main_.Current_image #NL ;
     Thumbnails.Invalidate_all
@@ -3000,8 +3195,10 @@ METHOD Delete_current_image :
     b_d = NONE
     ---------------------------------
     Main_.All_images[].Delete(ci)
+    Main_.Checksums_of_images[].Delete(ci)
 	Main_.All_scaled[].Delete(ci)
 	Main_.All_img_names[].Delete(ci)
+	Main_.All_img_URLs[].Delete(ci)
 	Main_.All_scales[].Delete(ci)
 	Main_.All_rotations[].Delete(ci)
 	CASE ci >= Main_.All_images[].Count ? 
@@ -3016,9 +3213,13 @@ METHOD Exchange_img(INT From|_image) :
     {Bitmap} temp|_image = Main_.All_images[From]
     Main_.All_images[From] = Main_.All_images[From+1]
     Main_.All_images[From+1] = temp
-    STR s_temp|_name = Main_.All_img_names[From]
+    STR s_temp|_name
+    ------------------------------------------------- 'xchg__s', REUSED
+    s_temp = Main_.All_img_names[From]
     Main_.All_img_names[From] = Main_.All_img_names[From+1]
     Main_.All_img_names[From+1] = s_temp
+    ------------------------------------------------
+    LIKE .......... 'xchg__s', BUT(img_names==>img_URLs)*4
     ------------------------------------------------ 'update current'
     Main_.Image = Main_.All_images[.Current_image]
     Go_to_another_image .
@@ -3029,6 +3230,7 @@ REAL Y_starting_thumb|nails[]
 
 OVERRIDE paint :
     CASE sender_alias ?
+    ["PAINTBOX_1"]: NONE
     ["THUMBNAILS"]:
         {Canvas} c|anves_dest = Thumbnails.Canvas
         c.Erase
@@ -3055,13 +3257,15 @@ OVERRIDE paint :
             b.Stretch_draw(c, dest)
             ----------------- 'draw size'
             PUSH c.Foreground = BLACK :
+            PUSH c.Quality = 'HIGH' :
                  FOR dd IN [1 DOWNTO 0] :
                      c.Text(Pt(2 + dd.Pixels_to_points, 
                      		   y+1 + dd.Pixels_to_points), 
                      		b.Width.S " x " b.Height.S)
-                     		
+
                      c.Foreground = WHITE 
                  ;
+            ;
             ;
         	y += dest.H + 1    
         ;
@@ -3437,30 +3641,24 @@ INT points|_wide, BOOL with_lines)
     .
     
     
-//FUNCTION Copy_to_bitmap_direct({Bitmap_direct} S|ource_bitmap,
-//    INT Xfrom|_position, INT Yfrom|_position,
-//    {Bitmap_direct} D|estination_bitmap)
-//    :
-//    INT yy|_destination = 0
-//    INT bpp_S|ource = S.Bpp / 8
-//    INT bpp_D|restination = D.Bpp / 8
-//    FOR y IN [Yfrom TO Yfrom+D.Height-1] :
-//        S.Lock_rows(y, 1, TRUE) 
-//        D.Lock_rows(yy, 1, TRUE)
-//        INT x_s|ource = Xfrom * bpp_S
-//        INT x_d|estination = 0
-//        FOR x IN [Xfrom TO Xfrom + D.Width-1] :
-//            D.Pixels[x_d] = S.Pixels[x_s]
-//            D.Pixels[x_d+1] = S.Pixels[x_s+1]
-//            D.Pixels[x_d+2] = S.Pixels[x_s+2]
-//            x_s += bpp_S
-//            x_d += bpp_D
-//        ;
-//        D.Unlock(TRUE)
-//        S.Unlock(FALSE)    
-//    ;
-//    .
+FUN Calculate_checksum(STR Path|_of_file) ==> INT :
+    {File_stream} f|ile_temp= Read_file_stream(Path) 
+    BYTE buf|fer_64K[].Allocate(65536)
+    RESULT = 0
+    FOR i IN [0 TO f.Size.To_int/65536] :
+        INT size|_read = f.Read_bytes(buf[0 TO *]) 
+        FOR j IN [0 TO size-1] :
+            RESULT = _.ShiftL(1) ^ buf[j].Int ;
+    ;
+    RESULT &= 0x7FFF_FFFF .
 
+FUN Downscale(
+{Bitmap} B|itmap_to_reduce, INT K|oefficient_2_or_more) ==> {Bitmap}, NEW
+    :
+    RESULT = New_bitmap(B.Width / K, .Height / K, 24) 
+    B.Stretch_draw(RESULT.Canvas, {rect}(Width=RESULT.Width.Pixels_to_points,
+    	Height=RESULT.Height.Pixels_to_points))
+    .
     
 	
 END

@@ -1,0 +1,204 @@
+/*
+
+CLASS {Transform_model|_form}, UNTESTED:
+
+IMPORT {Form_common} .
+IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
+IMPORT: {Main_plasma_tides}, {Satellite_param}.
+
+BASE CLASS: {Form_common} .
+
+{Label} Label_1 | _187005_726243
+{Edit} Rotation
+{Label} Label_2 | _457831_726243
+{Edit} Scaleing
+{Label} Label_3 | _51822_726243
+{Paintbox} Bar|_X_Y_offset
+{Button} Apply|_transform
+{Button} Reset_offsets
+{Checkbox} Checkbox_1
+
+METHOD before_CONSTRUCT: .
+
+{Main_plasma_tides} Main_ | form_, INIT, READ
+
+CONSTRUCT://235E8F05 Do not change manually (created by Form Designer)
+	before_CONSTRUCT
+PUSH in_construct = TRUE :
+	------------------------------------------------------------------ 'column '
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=120))
+
+	-------------------------- 'LABEL_1'
+	Label_1 = {Label}(Form_=THIS, Alias="LABEL_1")
+
+	...Set_text("Rotate (degrees):")
+	------------------------- 'ROTATION'
+	Rotation = New_edit(THIS, "ROTATION")
+	-------------------------- 'LABEL_2'
+	Label_2 = {Label}(Form_=THIS, Alias="LABEL_2")
+
+	...Set_text("Scale (%)")
+	------------------------- 'SCALEING'
+	Scaleing = New_edit(THIS, "SCALEING")
+
+	...Set_text("100")
+	-------------------------- 'LABEL_3'
+	Label_3 = {Label}(Form_=THIS, Alias="LABEL_3")
+
+	...Set_text("Move center:")
+	------------------------------ 'BAR'
+	Bar = New_paintbox(THIS, "BAR", "")
+	...Set_anchor_bottom(TRUE)
+	------------------------------------------------------------- 'column COL_1'
+	new_column("COL_1", 'BOTTOM', DEFAULT_SIZES)
+
+	---------------------------- 'APPLY'
+	Apply = New_button(THIS, "APPLY", "Apply")
+	-------------------- 'RESET_OFFSETS'
+	Reset_offsets = New_button(THIS, "RESET_OFFSETS", "Reset offsets")
+	----------------------------------------'form size / position'
+	Set_size(200, 200, 'FIT_TO_DISPLAY')
+	-------------------------- 'TITLE of Form'
+	Set_caption("Transform model")
+
+	after_CONSTRUCT
+; .
+
+METHOD after_CONSTRUCT: 
+	------------------------ 'bounds', REUSED
+	Restore_bounds(Main_.App_name, "Transform_model", "whlt") 	
+	------------------------
+	.
+	
+OVERRIDE moved :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+
+OVERRIDE resize :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .	
+
+
+
+OVERRIDE closing ==> {Form}.{action} :
+	RESULT = 'DECLINE'
+	Hide .
+	
+
+OVERRIDE value_change :
+    CASE sender_alias ?
+    ["SCALE_RELATIVE", "ROTATION", "SCALEING"]: Main_.PBox.Invalidate_all
+    ; .
+    
+    
+REAL X_offset = 0.5
+REAL Y_offset = 0.5
+
+
+OVERRIDE paint :
+    CASE sender_alias ?
+    ["BAR"]:
+        {Canvas} c|anvas_bar = Bar.Canvas
+        c.Foreground = WHITE
+        c.Background = NAVY
+        c.Erase
+        c.Line(Pt(Bar.Width*X_offset, 0), Pt(.Width*X_offset, .Height))
+        c.Line(Pt(0, Bar.Height*Y_offset), Pt(.Width, .Height*Y_offset))
+    ELSE BASE
+    ; .
+    
+    
+BOOL Applying
+
+OVERRIDE click :
+    CASE sender_alias ?
+    ["APPLY"]:
+        CASE Applying ? ==> ;
+        PUSH Applying = TRUE :
+	         FOR sat IN Main_.Satellite_param.All_satellites[] :
+	             sat.Rotate = (((_ + Rotation.Text.Real) * 10).Int)/10.0
+                 //sat.Center_gal.X += X_offset - 0.5
+                 //sat.Center_gal.Y += Y_offset - 0.5
+	             {point} v_move|vector_from_center_pt0_to_center_pt_of_current_sat
+		     	 REAL a|ngle_rotation_radians
+		     	 REAL len_v|ector
+				 -------------- 'center__point__moving'     
+		         {point} center_pt = Pt(sat.Center_gal.X + X_offset - 0.5,
+		                 				sat.Center_gal.Y + Y_offset - 0.5)
+		                 				 
+		         CASE sat.INDEX == 0 
+		              || sat.Name==Main_.Satellite_param.All_satellites[0].Name 
+		              	 != "" 
+		              ?
+		              {point} center_pt0 = center_pt.CLONE 
+		         ELSE
+		         	  v_move = Pt((center_pt.X - center_pt0.X), 
+		         	  	  	 	  (center_pt.Y - center_pt0.Y)) 
+		         	  	  	 	  
+	                  //DEBUG: "v_move=" v_move.X " " v_move.Y #NL ;
+		         	  
+		         	  CASE Rotation.Text != "" 
+		         	       ?
+		         	  	   a = Rotation.Text.Real
+		         	  	   a = -_ / 180 * PI
+		         	  	   v_move = Pt(Cos(a)*_.X + Sin(a)*_.Y,
+		         	  	   		  	  -Sin(a)*_.X + Cos(a)*_.Y)
+		         	  ;
+		         	  	  	 
+		         	  center_pt = center_pt0.Offset(v_move. X, .Y)
+		         ;
+		         sat.Center_gal = center_pt.CLONE
+	        	 Main_.Satellite_param.All_satellites[sat.INDEX] = sat.CLONE 
+	         ;
+	         REAL bw|idth_box = Main_.Satellite_param.Box_width.Text.Real
+	         CASE Scaleing.Text != "" ? 
+		          Main_.Satellite_param.Box_width.Set_text(
+			         	  (bw / (Scaleing.Text.Real/100.0)).Int.S)
+	         ;
+	         ----------------------- 'new clear'
+	         Rotation.Set_text("")
+	         Scaleing.Set_text("100")
+	         X_offset = 0.5
+	         Y_offset = 0.5
+	         Bar.Invalidate_all
+	         Main_.PBox.Invalidate_all
+        ;
+    ["RESET_OFFSETS"]: X_offset = 0
+    				   Y_offset = 0
+    				   Bar.Invalidate_all
+    				   Main_.PBox.Invalidate_all
+    ; .
+
+OVERRIDE mouse_down :
+	CASE !Bar.Bounds.Contains(mouse) ? ==> ;
+	L_down = mouse_button == 'LMB'
+	R_down = mouse_button == 'RMB'
+	Down_pos = mouse    
+	XY = Pt(X_offset, Y_offset) .
+	
+BOOL L_down|_left_mouse_button
+BOOL R_down|_right_mouse_button
+{point} Down_pos
+{point} XY|_start_offset
+	
+
+OVERRIDE mouse_move :
+	CASE ?
+	[!Bar.Bounds.Contains(mouse)] ? ==>     
+	[R_down] ?
+	     X_offset = (mouse.X - Bar.Bounds.Loc.X) * 1.0 / Bar.Width
+	     Y_offset = (mouse.Y - Bar.Bounds.Loc.Y) * 1.0 / Bar.Height
+	[L_down] ?
+		REAL m|iltiply = 0.1
+		CASE Key_pressed(CONTROL) ? m = 1 ;
+	    X_offset = XY.X + (mouse.X - Down_pos.X) * m / Bar.Width 
+	    Y_offset = XY.Y + (mouse.Y - Down_pos.Y) * m / Bar.Height
+	ELSE ==> ;
+	Bar.Invalidate_all
+	Main_.PBox.Invalidate_all .
+	
+
+OVERRIDE mouse_up :
+	L_down = FALSE
+	R_down = FALSE .
+END
+
+*/
