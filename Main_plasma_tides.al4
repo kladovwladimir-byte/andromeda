@@ -1580,7 +1580,7 @@ FUN mod360|_of_real_value(REAL v|alue_to_mod) ==> REAL :
 	    ELSE BREAK i ;
 	; .
 	
-FUN mod180|_or_minus_180(REAL V|alue_180) ==> REAL :
+FUN mod180|_or_minus_180(REAL V|alue_180) ==> REAL, PUBLIC :
     RESULT = V.mod360
     CASE RESULT > 180 ? RESULT -= 360 ; 
     CASE RESULT < -180 ? RESULT += 360 ; .
@@ -1676,12 +1676,16 @@ OVERRIDE mouse_move :
 		 	  REAL rA|ngle_rotate
 		 	  REAL cA|ngle_correction 
 		 	  REAL sA|ngle_correction 
+		 	  REAL dX|_delta_X
+		 	  REAL dY|_delta_Y
 		      ------------------------------ 'drag__scaled', REUSED
-		      rA = -Satellite_param.Rotate_image.Text.Real
+		      rA = Satellite_param.Rotate_image.Text.Real
 		      cA = Cos(rA*PI/180)
 		      sA = Sin(rA*PI/180)
-		      ShiftX = shift0.X + cA * (mouse.X - mouse_down0.X) / w1 * 100
-		      ShiftY = shift0.Y + cA * (mouse.Y - mouse_down0.Y) / w1 * 100
+		      dX = mouse.X - mouse_down0.X
+		      dY = mouse.Y - mouse_down0.Y
+		      ShiftX = shift0.X + (cA * dX + sA * dY) / w1 * 100
+		      ShiftY = shift0.Y + (-sA * dX + cA * dY) / w1 * 100
 		      CASE ?
 		      [ShiftX < -199] ? ShiftX = -199 
 		      [ShiftX > 199] ? ShiftX = 199 ;
@@ -1690,24 +1694,22 @@ OVERRIDE mouse_move :
 		      [ShiftY > 199] ? ShiftY = 199 ;
 		      CASE Key.Shift ? 
 		           CASE ?
-                   //[35 <= Arctan2((mouse.Y-mouse_down0.Y).Abs,
-                   // (mouse.X-mouse_down0.X).Abs) * 180 / PI <= 55
-                   // && (mouse.X-mouse_down0.X).Abs > 20
-                   // && (mouse.Y-mouse_down0.Y).Abs > 20] ?
-                   //     ShiftY = shift0.Y + (ShiftX - shift0.X).Abs
-                   //         * Sign(ShiftY - shift0.Y)
 		           [(mouse.X-mouse_down0.X).Abs >= (mouse.Y-mouse_down0.Y).Abs]?
 		                ShiftY = shift0.Y
 		           ELSE ShiftX = shift0.X ;
 		      ;
 		      ------------------------------
 		 [!Satellite_param.Control_drag_center || Key.Control] ?
-			  Offset_x = offset0.X + (mouse.X - mouse_down0.X) / w1
-			  Offset_y = offset0.Y + (mouse.Y - mouse_down0.Y) / w1
+		      rA = Satellite_param.Rotate_image.Text.Real
+		      cA = Cos(rA*PI/180)
+		      sA = Sin(rA*PI/180)
+		 	  dX = mouse.X - mouse_down0.X
+		      dY = mouse.Y - mouse_down0.Y
+			  Offset_x = offset0.X + (cA * dX + sA * dY) / w1
+			  Offset_y = offset0.Y + (-sA * dX + cA * dY) / w1
 			  ------------------ 'check__range', REUSED
 			  CASE ?
 			  [Offset_x < -0.5] ? Offset_x = -0.5 
-			  //[Offset_x > 0.999] ? Offset_x = 0.999 ;
 			  [Offset_x > 1.5] ? Offset_x = 1.5 ;
 			  ------------------
 			  LIKE ............. 'check__range', BUT (_x==>_y)*4
@@ -1724,7 +1726,6 @@ OVERRIDE mouse_move :
 		 REAL old_val|ue = Satellite_param.Rotate_proj.Text.Real
 		 --------------------------------------- 'rotate__proj', REUSED
 		 new_val = proj0 + (mouse.X - mouse_down0.X) / PBox.Width * 360
-		 //new_val = _.mod360
 		 new_val = _.mod180
 		 CASE !Key.Shift ? new_val = _.Int ;
 		 Satellite_param.Rotate_proj.Set_text(new_val.S)
@@ -1743,13 +1744,9 @@ OVERRIDE mouse_move :
 		 NONE = Satellite_param.hint_a(.Satellite_num.Current, TRUE)
 	[change_tilt] ?
 		 new_val = tilt_0 + (mouse.X - mouse_down0.X) / PBox.Width * 360
-		 //new_val = _.mod360
 		 new_val = _.mod180
 		 CASE !Key.Shift ? new_val = _.Int ;
 		 Satellite_param.Edit_tilt.Set_text(new_val.S)
-         //CASE Satellite_param.Start_proj_together ? 
-         //     LIKE ................. 'rotate__proj',
-         //     BUT (proj0 +==>proj0 -) ;
 		 NONE = Satellite_param.hint_a(.Satellite_num.Current, TRUE)
 	     
 	[change_incl] ?
@@ -1821,6 +1818,9 @@ OVERRIDE key_down ==> {Form}.{action} :
 	     CASE Key.Special ?
 	     [LETTER_Z]: 
 	         CASE Key.Shift ? Satellite_param.Redo ELSE Satellite_param.Undo ; 
+	     [LETTER_T]:
+	         CASE !Satellite_param.Transform_model.Visible ? 
+	              Satellite_param.Show_transform_model ;
 	     ;
 	; .
 	     

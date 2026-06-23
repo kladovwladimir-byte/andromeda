@@ -2787,14 +2787,16 @@ BOOL Use_bitmaps_24 = TRUE
 
 {Transform_model} Transform_model
 
+METHOD Show_transform_model :
+	CASE Transform_model == NONE ? 
+	     Transform_model = {Transform_model}(Main_= Main_, Screen_=Screen_)
+	;
+	Transform_model.Show .
+
 
 OVERRIDE menu_item :
     CASE menu_alias ?
-    ["TRANSORM_MODEL"]: 
-    	CASE Transform_model == NONE ? 
-    	     Transform_model = {Transform_model}(Main_= Main_, Screen_=Screen_)
-    	;
-    	Transform_model.Show
+    ["TRANSORM_MODEL"]: Show_transform_model
     ["SET_URL"]: STR url|_to_set = Text_from_clipboard
     		CASE !url.Lower.Starting("http")
     		     && !url.Lower.Starting("ftp")
@@ -3048,6 +3050,8 @@ OVERRIDE key_down ==> {Form}.{action} :
 	     CASE Key.Special ?
 	     [LETTER_Z]: 
 	         CASE Key.Shift ? Redo ELSE Undo ; 
+	     [LETTER_T]:
+	     	 CASE !Transform_model.Visible ? Show_transform_model ;
 	     ;
 	ELSE
 		 CASE Key.Special ? 

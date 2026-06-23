@@ -8,34 +8,35 @@ IMPORT: {Main_plasma_tides}, {Satellite_param}.
 
 BASE CLASS: {Form_common} .
 
-{Label} Label_1 | _187005_726243
 {Edit} Rotation
-{Label} Label_2 | _457831_726243
 {Edit} Scaleing
 {Label} Label_3 | _51822_726243
 {Paintbox} Bar|_X_Y_offset
 {Button} Apply|_transform
 {Button} Reset_offsets
 {Checkbox} Checkbox_1
+{Label} Label_4 | _277633_726243
+{Label} Label_scale
+{Label} Label_rotate
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_ | form_, INIT, READ
 
-CONSTRUCT://235E8F05 Do not change manually (created by Form Designer)
+CONSTRUCT://3AE04ED7 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
 	new_column("", 'CENTER', {Form}.{sizes_col}(Label=120))
 
-	-------------------------- 'LABEL_1'
-	Label_1 = {Label}(Form_=THIS, Alias="LABEL_1")
+	--------------------- 'LABEL_ROTATE'
+	Label_rotate = {Label}(Form_=THIS, Alias="LABEL_ROTATE")
 
 	...Set_text("Rotate (degrees):")
 	------------------------- 'ROTATION'
 	Rotation = New_edit(THIS, "ROTATION")
-	-------------------------- 'LABEL_2'
-	Label_2 = {Label}(Form_=THIS, Alias="LABEL_2")
+	---------------------- 'LABEL_SCALE'
+	Label_scale = {Label}(Form_=THIS, Alias="LABEL_SCALE")
 
 	...Set_text("Scale (%)")
 	------------------------- 'SCALEING'
@@ -56,6 +57,10 @@ PUSH in_construct = TRUE :
 	Apply = New_button(THIS, "APPLY", "Apply")
 	-------------------- 'RESET_OFFSETS'
 	Reset_offsets = New_button(THIS, "RESET_OFFSETS", "Reset offsets")
+	-------------------------- 'LABEL_4'
+	Label_4 = {Label}(Form_=THIS, Alias="LABEL_4")
+
+	...Set_text("Control+T shows me")
 	----------------------------------------'form size / position'
 	Set_size(200, 200, 'FIT_TO_DISPLAY')
 	-------------------------- 'TITLE of Form'
@@ -168,11 +173,29 @@ OVERRIDE click :
     ; .
 
 OVERRIDE mouse_down :
-	CASE !Bar.Bounds.Contains(mouse) ? ==> ;
+	change_scale = FALSE
+	change_rotate = FALSE
+	CASE ?
+	[Bar.Bounds.Contains(mouse) ] ?
+		XY = Pt(X_offset, Y_offset)
+	ELSE
+		------------------------------------ 'changing scale or rotation ?'
+		change_scale = Label_scale.Bounds.Contains(mouse)
+		change_rotate = Label_rotate.Bounds.Contains(mouse)
+		CASE !change_rotate && !change_rotate ? ==> ;
+	;
+	scale_0 = Scaleing.Text.Real
+	rotate_0 = Rotation.Text.Real
+	Down_pos = mouse    
 	L_down = mouse_button == 'LMB'
 	R_down = mouse_button == 'RMB'
-	Down_pos = mouse    
-	XY = Pt(X_offset, Y_offset) .
+	.
+	
+BOOL change_scale
+REAL scale_0|_when_down
+BOOL change_rotate
+REAL rotate_0|_when_down
+
 	
 BOOL L_down|_left_mouse_button
 BOOL R_down|_right_mouse_button
@@ -183,6 +206,16 @@ BOOL R_down|_right_mouse_button
 OVERRIDE mouse_move :
 	CASE ?
 	[!Bar.Bounds.Contains(mouse)] ? ==>     
+	[change_rotate] ? 
+	    REAL new_v|alue = rotate_0 
+	    		+ (mouse.X - Down_pos.X) * 180 / Label_rotate.Width
+	    		
+	    new_v = ((_ * 10).Int / 10.0).mod180
+	    Rotation.Set_text(new_v.S)
+	[change_scale] ? 
+	    new_v = scale_0 + (mouse.X - Down_pos.X) * scale_0 / 2
+	    new_v = ((_ * 10).Int / 10.0)
+	    Scaleing.Set_text(new_v.S)
 	[R_down] ?
 	     X_offset = (mouse.X - Bar.Bounds.Loc.X) * 1.0 / Bar.Width
 	     Y_offset = (mouse.Y - Bar.Bounds.Loc.Y) * 1.0 / Bar.Height
