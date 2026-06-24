@@ -148,9 +148,15 @@ OVERRIDE paint :
              LIKE ............. 'text', BUT(BLUE==>ORANGE)
         ;
         CASE Satellite_param.Stamp_param.Executing ? 
-             PUSH c.Foreground = ORANGE :
+             PUSH c.Foreground = BLACK :
              PUSH c.Font.Size = View_size.X /500 * 10 :
-                  c.Text(Pt(10, 10), "PLEASE WAIT..."._Please_wait) ;
+                  FOR delta IN [1 DOWNTO 0] :
+                      c.Text(Pt(10+delta, 10+delta), 
+                      	"PLEASE WAIT..."._Please_wait)
+                      	
+                      c.Foreground = ORANGE
+                  ;
+             ;
              ;
         ;
     ELSE BASE
@@ -1705,8 +1711,14 @@ OVERRIDE mouse_move :
 		      sA = Sin(rA*PI/180)
 		 	  dX = mouse.X - mouse_down0.X
 		      dY = mouse.Y - mouse_down0.Y
-			  Offset_x = offset0.X + (cA * dX + sA * dY) / w1
-			  Offset_y = offset0.Y + (-sA * dX + cA * dY) / w1
+		      ------------------------------------- 'corrections'
+		      REAL box_w|idth = Satellite_param.Box_width.Text.Real
+		      CASE Key_pressed(SHIFT) ? w1 *= 10 ;
+		      ------------------------------------- 'new offset'     
+			  Offset_x = offset0.X + (cA * dX + sA * dY) / w1 * box_w / 100000
+			  Offset_y = offset0.Y + (-sA * dX + cA * dY) / w1 * box_w / 100000
+			  DEBUG: "dX=" dX " dY=" dY " w1=" w1 " Offset_x=" Offset_x
+			  		" Offset_y=" Offset_y " Offset0-" offset0.S #NL ;
 			  ------------------ 'check__range', REUSED
 			  CASE ?
 			  [Offset_x < -0.5] ? Offset_x = -0.5 

@@ -175,6 +175,9 @@ OVERRIDE click :
 OVERRIDE mouse_down :
 	change_scale = FALSE
 	change_rotate = FALSE
+	scale_0 = Scaleing.Text.Real
+	rotate_0 = Rotation.Text.Real
+	Down_pos = mouse    
 	CASE ?
 	[Bar.Bounds.Contains(mouse) ] ?
 		XY = Pt(X_offset, Y_offset)
@@ -184,9 +187,6 @@ OVERRIDE mouse_down :
 		change_rotate = Label_rotate.Bounds.Contains(mouse)
 		CASE !change_rotate && !change_rotate ? ==> ;
 	;
-	scale_0 = Scaleing.Text.Real
-	rotate_0 = Rotation.Text.Real
-	Down_pos = mouse    
 	L_down = mouse_button == 'LMB'
 	R_down = mouse_button == 'RMB'
 	.
@@ -205,7 +205,6 @@ BOOL R_down|_right_mouse_button
 
 OVERRIDE mouse_move :
 	CASE ?
-	[!Bar.Bounds.Contains(mouse)] ? ==>     
 	[change_rotate] ? 
 	    REAL new_v|alue = rotate_0 
 	    		+ (mouse.X - Down_pos.X) * 180 / Label_rotate.Width
@@ -213,23 +212,35 @@ OVERRIDE mouse_move :
 	    new_v = ((_ * 10).Int / 10.0).mod180
 	    Rotation.Set_text(new_v.S)
 	[change_scale] ? 
-	    new_v = scale_0 + (mouse.X - Down_pos.X) * scale_0 / 2
+	    new_v = scale_0 + (mouse.X - Down_pos.X) * scale_0 /Label_scale.Width /2
 	    new_v = ((_ * 10).Int / 10.0)
+	DEBUG: "sc0=" scale_0 " mX=" mouse.X "dX=" Down_pos.X 
+		" Lw=" Label_scale.Width " new_v=" new_v #NL ;
 	    Scaleing.Set_text(new_v.S)
+	[!Bar.Bounds.Contains(mouse)] ? ==>     	
 	[R_down] ?
 	     X_offset = (mouse.X - Bar.Bounds.Loc.X) * 1.0 / Bar.Width
 	     Y_offset = (mouse.Y - Bar.Bounds.Loc.Y) * 1.0 / Bar.Height
 	[L_down] ?
 		REAL m|iltiply = 0.1
+		REAL dX|_delta_X = mouse.X - Down_pos.X
+		REAL dY|_delta_Y = mouse.Y - Down_pos.Y
+		REAL rA|ngle_rotate = Main_.Satellite_param.Rotate_image.Text.Real
+		REAL cA|ngle_correction = Cos(rA*PI/180)
+		REAL sA|ngle_correction = Sin(rA*PI/180)
 		CASE Key_pressed(CONTROL) ? m = 1 ;
-	    X_offset = XY.X + (mouse.X - Down_pos.X) * m / Bar.Width 
-	    Y_offset = XY.Y + (mouse.Y - Down_pos.Y) * m / Bar.Height
+		--------------------------------- 'calculate new offsets now'     
+	    X_offset = XY.X + (cA * dX + sA * dY) * m / Bar.Width 
+	    Y_offset = XY.Y + (-sA * dX + cA* dY) * m / Bar.Height
 	ELSE ==> ;
 	Bar.Invalidate_all
-	Main_.PBox.Invalidate_all .
+	Main_.PBox.Invalidate_all 
+	Main_.Process .
 	
 
 OVERRIDE mouse_up :
+		     change_rotate = FALSE
+		     change_scale = FALSE
 	L_down = FALSE
 	R_down = FALSE .
 END
