@@ -5,7 +5,7 @@ UNTESTED, BITWISE:
 
 IMPORT {Form_common}, {Main_plasma_tides}, {Localize_str},  {Form} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
-IMPORT: {Bmp}, {Gif}, {Jpeg}, {Png}, {Tiff} .
+IMPORT: {Bmp}, {Gif}, {Jpeg}, {Png}, {Tiff}, {WebP} .
 IMPORT: {Elliptic_orbit}, {Calculations_diff}, 
 		{Stamp_parameters}, {Bitmap_direct}, {Holder_bitmaps} ,
 		{Matrix}, {Vector} .
@@ -104,7 +104,7 @@ METHOD before_CONSTRUCT: .
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://1D8F9E35 Do not change manually (created by Form Designer)
+CONSTRUCT://11D483E4 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -258,10 +258,9 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS,
- "FINAL_PLASMA_SPEED",
- "#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", #LF
+"#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -494,7 +493,10 @@ PUSH in_construct = TRUE :
 	--------------------- 'DIALOG_IMAGE'
 	Dialog_image = New_dialog_open(THIS, "DIALOG_IMAGE")
 
-	...Filter = "All supported images|*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif"
+
+	...Filter = "All supported images|*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif;"
+"*webp"
+
 	----------------------- 'LABEL_FILE'
 	Label_file = New_read_only_edit(THIS, "LABEL_FILE")
 	------------------------------------------------------------- 'column COL_3'
@@ -1385,13 +1387,25 @@ OVERRIDE click :
         [".bmp"]: .. = {Bmp}.From_file(f)
         [".gif"]: .. = {Gif}.Load(Path= f).Bitmap
         [".jpg", ".jpeg"]: .. = {Jpeg}.From_file(f, 'FULL')
-        [".tif", ".tiff"]: .. = {Tiff}.From_file(f) ;
+        [".tif", ".tiff"]: .. = {Tiff}.From_file(f) 
+        [".webp"]: .. = {WebP}.From_file(f) 
+        	CASE Main_.Image.Width==0 ? 
+        	     message("To open WEBP images format properly the libwebp64.dll"
+        	     " should be available either via the system Path environment "
+        	     "variable or placed in the same directpry where the "
+        	     "GalaxyModel.exe is located. You can freely obtain it with "
+        	     "some 3rd party applications or seoarately. PLEASE DON'T "
+        	     "DOWNLOAD this file from arbitrary and unverified sources, "
+        	     "malware is often distributed under the guise of this dll. ") ;
+        ;
         //DEBUG: "loaded: =" Main_.Image.Width " x " .Height #NL ;
         ------------------- 'loaded image'
         Main_.Update_caption(f.Extract_file_name)
         Main_.Checksums_of_images[.Current_image] = ch
         CASE Main_.Image.Width * .Height > 13_000_000 ? 
-             CASE ask("Image size is very big. Downscale it to fit 10M pixels ?"
+             CASE ask("Image size (" Main_.Image.Width.S 
+                  " x " Main_.Image.Height.S ") is very big. "
+                  "Downscale it to fit 10M pixels ?"
                   ) 
                   ?
                   FOR r IN [2 TO Main_.Image.Width] :
@@ -1750,9 +1764,10 @@ OVERRIDE click :
         	CASE url != "" ? 
         	     FOR u IN Main_.All_img_URLs[] :
         	         CASE u==url ? 
-        	              url = "" 
+        	              //url = "" 
         	              BREAK u ;
         	     ;
+        	     Main_.All_img_URLs[0] = url
         	;
         	CASE url != "" 
         	     && ask("URL was found been stored with the model loaded. "
@@ -2360,7 +2375,9 @@ METHOD caption_loc|alizable ==> STR :
 	= "Satellite /galaxy parameters"._CAPTION .
 
 OVERRIDE mouse_down :
-	Main_.lmb_down = mouse_button == 'LMB'
+CASE processing_mouse ? ==> ;
+PUSH processing_mouse = TRUE :
+    Main_.lmb_down = mouse_button == 'LMB'
 	CASE ?
 	[sender_alias == "THUMBNAILS"] ?
 		CASE mouse_button=='RMB' ?
@@ -2501,7 +2518,7 @@ OVERRIDE mouse_down :
 	     range_fr = editing.Text.Real - (.Real - _)/5 
 	     range_to = editing.Text.Real + (_ - .Real)/5
 	     ;
-	.
+;	.
 	
 BOOL Enable_filtering = TRUE
 BOOL Filtering_by_speed = TRUE
@@ -2520,9 +2537,13 @@ REAL start_value_activity
 REAL start_value_box_width
 BOOL down_with_shift
 
+BOOL processing_mouse
+
 
 OVERRIDE mouse_move :
-	CASE dragging==NONE || !Main_.Global_L_button ? ==> ;
+CASE processing_mouse ? ==> ;
+PUSH processing_mouse = TRUE :
+    CASE dragging==NONE || !Main_.Global_L_button ? ==> ;
 	BOOL neg|ative = value_start < 0 
 		 .. &&= Deviation_angle != editing != Inclination
 		 .. &&= Final_deviation != editing
@@ -2619,7 +2640,8 @@ OVERRIDE mouse_move :
 	;
 	Copy_params_same_spiral
 	Main_.PBox.Invalidate_all 
-	.
+	Main_.Process
+;	.
 	
 METHOD Copy_params_same_spiral :
 	INT ncur|rent_satellite = Satellite_num.Current
@@ -2684,7 +2706,9 @@ METHOD Change_hint :
 	; .
 
 OVERRIDE mouse_up :
-	    CASE editing != NONE ?
+CASE processing_mouse ? ==> ;
+PUSH processing_mouse = TRUE :
+    CASE editing != NONE ?
 	         REAL new_val|ue = editing.Text.Real
 			 CASE is_0_360 ? 
 			      CASE new_val >= 180 ? new_val -= 360 ;
@@ -2699,7 +2723,7 @@ OVERRIDE mouse_up :
 	     NONE = hint_a(Satellite_num.Current, TRUE)
 	     editing = NONE
 	ELSE Change_hint ;
-	button_colors .
+	button_colors ; .
 	
 METHOD copy_to_table :
     STR t|able_result[] << "Parameter \ Satellite"

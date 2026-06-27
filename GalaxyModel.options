@@ -29,6 +29,7 @@ Main_plasma_tides.al4
 /NOINDEXING
 /$ICON=Icon32x32-plasma-tidesl.ico
 /$NOLONGOP
+/$FRAMEWORK=4.8
 
 ################################################################
 [Delphi_vcl]

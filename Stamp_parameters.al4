@@ -431,6 +431,7 @@ OVERRIDE click :
         r_current = sender.{Paint_turtle}.Current
         BOOL do_backup = !(Key.Control
              && s_alias.Starting("RUN_POST_PROCESS") && r_current=="Grayscale")
+             && !Executing
              
         INT i_pp|ost_processing_index_line = s_alias.[*].Int
         DEBUG: "sender_alias:" sender_alias " r_current:" r_current 
