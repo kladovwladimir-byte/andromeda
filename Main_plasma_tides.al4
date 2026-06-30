@@ -89,6 +89,7 @@ METHOD Rescale|_image :
     
 {Bitmap} All_images[]
 INT Checksums_of_images[]
+INT Checksums2_of_images[]
 {Bitmap} All_scaled|_images[]
 STR All_img_names[]
 STR All_img_URLs[]
@@ -99,7 +100,9 @@ REAL All_rotations|_of_images[]
 METHOD Clear_images :
     All_images[].Clear
     Checksums_of_images[].Clear
+    Checksums2_of_images[].Clear
     All_scaled[].Clear
+    ------------------------- 'clear other mages attributes'
     All_img_names[].Clear
     All_img_URLs[].Clear
     All_scales[].Clear
@@ -147,7 +150,7 @@ OVERRIDE paint :
              t = _ " P: " rotate_p.mod180.S_float(2)
              LIKE ............. 'text', BUT(BLUE==>ORANGE)
         ;
-        CASE Satellite_param.Stamp_param.Executing ? 
+        CASE Satellite_param.Stamp_param.Executing > 0 ? 
              PUSH c.Foreground = BLACK :
              PUSH c.Font.Size = View_size.X /500 * 10 :
                   FOR delta IN [1 DOWNTO 0] :
@@ -362,7 +365,9 @@ METHOD Paint_to2(
 	scale_size = ww1
 	max_dist = Satellite_param.Max_dist.Text.Real
 	box_size = Satellite_param.Box_width.Text.Real
-	CASE Satellite_param.Transform_model.Visible ?
+	CASE Satellite_param.Transform_model.Visible 
+	     && Satellite_param.Transform_model.Active.Checked
+	     ?
          CASE Satellite_param.Transform_model.Scaleing.Text != "" ? 
               box_size = _ 
                    / Satellite_param.Transform_model.Scaleing.Text.Real * 100
@@ -572,7 +577,9 @@ METHOD Paint_to2(
 	FOR sat1 IN Satellite_param.All_satellites[] :
 		CASE Skip_all_sat ? CONTINUE sat1 ;
     ------------------- 'using transform_model?'
-    CASE Satellite_param.Transform_model.Visible ? 
+    CASE Satellite_param.Transform_model.Visible 
+         && Satellite_param.Transform_model.Active.Checked
+         ?
          REAL add_offset_x = Satellite_param.Transform_model.X_offset - 0.5
          REAL add_offset_y = Satellite_param.Transform_model.Y_offset - 0.5
          //CASE Satellite_param.Transform_model.Scaleing.Text != "" ?
@@ -607,7 +614,8 @@ METHOD Paint_to2(
                   //DEBUG: "v_move=" v_move.X " " v_move.Y #NL ;
 	         	  
 	         	  CASE Satellite_param.Transform_model.Visible 
-	         	       && .Rotation.Text != "" 
+	         	       && Satellite_param.Transform_model.Active.Checked
+	         	       && Satellite_param.Transform_model.Rotation.Text != "" 
 	         	       ?
 	         	  	   a = Satellite_param.Transform_model.Rotation.Text.Real
 	         	  	   a = -_ / 180 * PI
@@ -1440,7 +1448,9 @@ METHOD provide_matrices(
          u += Satellite_param.Rotate_image.Text.Real * PI / 180
          m = Satellite_param.Scale_image.Text.Real / 100.0
     ;
-    CASE Satellite_param.Transform_model.Visible ? 
+    CASE Satellite_param.Transform_model.Visible 
+         && Satellite_param.Transform_model.Active.Checked
+         ?
          u -= Satellite_param.Transform_model.Rotation.Text.Real / 180 * PI
          //CASE Satellite_param.Transform_model.Scaleing.Text != "" ? 
          //     CASE Satellite_param.Transform_model.Scale_relative.Checked ? 
@@ -1836,7 +1846,8 @@ OVERRIDE key_down ==> {Form}.{action} :
 	     [LETTER_Z]: 
 	         CASE Key.Shift ? Satellite_param.Redo ELSE Satellite_param.Undo ; 
 	     [LETTER_T]:
-	         CASE !Satellite_param.Transform_model.Visible ? 
+	         CASE !Satellite_param.Transform_model.Visible
+	              ?
 	              Satellite_param.Show_transform_model ;
 	     ;
 	; .
@@ -1871,8 +1882,11 @@ OVERRIDE mouse_wheel ==> BOOL :
 		 Satellite_param.Thumbnails.Invalidate_all
 		 ==>                    
 	;
-		
-	CASE vertical_wheel < 0 ? 
+	Select_spiral_by_wheel(vertical_wheel)
+	.
+	
+METHOD Select_spiral_by_wheel(REAL Delta|_wheel) :
+	CASE Delta < 0 ? 
 	     CASE Satellite_param.Satellite_num.Current < .Count-1 ?
 	          INT to_s|atellite_index = Satellite_param.Satellite_num.Current+1
 	          //Satellite_param.Satellite_num.Select(.Current+1)
@@ -1898,6 +1912,7 @@ METHOD Save_current_image(BOOL Add_new|_image) :
 	     CASE All_images[].Count < Current_image ? 
 	          All_images[] << Image
 	          Checksums_of_images[] << Checksums_of_images[Current_image]
+	          Checksums2_of_images[] << Checksums2_of_images[Current_image]
 	          All_scaled[] << NONE // Scaled_image 
 	          All_scales[] << Satellite_param.Scale_image.Text.Real
 	          All_rotations[] << Satellite_param.Rotate_image.Text.Real
@@ -1914,13 +1929,16 @@ METHOD Save_current_image(BOOL Add_new|_image) :
     	 ---------------------- 'duplicate current image'     
     	 {Bitmap} copy|_temp = New_bitmap(Image.Width, .Height, 24)
     	 INT ch|ecksum = Checksums_of_images[Current_image]
+    	 INT ch2|ecksum = Checksums2_of_images[Current_image]
     	 Image.Draw(copy.Canvas, Pt(0,0))
     	 Scaled_image = NONE
     	 ---------------------- 'insert it'
 	     All_images[].Insert(Current_image, copy)
-	     Checksums_of_images[].Insert(Current_image, ch)
 	     All_scaled[].Insert(Current_image, Scaled_image)
 	     All_scales[].Insert(Current_image, Satellite_param.Scale_image.Text.Real)
+	     ---------------------- 'and its attributes'
+	     Checksums_of_images[].Insert(Current_image, ch)
+	     Checksums2_of_images[].Insert(Current_image, ch2)
 	     All_rotations[].Insert(Current_image, Satellite_param.Rotate_image.Text
 	     	.Real)
 	     	

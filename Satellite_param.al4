@@ -1378,15 +1378,17 @@ OVERRIDE click :
         Main_.Save_current_image(TRUE)
         STR f|ilename = Dialog_image.Filename  
         INT ch|ecksum = Calculate_checksum(f)
+        INT ch2|ecksum = Calculate_checksum2(f)
         DEBUG:
         	CASE ch==0 ? 
         	     << "could not clalculate checksum!" #NL ;
         ;
-        CASE f.Ext.Lower ? 
+        STR format|_actual = Actual_format(f)
+        CASE format ? 
         [".png"]: Main_.Image = {Png}.From_file(f, 'FULL')
         [".bmp"]: .. = {Bmp}.From_file(f)
         [".gif"]: .. = {Gif}.Load(Path= f).Bitmap
-        [".jpg", ".jpeg"]: .. = {Jpeg}.From_file(f, 'FULL')
+        [".jpg", ".jpeg", ".jpe"]: .. = {Jpeg}.From_file(f, 'FULL')
         [".tif", ".tiff"]: .. = {Tiff}.From_file(f) 
         [".webp"]: .. = {WebP}.From_file(f) 
         	CASE Main_.Image.Width==0 ? 
@@ -1402,6 +1404,7 @@ OVERRIDE click :
         ------------------- 'loaded image'
         Main_.Update_caption(f.Extract_file_name)
         Main_.Checksums_of_images[.Current_image] = ch
+        Main_.Checksums2_of_images[.Current_image] = ch2
         CASE Main_.Image.Width * .Height > 13_000_000 ? 
              CASE ask("Image size (" Main_.Image.Width.S 
                   " x " Main_.Image.Height.S ") is very big. "
@@ -1419,7 +1422,8 @@ OVERRIDE click :
               FOR i IN [0 TO Main_.All_images[].Count-1] :
                   << i.S #TAB 
                   << Main_.All_img_names[i] #TAB 
-                  << Main_.Checksums_of_images[i].Hex(8) #NL 
+                  << Main_.Checksums_of_images[i].Hex(8) #TAB 
+                  << Main_.Checksums2_of_images[i].Hex(8) #NL 
               ;
               ;
         Main_.Invalidate
@@ -1462,7 +1466,8 @@ OVERRIDE click :
                  Main_.Protected_img = -1 ;     
             Delete_current_image 
             DEBUG: "Holder[]:" Stamp_parameters.Holder.Count
-            	" Checksums: " Main_.Checksums_of_images[].Merge(",") 
+            	" Checksums: " Main_.Checksums_of_images[].Merge(",")
+            	" Ch2: " Main_.Checksums2_of_images[].Merge(",") 
             	#NL ;
             ==>
         ["Dup"]:
@@ -1481,13 +1486,15 @@ OVERRIDE click :
                  ;
         	------------------------
             DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
-            		" Checksums: " Main_.Checksums_of_images[].Merge(",")#NL ;
+            		" Checksums: " Main_.Checksums_of_images[].Merge(",")
+            		" Ch2: " Main_.Checksums2_of_images[].Merge(",") #NL ;
             ==>
         ["Stamp"]:
             Provide_stamp_param
         	Stamp_param.Show
             DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
-            		" Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
+            		" Checksums: " Main_.Checksums_of_images[].Merge(",")
+            		" Ch2: " Main_.Checksums2_of_images[].Merge(",") #NL ;
             ==>
         ;
         Go_to_another_image
@@ -1656,12 +1663,16 @@ OVERRIDE click :
                           //CASE Main_.All_img_names[i].Lower.Starting("st") ? 
                           //     CONTINUE i ;
 	    	              ch = Main_.Checksums_of_images[i]
-	    	              CASE ch != 0 ? BREAK i ;
+	    	              ch2 = Main_.Checksums2_of_images[i]
+	    	              CASE ch != 0 || ch2 != 0 ? BREAK i ;
 	    	          ;
-	    	          DEBUG: "checksum=" ch #NL ;
+	    	          DEBUG: "checksums=" ch "," ch2 #NL ;
 	    	          FOR i IN [0 TO Commands_s[].Count] :
-	    	              CASE ch==0 ? BREAK i ;
-	    	              CASE i==0 ? c.Set_s("Checksum", ch.Hex(8)) ;
+	    	              CASE ch==0 && ch2==0 ? BREAK i ;
+	    	              CASE i==0 ? 
+	    	                   c.Set_s("Checksum", ch.Hex(8)) 
+	    	                   c.Set_s("Checksum2", ch2.Hex(8)) 
+	    	              ;
 	    	              c.Set_s("Command" i.S, Commands_s[i])     
 	    	          ;
 	    	     ;
@@ -1670,13 +1681,13 @@ OVERRIDE click :
 	    	     FOR u IN Main_.All_img_URLs[] :
 	    	     	 DEBUG: "i=" u.INDEX " u=" u " url=" url #NL ;
 	    	         CASE u=="" ? CONTINUE u ;
-	    	         CASE url != u  ? INT count_u|rls += 1 ;
-	    	         CASE count_u > 1 ? BREAK u ;
-	    	         url = u     
+	    	         //CASE url != u  ? INT count_u|rls += 1 ;
+	    	         //CASE count_u > 1 ? BREAK u ;
+	    	         url = u
+	    	         BREAK u     
 	    	     ;
 	    	     c.Section = ""
-	    	     DEBUG: "count_u=" count_u " URL=" url #NL ;
-	    	     CASE count_u == 1 ? 
+	    	     CASE url!="" ? 
 	    	          c.Set_s("URL", url) 
 	    	          BOOL url_saved = TRUE
 	    	     ELSE c.Set_s("URL", "");
@@ -1778,9 +1789,13 @@ OVERRIDE click :
         	;
         	--------------------------- 'load comands ?'
         	Checksum_img_loaded = 0
+        	Checksum2_img_loaded = 0
         	CASE c.Present("Checksum") ? 
         	     ch = c.Str("Checksum").From_hex 
         	     Checksum_img_loaded = ch ;
+        	CASE c.Present("Checksum2") ? 
+        	     ch2 = c.Str("Checksum2").From_hex 
+        	     Checksum2_img_loaded = ch2 ;
 			Provide_stamp_param
         	Commands_s[].Clear
     		FOR i IN [0 TO MAX_INT-1] :
@@ -2293,7 +2308,8 @@ OVERRIDE click :
         ;
     ; 
     DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
-    		" Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
+    		" Checksums: " Main_.Checksums_of_images[].Merge(",") 
+    		" Ch2: " Main_.Checksums2_of_images[].Merge(",") #NL ;
     .
     
 METHOD List_saved_positions ==> STR :
@@ -2327,7 +2343,7 @@ BOOL Scale_up_shift = TRUE
 BOOL Control_drag_center = TRUE
 BOOL Show_cone
 BOOL Show_deviations
-REAL Show_crossing = 0.5
+REAL Show_crossing = 1 //0.5
 INT Screenshot_scale = 100
 
 INT Draw_as|_1points_2polygons_3zigzag_neg1linesAndPoints
@@ -2350,8 +2366,10 @@ METHOD Provide_stamp_param :
 
 METHOD Auto_stamp :
 	CASE Main_.All_images[].Count==1 
-	     && Checksum_img_loaded 
-	     == Main_.Checksums_of_images[.Current_image]  
+	     && (Checksum_img_loaded 
+	     == Main_.Checksums_of_images[.Current_image]
+	     || Checksum_img_loaded==0 && 0!=Checksum2_img_loaded 
+	     == Main_.Checksums2_of_images[.Current_image])  
 	     && Commands_s[].Count > 0
 	     ?
 	     DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
@@ -2368,6 +2386,7 @@ METHOD Auto_stamp :
 	; .
 	
 INT Checksum_img_loaded	
+INT Checksum2_img_loaded	
 STR Commands_s|equence[]
 
 
@@ -3223,8 +3242,10 @@ METHOD Delete_current_image :
     b_d = NONE
     ---------------------------------
     Main_.All_images[].Delete(ci)
-    Main_.Checksums_of_images[].Delete(ci)
 	Main_.All_scaled[].Delete(ci)
+	--------------------------------- 'and attributes'
+    Main_.Checksums_of_images[].Delete(ci)
+    Main_.Checksums2_of_images[].Delete(ci)
 	Main_.All_img_names[].Delete(ci)
 	Main_.All_img_URLs[].Delete(ci)
 	Main_.All_scales[].Delete(ci)
@@ -3680,6 +3701,18 @@ FUN Calculate_checksum(STR Path|_of_file) ==> INT :
     ;
     RESULT &= 0x7FFF_FFFF .
 
+FUN Calculate_checksum2(STR Path|_of_file) ==> INT :
+    {File_stream} f|ile_temp= Read_file_stream(Path) 
+    BYTE buf|fer_64K[].Allocate(65536)
+    RESULT = 0
+    FOR i IN [0 TO f.Size.To_int/65536] :
+        INT size|_read = f.Read_bytes(buf[0 TO *]) 
+        FOR j IN [0 TO size-1] :
+            RESULT = _.ShiftL(1) ^ buf[j].Int ^ (RESULT.ShiftR(31) & 1) ;
+    ;
+    RESULT &= 0x7FFF_FFFF .
+
+
 FUN Downscale(
 {Bitmap} B|itmap_to_reduce, INT K|oefficient_2_or_more) ==> {Bitmap}, NEW
     :
@@ -3687,6 +3720,22 @@ FUN Downscale(
     B.Stretch_draw(RESULT.Canvas, {rect}(Width=RESULT.Width.Pixels_to_points,
     	Height=RESULT.Height.Pixels_to_points))
     .
+    
+FUN Actual_format(STR Path|_to_image_file) ==> STR :
+    {File_stream} in|_temp_file = Read_file_stream(Path) 
+    BYTE start|_bytes[]
+    NONE = in.Load_bytes(start[], 20)
+    in.Close
+    STR ss|tart_chars = Bytes_to_ascii(start[0 TO *]).Upper
+    CASE ?
+    ["PNG" IN ss] ? RESULT = ".png" ==> 
+    ["JFIF" IN ss] ? .. = ".jpg" ==>
+    ["TIF" IN ss] ? .. = ".tif" ==>
+    ["GIF" IN ss] ? .. = ".gif" ==>
+    ["WEBP" IN ss] ? ..= ".webp" ==>
+    [ss.Starting("BM")] ? ..=".bmp" ==> 
+    ;
+    RESULT = Path.Lower.Ext .
     
 	
 END

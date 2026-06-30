@@ -54,7 +54,7 @@ BASE CLASS: {Form_common} .
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://40468133 Do not change manually (created by Form Designer)
+CONSTRUCT://020EE9DD Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -187,7 +187,7 @@ PUSH in_construct = TRUE :
 "Post processing operation (always replaces current image):"._Post_processing)
 	---------------- 'POST_PROCESSING_1'
 	Post_processing_1 = New_combo(THIS, "POST_PROCESSING_1", @
-"1: Shift colot by Multiplier"
+"1: Shift color by Multiplier"
 "2: Grayscale"
 "3: Darken 25%"
 "4: Darken 50% high part only"
@@ -223,7 +223,7 @@ PUSH in_construct = TRUE :
 	...Set_fill(BLACK)
 	---------------- 'POST_PROCESSING_2'
 	Post_processing_2 = New_combo(THIS, "POST_PROCESSING_2", @
-"1: Shift colot by Multiplier"
+"1: Shift color by Multiplier"
 "2: Grayscale"
 "3: Darken 25%"
 "4: Darken 50% high part only"
@@ -259,7 +259,7 @@ PUSH in_construct = TRUE :
 	...Set_fill(BLACK)
 	---------------- 'POST_PROCESSING_3'
 	Post_processing_3 = New_combo(THIS, "POST_PROCESSING_3", @
-"1: Shift colot by Multiplier"
+"1: Shift color by Multiplier"
 "2: Grayscale"
 "3: Darken 25%"
 "4: Darken 50% high part only"
@@ -352,6 +352,7 @@ PUSH in_construct = TRUE :
 	Progress_1 = New_progress(THIS, "PROGRESS_1")
 	-------------------------- 'P_HINTS'
 	P_Hints = New_paintbox(THIS, "P_HINTS", "")
+	...Set_anchor_bottom(TRUE)
 
 	...Set_height(38)
 	----------------------------------------'form size / position'
@@ -360,7 +361,6 @@ PUSH in_construct = TRUE :
 	Set_caption("3D-stamp parameters"._3D_stamp)
 
 	after_CONSTRUCT
-	Auto_height
 ; .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
@@ -412,6 +412,8 @@ OVERRIDE click :
         Main_.Satellite_param.Commands_s[] << "SHIFT;" Shift_commands.Current 
         	";M=" Edit_multiplier.Text
         	
+        hint_from_commands
+        	
     ["TRANSPARENCY_ON_OFF"]:
         CASE Transparency_percents.Text.Int ? 
         [0]: Transparency_percents.Set_text("50")
@@ -431,14 +433,14 @@ OVERRIDE click :
         r_current = sender.{Paint_turtle}.Current
         BOOL do_backup = !(Key.Control
              && s_alias.Starting("RUN_POST_PROCESS") && r_current=="Grayscale")
-             && !Executing
+             && Executing == 0
              
         INT i_pp|ost_processing_index_line = s_alias.[*].Int
         DEBUG: "sender_alias:" sender_alias " r_current:" r_current 
         	 " i_pp=" i_pp  #NL ;
         CASE i_pp ? 
         [0]: 
-        	 CASE !Executing ? 
+        	 CASE Executing==0 ? 
              	Main_.Satellite_param.Commands_s[] << "" 
              	"CREATE;X=" X_offset.Text ";Y=" Y_offset.Text
         		";V=" Value.Text ";S=" Shift_final.Text 
@@ -448,7 +450,6 @@ OVERRIDE click :
         		";24=" Main_.Satellite_param.Use_bitmaps_24.S
         		";D=" Downscale_first.Current.S
              ;
-        		     
         [1]: {Combo} pp|ost_processing_combo = Post_processing_1 
         [2]: pp = Post_processing_2 
         [3]: pp = Post_processing_3 
@@ -474,6 +475,7 @@ OVERRIDE click :
 	              	";M=" Edit_multiplier.Text ";" r_current 
              ;
         ;
+        hint_from_commands
         {Bitmap} cur|rent_image
         {Bitmap} fr|om_bitmap
         {Bitmap_24} temp_b|itmap
@@ -565,6 +567,18 @@ OVERRIDE click :
     ; 
     DEBUG: "Holder[]:" Holder.Count 
     	 " Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
+    .
+    
+METHOD hint_from_commands :
+    FOR c IN Main_.Satellite_param.Commands_s[] :
+        CASE 0 < Executing < c.INDEX+1 ? BREAK c ;
+        STR c1|_command = c.Before(";")
+        STR p|arameters[].Split(c, ";")
+        CASE c1=="CREATE" ?
+             c1 = "[" p[0 TO 4].Merge(" ") "]"
+        ELSE c1 = "[" p[1] "]" ;
+        STR h|int_total = _ c1 #NL ;
+    Hint_set(h)
     .
     
 METHOD Make_scaled_prev2 ==> {Bitmap_direct}, NEW :
@@ -928,7 +942,7 @@ METHOD Run_button(INT Operation) :
     	  	 [20]: b = avg_of_next_stamps(b) //-only 24
     	     ; 
 		     Progress_1.Set_progress(0)
-		     Hint_set("")
+		     //Hint_set("")
 		     --------------------- 'release__file', REUSED
 		     CASE File_stream != NONE ? 
 				  File_stream.Close
@@ -1009,6 +1023,7 @@ METHOD Run_button(INT Operation) :
     	         Main_.Satellite_param.Go_to_prev_image     
     	     ;
     	     Hint_set("")
+    	     hint_from_commands
     	 ;
     ;
     ; .
@@ -1387,6 +1402,7 @@ BOOL dark_n|eighbors_only) ==> {Bitmap_direct}, NEW
     	r.Unlock(TRUE)
     ;
     b.Unlock(FALSE)
+    hint_from_commands  
     //DEBUG:
     //      {Png}.To_file(r, "after-blur.png", 100)
     //      {Png}.To_file(b, "before-blur.png", 100)
@@ -1775,12 +1791,14 @@ METHOD avg_of_next_stamps(
 	;
 	.
 
-BOOL Executing|_commands_stored
+INT Executing|_commands_stored
 	
 METHOD Execute_commands|_stored_earlier(STR Commands_s|equence[]) :
-	PUSH Executing = TRUE :
+	PUSH Executing = 1 :
 	     FOR i_c|ommand IN [0 TO Commands_s[].Count-1] :
+	     	 Executing = i_c+1
 	         STR instr|uctions[].Split(Commands_s[i_c], ";") 
+	         hint_from_commands
 	    	 CASE instr[0] ? 
 	    	 ["CREATE"]:
 	    	     FOR j IN [1 TO instr[].Count-1] :
@@ -1829,6 +1847,23 @@ METHOD Execute_commands|_stored_earlier(STR Commands_s|equence[]) :
     ; .
 
 
+
+OVERRIDE paint :
+    CASE sender_alias ?
+    ["PAINTBOX_1", "PAINTBOX_2"]: NONE
+    ["P_HINTS"]:
+        {Canvas} c|anvas_hints = P_Hints.Canvas
+        c.Background = YELLOW.Mix(SILVER)
+        c.Font.Size = 12
+        c.Erase
+    	STR lines|_hint[].Split(Hint, #NL)
+    	REAL y|_top_position = 0
+    	FOR h IN lines[] :
+    	    c.Text(Pt(0, y), h) 
+    	    y += c.Font.Size
+    	;
+    ELSE BASE
+    ; .
 END
 
 */

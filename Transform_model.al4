@@ -14,7 +14,7 @@ BASE CLASS: {Form_common} .
 {Paintbox} Bar|_X_Y_offset
 {Button} Apply|_transform
 {Button} Reset_offsets
-{Checkbox} Checkbox_1
+{Checkbox} Active|_transformations
 {Label} Label_4 | _277633_726243
 {Label} Label_scale
 {Label} Label_rotate
@@ -23,12 +23,15 @@ METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_ | form_, INIT, READ
 
-CONSTRUCT://3AE04ED7 Do not change manually (created by Form Designer)
+CONSTRUCT://1BA4697D Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
 	new_column("", 'CENTER', {Form}.{sizes_col}(Label=120))
 
+	--------------------------- 'ACTIVE'
+	Active = New_checkbox(THIS, "ACTIVE", "Active")
+	...Set_checked(TRUE)
 	--------------------- 'LABEL_ROTATE'
 	Label_rotate = {Label}(Form_=THIS, Alias="LABEL_ROTATE")
 
@@ -70,6 +73,7 @@ PUSH in_construct = TRUE :
 ; .
 
 METHOD after_CONSTRUCT: 
+	Show_application_button(TRUE)
 	------------------------ 'bounds', REUSED
 	Restore_bounds(Main_.App_name, "Transform_model", "whlt") 	
 	------------------------
@@ -173,6 +177,7 @@ OVERRIDE click :
     ; .
 
 OVERRIDE mouse_down :
+	CASE !Active.Checked ? ==> ;
 	change_scale = FALSE
 	change_rotate = FALSE
 	scale_0 = Scaleing.Text.Real
@@ -204,6 +209,7 @@ BOOL R_down|_right_mouse_button
 	
 
 OVERRIDE mouse_move :
+	CASE !Active.Checked ? ==> ;
 	CASE ?
 	[change_rotate] ? 
 	    REAL new_v|alue = rotate_0 
@@ -243,6 +249,10 @@ OVERRIDE mouse_up :
 		     change_scale = FALSE
 	L_down = FALSE
 	R_down = FALSE .
+
+OVERRIDE mouse_wheel ==> BOOL :
+	Main_.Select_spiral_by_wheel(vertical_wheel) .
+	
 END
 
 */
