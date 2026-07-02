@@ -915,32 +915,34 @@ METHOD Run_button(INT Operation) :
 		          Main_.All_images[.Current_image] = t
     	  	 ELSE b = New_bitmap_direct(Main_.Image.Width, .Height, 24)
 		          Main_.Image.Draw(b.Canvas, Pt(0,0)) ;
-    	     CASE Operation ?
-    	     [0]: lighten_darken(b, 0)
-    	     [1]: shift_color(b)
-    	  	 [2]: b = grayscale(b)
-    	     [3]: lighten_darken(b, -25)
-    	     [4]: lighten_darken(b, -50)
-    	     [5]: lighten_darken(b, 25)
-    	     [6]: lighten_darken(b, 50)
-    	  	 [7]: contrast_up_down(b, 25) 
-    	  	 [8]: contrast_up_down(b, 50) 
-    	  	 [9]: contrast_up_down(b, -25) 
-    	  	 [10]: contrast_up_down(b, -50) 
-    	     [11]: union_2_images(Value.Text.Int) //! TODO : {Bitmap_24} 
-    	     		==>
-    	  	 [12]: curves_rgb(b, 
-    	  	 		(255/Iterations_count1.Text.Real.Max(1)).Int.Max(1))
-    	  	 		//! TODO : {Bitmap_24}
-    	  	 [13]: b = Downscale(b, 2) //! TODO : {Bitmap_24} 
-    	  	 [14]: b = Downscale(b, 3) //! TODO : {Bitmap_24} 
-    	  	 [15]: b = Downscale(b, 5) //! TODO : {Bitmap_24} 
-    	  	 [16]: b = blur(b, FALSE)
-    	  	 [17]: b = blur(b, TRUE)
-    	  	 [18]: b = dynamic_contrast(b)
-    	  	 [19]: b = retouch(b)
-    	  	 [20]: b = avg_of_next_stamps(b) //-only 24
-    	     ; 
+			 PUSH Main_.Current_image :
+	    	      CASE Operation ?
+	    	      [0]: lighten_darken(b, 0)
+	    	      [1]: shift_color(b)
+	    	  	  [2]: b = grayscale(b)
+	    	      [3]: lighten_darken(b, -25)
+	    	      [4]: lighten_darken(b, -50)
+	    	      [5]: lighten_darken(b, 25)
+	    	      [6]: lighten_darken(b, 50)
+	    	  	  [7]: contrast_up_down(b, 25) 
+	    	  	  [8]: contrast_up_down(b, 50) 
+	    	  	  [9]: contrast_up_down(b, -25) 
+	    	  	  [10]: contrast_up_down(b, -50) 
+	    	      [11]: union_2_images(Value.Text.Int) //! TODO : {Bitmap_24} 
+	    	     		 ==>
+	    	  	  [12]: curves_rgb(b, 
+	    	  	 		 (255/Iterations_count1.Text.Real.Max(1)).Int.Max(1))
+	    	  	 		 //! TODO : {Bitmap_24}
+	    	  	  [13]: b = Downscale(b, 2) //! TODO : {Bitmap_24} 
+	    	  	  [14]: b = Downscale(b, 3) //! TODO : {Bitmap_24} 
+	    	  	  [15]: b = Downscale(b, 5) //! TODO : {Bitmap_24} 
+	    	  	  [16]: b = blur(b, FALSE)
+	    	  	  [17]: b = blur(b, TRUE)
+	    	  	  [18]: b = dynamic_contrast(b)
+	    	  	  [19]: b = retouch(b)
+	    	  	  [20]: b = avg_of_next_stamps(b) //-only 24
+	    	      ;
+			 ;
 		     Progress_1.Set_progress(0)
 		     //Hint_set("")
 		     --------------------- 'release__file', REUSED
@@ -989,15 +991,17 @@ METHOD Run_button(INT Operation) :
     	      ELSE b = New_bitmap_direct(Main_.Image.Width, .Height, 24)
     	           Main_.Image.Draw(b.Canvas, Pt(0,0)) ;
     	      PUSH Main_.Satellite_param.Use_bitmaps_24 = FALSE :
+    	      PUSH Main_.Current_image :
     	           CASE Downscale_first.Current ? 
     	           [1]: b = Downscale(b, 2) 
     	           [2]: b = Downscale(b, 3) 
     	           [3]: b = Downscale(b, 4) ;
-    	           Main_.Image = b
-    	           Main_.All_images[.Current_image] = b
-    	           Main_.All_scales[.Current_image] = NONE
-    	           Main_.Satellite_param.Thumbnails.Invalidate_all
     	      ;
+    	      ;
+	          Main_.Image = b
+	          Main_.All_images[.Current_image] = b
+	          Main_.All_scales[.Current_image] = NONE
+	          Main_.Satellite_param.Thumbnails.Invalidate_all 
     	 ;
     	 CASE Stamp_type.Current ? 
     	 [0, 1, 4, 5, 6 ,7, 8, 9]:
@@ -1026,7 +1030,8 @@ METHOD Run_button(INT Operation) :
     	     hint_from_commands
     	 ;
     ;
-    ; .
+    ;
+    .
     
 METHOD curves_rgb|_levels_for_values(
 {Bitmap_direct} b|itmap_current, INT rang|es_count)
