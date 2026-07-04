@@ -1412,8 +1412,8 @@ OVERRIDE click :
                   ) 
                   ?
                   FOR r IN [2 TO Main_.Image.Width] :
-                      CASE Main_.Image.Width * .Height / r / r <= 10_000_000 ? 
-                           Main_.Image = Downscale(_, r)
+                      CASE Main_.Image.Width*.Height/(r*0.5).q2 <= 10_000_000 ? 
+                           Main_.Image = Downscale(_, r*0.5)
                            BREAK r ;
                   ;
              ;
@@ -1629,6 +1629,7 @@ OVERRIDE click :
 	    	     //CASE !Scale_up_shift ? 
 		    	      c.Set_r("Image_rotate", Rotate_image.Text.Real)
 		    	      c.Set_r("Image_scale", Scale_image.Text.Real) //;
+	    	     c.Set_b("Mirrored", Image_mirrored)
 	    	     ----------------------- 'loop on all spirals'
 	    	     FOR i IN [0 TO Satellite_num.Count-1] :
 	    	         PUSH c.Section = (i+1).S :
@@ -1771,6 +1772,7 @@ OVERRIDE click :
         	Main_.Stack_redo[].Clear
         	------------------ 'load URL'
         	c.Section = ""
+        	Image_mirrored = c.Bool("Mirrored")
         	url = c.Str("URL")
         	CASE url != "" ? 
         	     FOR u IN Main_.All_img_URLs[] :
@@ -2370,19 +2372,25 @@ METHOD Auto_stamp :
 	     == Main_.Checksums_of_images[.Current_image]
 	     || Checksum_img_loaded==0 && 0!=Checksum2_img_loaded 
 	     == Main_.Checksums2_of_images[.Current_image])  
-	     && Commands_s[].Count > 0
 	     ?
-	     DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
-	       " ~ " Main_.Checksums_of_images[0 TO *].Merge(",")  #NL ;
-		 CASE !ask("The image loaded is single and it is the "
-		      "same as it was used to create the model loading. "
-		      "Create stamp now ?"._Image_detected_ask_create_stamp) 
-		      ? ==> ;
-		 Stamp_param.Close
-		 Stamp_param = NONE
-		 Provide_stamp_param
-		 Stamp_param.Show_no_activate
-		 Stamp_param.Execute_commands(Commands_s[])
+	     CASE Image_mirrored ? 
+	          CASE ask("Image loaded marked as 'mirrored'. Mirror it now?"
+	               " (Ask NO if it was mirrored already).") 
+	               ? 
+	               do_mirroring ;
+	     ;
+	     CASE Commands_s[].Count > 0 ?
+		      DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
+		        " ~ " Main_.Checksums_of_images[0 TO *].Merge(",")  #NL ;
+			  CASE !ask("The image loaded is single and it is the "
+			       "same as it was used to create the model loading. "
+			       "Create stamp now ?"._Image_detected_ask_create_stamp) 
+			       ? ==> ;
+			  Stamp_param.Close
+			  Stamp_param = NONE
+			  Provide_stamp_param
+			  Stamp_param.Show_no_activate
+			  Stamp_param.Execute_commands(Commands_s[]) ;
 	; .
 	
 INT Checksum_img_loaded	
@@ -2405,10 +2413,15 @@ PUSH processing_mouse = TRUE :
 
 	""	Item(	"SET_URL",
 				"Set URL (from clipboard)"
+		)
+
+	""	Item(	"MIRROR_IMG",
+				"Mirror image"
+		).Checked(
+		Image_mirrored
 		))
 
-
-
+		==>
 		;
 		Main_.Save_current_image(FALSE)
 	    FOR i IN [1 TO Main_.All_images[].Count-1] :
@@ -2837,8 +2850,21 @@ METHOD Show_transform_model :
 	Transform_model.Show .
 
 
+BOOL Image_mirrored
+
+METHOD do_mirroring :
+	Main_.Image = _.Rotate_flip(0, TRUE, FALSE)
+	Main_.Scaled_image = NONE
+	Main_.All_images[.Current_image] = Main_.Image
+	Main_.All_scales[.Current_image] = NONE
+	Thumbnails.Invalidate_all
+	need_invalidate = TRUE
+	Main_.Invalidate .
+
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["MIRROR_IMG"]: Image_mirrored = !_
+    	do_mirroring
     ["TRANSORM_MODEL"]: Show_transform_model
     ["SET_URL"]: STR url|_to_set = Text_from_clipboard
     		CASE !url.Lower.Starting("http")
@@ -3714,9 +3740,9 @@ FUN Calculate_checksum2(STR Path|_of_file) ==> INT :
 
 
 FUN Downscale(
-{Bitmap} B|itmap_to_reduce, INT K|oefficient_2_or_more) ==> {Bitmap}, NEW
+{Bitmap} B|itmap_to_reduce, REAL K|oefficient_2_or_more) ==> {Bitmap}, NEW
     :
-    RESULT = New_bitmap(B.Width / K, .Height / K, 24) 
+    RESULT = New_bitmap((B.Width / K).Int, (B.Height / K).Int, 24) 
     B.Stretch_draw(RESULT.Canvas, {rect}(Width=RESULT.Width.Pixels_to_points,
     	Height=RESULT.Height.Pixels_to_points))
     .
@@ -3736,6 +3762,8 @@ FUN Actual_format(STR Path|_to_image_file) ==> STR :
     [ss.Starting("BM")] ? ..=".bmp" ==> 
     ;
     RESULT = Path.Lower.Ext .
+    
+FUN q2|_square(REAL x|_to_square) ==> REAL := x * x .
     
 	
 END

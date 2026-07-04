@@ -1797,7 +1797,7 @@ PUSH processing_mouse = TRUE :
 	
 
 OVERRIDE mouse_double_click :
-	CASE Satellite_param.Scale_up_shift ? 
+	CASE Satellite_param.Scale_up_shift && mouse_button != 'RMB' ? 
 	     ShiftX = 0
 	     ShiftY = 0
 	     PBox.Invalidate_all 
