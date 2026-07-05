@@ -248,7 +248,8 @@ OVERRIDE mouse_up :
 		     change_rotate = FALSE
 		     change_scale = FALSE
 	L_down = FALSE
-	R_down = FALSE .
+	R_down = FALSE 
+	Main_.Satellite_param.Show .
 
 OVERRIDE mouse_wheel ==> BOOL :
 	Main_.Select_spiral_by_wheel(vertical_wheel) .

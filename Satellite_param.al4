@@ -1413,7 +1413,7 @@ OVERRIDE click :
                   ?
                   FOR r IN [2 TO Main_.Image.Width] :
                       CASE Main_.Image.Width*.Height/(r*0.5).q2 <= 10_000_000 ? 
-                           Main_.Image = Downscale(_, r*0.5)
+                           Main_.Image = Downscale(_, r*0.5, f, Format=format)
                            BREAK r ;
                   ;
              ;
@@ -3740,12 +3740,26 @@ FUN Calculate_checksum2(STR Path|_of_file) ==> INT :
 
 
 FUN Downscale(
-{Bitmap} B|itmap_to_reduce, REAL K|oefficient_2_or_more) ==> {Bitmap}, NEW
+{Bitmap} B|itmap_to_reduce, REAL K|oefficient_2_or_more,
+STR Filename|_source,
+STR Format|_actual) ==> {Bitmap}, NEW
     :
-    RESULT = New_bitmap((B.Width / K).Int, (B.Height / K).Int, 24) 
-    B.Stretch_draw(RESULT.Canvas, {rect}(Width=RESULT.Width.Pixels_to_points,
-    	Height=RESULT.Height.Pixels_to_points))
-    .
+    DEBUG: "Filename=" Filename #NL
+     	   << "Format=" Format " K=" K #NL ;
+    CASE Filename != "" && Format==".jpg" ? 
+         CASE (K*2).Int ?
+         [1, 2, 3, 4]: NONE
+         [5, 6, 7, 8]: {Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
+         [9, 10, 11, 12, 13, 14, 15, 16]: re = {Jpeg}.From_file(Filename, 'QUAR') 
+         ELSE re = {Jpeg}.From_file(Filename, 'EIGH') ;
+    ;
+    CASE re == NONE ? 
+    	 re = New_bitmap((B.Width / K).Int, (B.Height / K).Int, 24) 
+    	 B.Stretch_draw(re.Canvas, 
+    	 	{rect}(Width=re.Width.Pixels_to_points,
+    		Height=re.Height.Pixels_to_points))
+    ;
+    RESULT = re .
     
 FUN Actual_format(STR Path|_to_image_file) ==> STR :
     {File_stream} in|_temp_file = Read_file_stream(Path) 

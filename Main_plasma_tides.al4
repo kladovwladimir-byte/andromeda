@@ -1570,13 +1570,14 @@ PUSH processing_mouse = TRUE :	lmb_down = mouse_button == 'LMB'
 	------------------------------- 'prepare to undo later'
 	Stack_undo[] << Satellite_param.All_satellites[.Satellite_num.Current].CLONE
 	PBox.Invalidate_all 
-	CASE rmb_down ? 
-	     Satellite_param.Show ;
+    //CASE rmb_down ?
+    //     Satellite_param.Show ;
 ;	.
 	
 OVERRIDE mouse_up :
 CASE processing_mouse ? ==> ;
-PUSH processing_mouse = TRUE :	lmb_down = FALSE
+PUSH processing_mouse = TRUE :	
+	lmb_down = FALSE
 	rmb_down = FALSE
 	drag_center = FALSE
 	rotate_proj = FALSE
@@ -1585,7 +1586,8 @@ PUSH processing_mouse = TRUE :	lmb_down = FALSE
 	change_excen = FALSE
 	------------------------- 'invalidation'
 	PBox.Invalidate_all 
-	Satellite_param.Change_hint ; .
+	Satellite_param.Change_hint 
+	Satellite_param.Show ; .
 	
 {point} last_mouse_shift
 
