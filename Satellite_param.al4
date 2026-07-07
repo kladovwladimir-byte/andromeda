@@ -1668,12 +1668,25 @@ OVERRIDE click :
 	    	              CASE ch != 0 || ch2 != 0 ? BREAK i ;
 	    	          ;
 	    	          DEBUG: "checksums=" ch "," ch2 #NL ;
+	    	          FOR i IN [0 TO 1000] :
+	    	              STR old_c|ommands[] << c.Str("Command" i.S) 
+	    	          	  CASE old_c[*] != Commands_s[i] ? 
+	    	          	       BOOL commands_changed = TRUE ;
+	    	          	  CASE old_c[*]=="" ? BREAK i ;
+	    	          ;
+	    	          CASE commands_changed && old_c[].Count > 1 ? 
+	    	               CASE ask("Another 3D-stamp commands are stored in "
+	    	               "the replacing .gal model. Preserve it?") 
+	    	               ?
+	    	                    BOOL preserve|_previous_commands = TRUE  ;
+	    	          ;
 	    	          FOR i IN [0 TO Commands_s[].Count] :
 	    	              CASE ch==0 && ch2==0 ? BREAK i ;
 	    	              CASE i==0 ? 
 	    	                   c.Set_s("Checksum", ch.Hex(8)) 
 	    	                   c.Set_s("Checksum2", ch2.Hex(8)) 
 	    	              ;
+	    	              CASE preserve ? BREAK i ;
 	    	              c.Set_s("Command" i.S, Commands_s[i])     
 	    	          ;
 	    	     ;
