@@ -54,7 +54,7 @@ BASE CLASS: {Form_common} .
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://020EE9DD Do not change manually (created by Form Designer)
+CONSTRUCT://18060244 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -88,7 +88,7 @@ PUSH in_construct = TRUE :
 	---------------------------- 'VALUE'
 	Value = New_edit(THIS, "VALUE")
 
-	...Set_text("5000")
+	...Set_text("15000")
 	---------------------- 'LABEL_SHIFT'
 	Label_shift = {Label}(Form_=THIS, Alias="LABEL_SHIFT")
 
