@@ -1,10 +1,13 @@
 ﻿[{Main_plasma_tides}]
+Please_wait=ПОЖАЛУЙСТА, ПОДОЖДИТЕ...
 TILT_ANGLE=ВРАЩЕНИЕ ПО ВЕРТИКАЛИ
 Eccentricity=Эксцентриситет
 PROJECTION_PLANE=ПЛОСКОСТЬ ПРОЕКЦИИ
 INCLINATION=НАКЛОН+ГАЛАКТИЧЕСКОЙ+ПЛОСКОСТИ
 
 [{Satellite_parameters}]
+Image_detected_ask_create_stamp=Загружено единственное изображение и оно вероятно соответствует загруженной модели. Создать штамп ?
+Skyblue_darkviolet=Небесно-голубой+Темно-фиолетовый
 Green_emerald=Зеленый+изумрудный
 Blue_violet=Синий+фиолетовый
 Red_orange=Красный+оранжевый
@@ -12,7 +15,7 @@ Yellow_green=Желтый+зеленый
 White_silver=Белый+серый
 Cyan_lime=Голубой+салатный
 Teal_silverblue=Морской+серо-синий
-Same_max_dist=Same maximal distance
+Same_max_dist=Одинаковая максимальная дистанция для всех
 5000LY=5000 св. лет
 Always_24bitmaps=Всегда использовать 24-битные серые битмапы
 Compensate_periods_on_box_w=Компенсировать периоды всех спутников при изменении ширины окна
