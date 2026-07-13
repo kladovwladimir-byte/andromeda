@@ -1,0 +1,3803 @@
+/*
+
+CLASS {Satellite_param|eters}, 
+UNTESTED, BITWISE:
+
+IMPORT {Form_common}, {Main_plasma_tides}, {Localize_str},  {Form} .
+IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
+IMPORT: {Bmp}, {Gif}, {Jpeg}, {Png}, {Tiff}, {WebP} .
+IMPORT: {Elliptic_orbit}, {Calculations_diff}, 
+		{Stamp_parameters}, {Bitmap_direct}, {Holder_bitmaps} ,
+		{Matrix}, {Vector} .
+IMPORT: {Transform_model} .
+
+
+BASE CLASS: {Form_common} .
+{Edit} Box_width|_light_years
+{Combo} Satellite_num|ber
+{Edit} Period_rot|ating
+{Edit} Cone_angle
+{Edit} Rotate_proj|ection
+{Edit} Inclination
+{Edit} Starting_angle
+{Combo} Arm_colors
+{Edit} Activity_time
+{Label} Label_last_activity
+{Edit} Last_activity|_time_skip
+{Label} Label_box_width
+{Label} Label_period
+{Label} Label_cone_angle
+{Label} Label_rotate_proj|ection
+{Label} Label_inclination
+{Label} Label_starting_a|ngle
+{Label} LabelArmColors
+{Label} Label_activity_time
+{Dialog_file} Dialog_file_save
+{Dialog_file} Dialog_load
+{Dialog_file} Dialog_image
+{Button} Load_under_image
+{Combo} Show_spirals
+{Paint_turtle} Save_load
+{Paint_turtle} Add_spiral|_button
+{Combo} List_lang|uages
+{Label} LabelXLang
+{Label} LabelShow|_spirals
+{Label} LabelSelectSpiral
+{Label} Label_RotateImage
+{Edit} Rotate_image
+{Label} Label_ScaleImage
+{Edit} Scale_image
+{Label} Label_plasma_speed
+{Edit} Plasma_speed
+{Label} Label_final_k|_plasma_speed
+{Edit} Final_plasma_speed
+
+{Label} Label_Eccentricity
+{Edit} Eccentricity
+{Label} Label_Mass|_Central_SMBH
+{Timer} Timer_invalidate
+{Label} Label_deviation_angle
+{Edit} Deviation_angle
+{Label} Label_first_activity
+{Edit} First_activity|_skip
+{Label} Label_final_deviation
+{Edit} Final_deviation
+{Edit} Mass_BH|ole
+{Button} Make_screenshot
+{Checkbox} Time_distortion
+{Paint_turtle} Add_to_activity|_or_subtract
+{Timer} Timer_activate_filter
+{Label} LabelName
+{Edit} Edit_name
+{Dialog_file} Dialog_save_scr|eenshot_directory
+{Paint_turtle} Back_direction
+{Label} Label_speed_filter
+{Edit} Filter_speed
+{Paint_turtle} BH_mass_change
+{Label} Label_max_dist|ance
+{Edit} Max_dist|ance_from_core
+{Memo} LabelHint1
+{Paintbox} Thumbnails|_of_all_images
+{Checkbox} Draw_background|_flag
+{Combo} Screenshot_type
+{Combo} Grid_options
+{Combo} Transparency_sel|ect
+{Label} LabelTransp
+{Progress} Progress_long|_operation
+{Paint_turtle} Op_image
+{Paintbox} Paintbox_1
+{Edit} Label_file
+{Label} Label_line_w|idth
+{Edit} Edit_line_w|idth
+{Paint_turtle} Line_width_1
+{Paint_turtle} Speed_switch
+{Paint_turtle} Speed_switch_2
+{Paint_turtle} Change_scale
+{Edit} Edit_tilt
+{Label} Label_tilt
+{Label} Label_Filter
+{Edit} Filter_sat|ellites
+{Paint_turtle} Star_filter
+
+METHOD before_CONSTRUCT: .
+
+{Main_plasma_tides} Main_|form_, INIT, READ
+STR Url_loaded
+
+CONSTRUCT://11D483E4 Do not change manually (created by Form Designer)
+	before_CONSTRUCT
+PUSH in_construct = TRUE :
+	------------------------------------------------------------------ 'column '
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=-95,Align_right=TRUE))
+
+	------------------ 'DIALOG_SAVE_SCR'
+	Dialog_save_scr = New_dialog_save(THIS, "DIALOG_SAVE_SCR")
+
+	...Filter = "Png file|*.png"
+	...Default_ext = "png"
+	----------------- 'TIMER_INVALIDATE'
+	Timer_invalidate = New_timer(THIS, "TIMER_INVALIDATE", 50)
+	--------------------- 'LABEL_LINE_W'
+	Label_line_w = {Label}(Form_=THIS, Alias="LABEL_LINE_W")
+
+	...Set_text("Line width:")
+	---------------------- 'EDIT_LINE_W'
+	Edit_line_w = New_edit(THIS, "EDIT_LINE_W")
+
+	...Set_text("1")
+	--------------------- 'LINE_WIDTH_1'
+	Line_width_1 = New_paint_turtle_button(THIS, "LINE_WIDTH_1", "10D80")
+
+	...Set_width(18)
+
+	...Set_height(18)
+	---------------- 'LABELSELECTSPIRAL'
+	LabelSelectSpiral = {Label}(Form_=THIS, Alias="LABELSELECTSPIRAL")
+
+	...Set_text("Select  satellite:")
+	-------------------- 'SATELLITE_NUM'
+	Satellite_num = New_combo(THIS, "SATELLITE_NUM", "1")
+	----------------------- 'ADD_SPIRAL'
+	Add_spiral = New_paint_turtle_button(THIS,
+ "ADD_SPIRAL",
+ "20R30DLL60B30RR30B60 "
+  "B30RR30 U45 (D5LL5LL5LL5LLU25)3")
+
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Add,Also")
+	--------------------- 'LABEL_FILTER'
+	Label_Filter = {Label}(Form_=THIS, Alias="LABEL_FILTER")
+
+	...Set_text("Filter satellites:")
+	----------------------- 'FILTER_SAT'
+	Filter_sat = New_edit(THIS, "FILTER_SAT"), >> grayable[]
+
+	...Set_text("*")
+	---------------------- 'STAR_FILTER'
+	Star_filter = New_paint_turtle_button(THIS,
+ "STAR_FILTER",
+ "20R30LLD(30BL30B)8")
+
+	...Set_width(18)
+
+	...Set_height(18)
+	------------------------ 'LABELNAME'
+	LabelName = {Label}(Form_=THIS, Alias="LABELNAME")
+
+	...Set_text("Name:"._Name)
+	------------------------ 'EDIT_NAME'
+	Edit_name = New_edit(THIS, "EDIT_NAME")
+	---------------------- 'DIALOG_LOAD'
+	Dialog_load = New_dialog_open(THIS, "DIALOG_LOAD")
+
+	...Filter = "Galaxy settings (*.gal)|*.gal"
+	...Default_ext = "gal"
+	----------------- 'DIALOG_FILE_SAVE'
+	Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE_SAVE")
+
+	...Filter = "Galaxy settings (*.gal)|*.gal"
+	...Default_ext = "gal"
+	------------------ 'LABEL_BOX_WIDTH'
+	Label_box_width = {Label}(Form_=THIS, Alias="LABEL_BOX_WIDTH")
+
+	...Set_text("Box width, light-years:")
+	------------------------ 'BOX_WIDTH'
+	Box_width = New_text_edit(THIS, "BOX_WIDTH", "N")
+
+	...Set_text("100000")
+	--------------------- 'LABEL_PERIOD'
+	Label_period = {Label}(Form_=THIS, Alias="LABEL_PERIOD")
+
+	...Set_text("Period, years:")
+	----------------------- 'PERIOD_ROT'
+	Period_rot = New_text_edit(THIS, "PERIOD_ROT", "N")
+
+	...Set_text("100000")
+	------------------- 'BACK_DIRECTION'
+	Back_direction = New_paint_turtle_button(THIS, "BACK_DIRECTION", "20R30DLL60")
+
+	...Set_width(18)
+
+	...Set_height(18)
+	--------------- 'LABEL_ECCENTRICITY'
+	Label_Eccentricity = {Label}(Form_=THIS, Alias="LABEL_ECCENTRICITY")
+
+	...Set_text("e, Eccentricity (0...0.99999):")
+	--------------------- 'ECCENTRICITY'
+	Eccentricity = New_text_edit(THIS, "ECCENTRICITY", "")
+
+	...Set_text("0.5")
+	----------------------- 'LABEL_MASS'
+	Label_Mass = {Label}(Form_=THIS, Alias="LABEL_MASS")
+
+	...Set_text("Central Black Hole Mass (of Sun):")
+	-------------------------- 'MASS_BH'
+	Mass_BH = New_edit(THIS, "MASS_BH")
+
+	...Set_text("1000000")
+	------------------- 'BH_MASS_CHANGE'
+	BH_mass_change = New_paint_turtle_button(THIS,
+ "BH_MASS_CHANGE",
+ "10R70DB60BL15"
+  "LL15BL60LLU25D(15L)8U13L5L15 D(6L)8")
+
+
+	...Set_width(18)
+
+	...Set_height(18)
+	--------------- 'LABEL_PLASMA_SPEED'
+	Label_plasma_speed = {Label}(Form_=THIS, Alias="LABEL_PLASMA_SPEED")
+
+	...Set_text("Plasma speed kc (k=0...1):")
+	--------------------- 'PLASMA_SPEED'
+	Plasma_speed = New_edit(THIS, "PLASMA_SPEED")
+
+	...Set_text("1")
+	--------------------- 'SPEED_SWITCH'
+	Speed_switch = New_paint_turtle_button(THIS,
+ "SPEED_SWITCH",
+ "20R30DFL40BR80BR4"
+
+  "0UNBR160DFBR40BR80BR30NUL27R30RR20RD30U 30BRD70B70BUR30D(5LL)4LU30LL10RRDR20"
+"R"
+
+  "R20RR20LL20LL20")
+
+
+	...Set_width(54)
+
+	...Set_height(18)
+
+	...Set_multi_button("Dec,Inc,1/0.2")
+	-------------------- 'LABEL_FINAL_K'
+	Label_final_k = {Label}(Form_=THIS, Alias="LABEL_FINAL_K")
+
+	...Set_text("Final plasma speed:")
+	--------------- 'FINAL_PLASMA_SPEED'
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", #LF
+"#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"N")
+
+
+	...Set_text("0.2")
+	------------------- 'SPEED_SWITCH_2'
+	Speed_switch_2 = New_paint_turtle_button(THIS,
+ "SPEED_SWITCH_2",
+ "20R30DFL40BR8"
+  "0BR40UNBR160DFBR40BR80BR30")
+
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Dec,Inc")
+	------------ 'LABEL_DEVIATION_ANGLE'
+	Label_deviation_angle = {Label}(Form_=THIS,
+ Alias="LABEL_DEVIATION_ANGLE"),
+ >> can_hide[]
+
+	...Set_text("Deviation angle (-90...90)")
+	------------------ 'DEVIATION_ANGLE'
+	Deviation_angle = New_text_edit(THIS, "DEVIATION_ANGLE", "N"), >> can_hide[]
+
+	...Set_text("60")
+	------------ 'LABEL_FINAL_DEVIATION'
+	Label_final_deviation = {Label}(Form_=THIS,
+ Alias="LABEL_FINAL_DEVIATION"),
+ >> can_hide[]
+
+	...Set_text("Final deviation angle (in perihole)")
+	------------------ 'FINAL_DEVIATION'
+	Final_deviation = New_text_edit(THIS, "FINAL_DEVIATION", "N"), >> can_hide[]
+
+	...Set_text("60")
+	----------------- 'LABEL_CONE_ANGLE'
+	Label_cone_angle = {Label}(Form_=THIS,
+ Alias="LABEL_CONE_ANGLE"),
+ >> can_hide[]
+
+	...Set_text("Cone angle (0...90):")
+	----------------------- 'CONE_ANGLE'
+	Cone_angle = New_text_edit(THIS, "CONE_ANGLE", "N"), >> can_hide[]
+
+	...Set_text("90")
+	----------------------- 'LABEL_TILT'
+	Label_tilt = {Label}(Form_=THIS, Alias="LABEL_TILT")
+
+	...Set_text("Tilt")
+	------------------------ 'EDIT_TILT'
+	Edit_tilt = New_edit(THIS, "EDIT_TILT")
+
+	...Set_text("0")
+	---------------- 'LABEL_ROTATE_PROJ'
+	Label_rotate_proj = {Label}(Form_=THIS, Alias="LABEL_ROTATE_PROJ")
+
+	...Set_text("Rotate projection (0...360):")
+	---------------------- 'ROTATE_PROJ'
+	Rotate_proj = New_edit(THIS, "ROTATE_PROJ")
+
+	...Set_text("0")
+	---------------- 'LABEL_INCLINATION'
+	Label_inclination = {Label}(Form_=THIS, Alias="LABEL_INCLINATION")
+
+	...Set_text("Inclination (-180...180):")
+	---------------------- 'INCLINATION'
+	Inclination = New_edit(THIS, "INCLINATION")
+
+	...Set_text("0")
+	----------------- 'LABEL_STARTING_A'
+	Label_starting_a = {Label}(Form_=THIS, Alias="LABEL_STARTING_A")
+
+	...Set_text("Starting angle (0...360):")
+	------------------- 'STARTING_ANGLE'
+	Starting_angle = New_text_edit(THIS, "STARTING_ANGLE", "N")
+
+	...Set_text("0")
+	------------------- 'LABELARMCOLORS'
+	LabelArmColors = {Label}(Form_=THIS, Alias="LABELARMCOLORS")
+
+	...Set_text("Spiral arms colors:")
+	----------------------- 'ARM_COLORS'
+	Arm_colors = New_combo(THIS, "ARM_COLORS", @
+"White-white"
+"Yellow-yellow"
+"Red-red"
+"Blue-Blue"
+"Green-green"
+"Skyblue-Fukshia"
+"Green-magenta"
+"Cyan-lime")
+	-------------- 'LABEL_ACTIVITY_TIME'
+	Label_activity_time = {Label}(Form_=THIS, Alias="LABEL_ACTIVITY_TIME")
+
+	...Set_text("Activity time, years:")
+	-------------------- 'ACTIVITY_TIME'
+	Activity_time = New_edit(THIS, "ACTIVITY_TIME")
+
+	...Set_text("120000")
+	------------------ 'ADD_TO_ACTIVITY'
+	Add_to_activity = New_paint_turtle_button(THIS,
+ "ADD_TO_ACTIVITY",
+ "20R30DFL40B"
+  "R80BR40UNBR160DFBR40BR80BR40")
+
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Dec,Inc")
+	------------- 'LABEL_FIRST_ACTIVITY'
+	Label_first_activity = {Label}(Form_=THIS, Alias="LABEL_FIRST_ACTIVITY")
+
+	...Set_text("Skip first activity")
+	------------------- 'FIRST_ACTIVITY'
+	First_activity = New_text_edit(THIS, "FIRST_ACTIVITY", "N")
+
+	...Set_text("0")
+	-------------- 'LABEL_LAST_ACTIVITY'
+	Label_last_activity = {Label}(Form_=THIS, Alias="LABEL_LAST_ACTIVITY")
+
+	...Set_text("Skip last activity, years:")
+	-------------------- 'LAST_ACTIVITY'
+	Last_activity = New_edit(THIS, "LAST_ACTIVITY")
+
+	...Set_text("0")
+	------------------- 'LABEL_MAX_DIST'
+	Label_max_dist = {Label}(Form_=THIS, Alias="LABEL_MAX_DIST")
+
+	...Set_text("Maximal distance, light-years:")
+	------------------------- 'MAX_DIST'
+	Max_dist = New_edit(THIS, "MAX_DIST")
+
+	...Set_text("0")
+	------------------ 'TIME_DISTORTION'
+	Time_distortion = New_checkbox(THIS, "TIME_DISTORTION", "Time distortion")
+	...Set_checked(TRUE)
+	----------------- 'LOAD_UNDER_IMAGE'
+	Load_under_image = New_button(THIS,
+ "LOAD_UNDER_IMAGE",
+ "Load under image"),
+ >> grayable[]
+	------------------ 'DRAW_BACKGROUND'
+	Draw_background = New_checkbox(THIS,
+ "DRAW_BACKGROUND",
+ "Draw background image")
+	...Set_checked(TRUE)
+	---------------- 'LABEL_ROTATEIMAGE'
+	Label_RotateImage = {Label}(Form_=THIS, Alias="LABEL_ROTATEIMAGE")
+
+	...Set_text("Rotate image (0...360):")
+	--------------------- 'ROTATE_IMAGE'
+	Rotate_image = New_text_edit(THIS, "ROTATE_IMAGE", "N")
+
+	...Set_text("0")
+	----------------- 'LABEL_SCALEIMAGE'
+	Label_ScaleImage = {Label}(Form_=THIS, Alias="LABEL_SCALEIMAGE")
+
+	...Set_text("Scale image, %")
+	---------------------- 'SCALE_IMAGE'
+	Scale_image = New_edit(THIS, "SCALE_IMAGE")
+
+	...Set_text("100")
+	--------------------- 'CHANGE_SCALE'
+	Change_scale = New_paint_turtle_button(THIS,
+ "CHANGE_SCALE",
+ "20R30DFL40BR80BR4"
+  "0UNBR160DFBR40BR80BR40")
+
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Dec,Inc")
+	------------------ 'MAKE_SCREENSHOT'
+	Make_screenshot = New_button(THIS,
+ "MAKE_SCREENSHOT",
+ "Screenshot !"),
+ >> grayable[]
+	--------------------- 'GRID_OPTIONS'
+	Grid_options = New_combo(THIS, "GRID_OPTIONS", @
+"No grid"
+"Grid 100x100, no notes"
+"Grid 200x200, no notes"
+"Grid 100x100, notes on top and left"
+"Grid 200x200, notes on top and left"
+"Grid 100x100, notes each 10 cells"
+"Grid 200x200, notes each 10 cells"
+"Grid in source, 100x100"
+"Grid in source, 200x200"
+"Grid in source, 300x300"
+"Grid in source, 400x400")
+	------------------ 'SCREENSHOT_TYPE'
+	Screenshot_type = New_combo(THIS, "SCREENSHOT_TYPE", @
+"Usual, as is"
+"No lines in odd rows (row is 100 pixels height)"
+"No lines in even rows"
+"No lines in odd columns (column is 100 pixels width)"
+"No lines in even columns"
+"Double all rows with no lines version"
+"Gradient visible lines (in)"
+"Gradient visible lines (out)"
+"Gradient visible lines (in+out)"
+"Anti-gradient visible lines (in)"
+"Anti-gradient visible lines (out)"
+"Anti-gradient visible lines (in+out)"
+"Line around of the spiral, 100 pt wide, no lines"
+"Line around of the spiral, 100 pt wide, with lines"
+"Line around of the spiral, 200 pt wide, no lines"
+"Line around of the spiral, 200 pt wide, with lines")
+	--------------- 'LABEL_SPEED_FILTER'
+	Label_speed_filter = {Label}(Form_=THIS, Alias="LABEL_SPEED_FILTER")
+
+	...Set_text("Filter plasma speed")
+	--------------------- 'FILTER_SPEED'
+	Filter_speed = New_edit(THIS, "FILTER_SPEED"), >> grayable[]
+	------------ 'TIMER_ACTIVATE_FILTER'
+	Timer_activate_filter = New_timer(THIS, "TIMER_ACTIVATE_FILTER", 300)
+
+	...Set_active(FALSE)
+	----------------------- 'LABELxLANG'
+	LabelXLang = {Label}(Form_=THIS, Alias="LABELxLANG")
+
+	...Set_text("Language:")
+	------------------------ 'LIST_LANG'
+	List_lang = New_combo(THIS, "LIST_LANG", "")
+	--------------------- 'DIALOG_IMAGE'
+	Dialog_image = New_dialog_open(THIS, "DIALOG_IMAGE")
+
+
+	...Filter = "All supported images|*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif;"
+"*webp"
+
+	----------------------- 'LABEL_FILE'
+	Label_file = New_read_only_edit(THIS, "LABEL_FILE")
+	------------------------------------------------------------- 'column COL_3'
+	new_column("COL_3", 'BOTTOM', DEFAULT_SIZES)
+
+
+	Set_column_height(40)
+	----------------------- 'LABELHINT1'
+	LabelHint1 = New_memo(THIS,
+ "LABELHINT1",
+ MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY)
+	...Set_anchor_bottom(TRUE)
+
+	...Set_height(30)
+
+	...Set_foreground(NAVY)
+	------------------------------------------------------------- 'column COL_2'
+	new_column("COL_2", 'CENTER', {Form}.{sizes_col}(Label=-90))
+
+	------------------------------------------------------------- 'column COL_1'
+	new_column("COL_1", 'TOP', DEFAULT_SIZES)
+
+	Set_column_controls_layout('CONTROLS_LEFT_LAST_RIGHT')
+	------------------------ 'LABELSHOW'
+	LabelShow = {Label}(Form_=THIS, Alias="LABELSHOW")
+
+	...Set_text("Show:")
+	--------------------- 'SHOW_SPIRALS'
+	Show_spirals = New_combo(THIS, "SHOW_SPIRALS", @
+"All spirals"
+"All, bold current"
+"All, bold all"
+"All bolder"
+"All bolder, white glove"
+"Single spiral (current only)"
+"Single spiral, bold"
+"Single spiral, bolder"
+"None (hide all spirals)")
+	...Set_anchor_bottom(TRUE)
+
+	...Set_width(150)
+	---------------------- 'LABELTRANSP'
+	LabelTransp = {Label}(Form_=THIS, Alias="LABELTRANSP")
+
+	...Set_text("Transparency:")
+	----------------- 'TRANSPARENCY_SEL'
+	Transparency_sel = New_combo(THIS, "TRANSPARENCY_SEL", @
+"No"
+"75%"
+"60%"
+"50%"
+"40%"
+"30%"
+"25%"
+"20%"
+"15%"
+"10%")
+
+	...Set_width(50)
+	------------------------ 'SAVE_LOAD'
+	Save_load = New_paint_turtle_button(THIS,
+ "SAVE_LOAD",
+ "5R25DL40LL40UR25RR40DBR"
+  "40RR40 UL40 (D50ULL17LL50B)3")
+
+
+	...Set_width(54)
+
+	...Set_height(18)
+
+	...Set_multi_button("Save,Load,Additionally")
+	------------------------------------------------------------- 'column COL_4'
+	new_column("COL_4", 'LEFT', {Form}.{sizes_col}(Width=110,Label=-92))
+
+	----------------------- 'THUMBNAILS'
+	Thumbnails = New_paintbox(THIS, "THUMBNAILS", "")
+	...Set_anchor_bottom(TRUE)
+	----------------------- 'PAINTBOX_1'
+	Paintbox_1 = New_paintbox(THIS, "PAINTBOX_1", "")
+
+	...Set_width(5)
+
+	...Set_height(5)
+	------------------------- 'OP_IMAGE'
+	Op_image = New_paint_turtle_button(THIS,
+ "OP_IMAGE",
+ "20L40BLD30LL30UL80DL30LL3"
+
+  "0UBL83RD60BRU60BRD60 UBR95RR3LL3LL23RRD S(20LL)4+20R15R (20LL)4 GLU20D 15R ("
+"2"
+
+  "0LL)4R U20+40L3 D(64LL)4 U12LL12 D(39RR)4U12RR12 D(15LL)4")
+, >> grayable[]
+
+	...Set_width(90)
+
+	...Set_height(18)
+
+	...Set_multi_button("Prev,Next,Delete,Dup,Stamp")
+	-------------------- 'PROGRESS_LONG'
+	Progress_long = New_progress(THIS, "PROGRESS_LONG")
+	----------------------------------------'form size / position'
+	Set_size(400, 0, 'FIT_TO_DISPLAY')
+	-------------------------- 'TITLE of Form'
+	Set_caption("Satellite parameters")
+
+	after_CONSTRUCT
+; .
+
+STR Images_path
+
+
+METHOD button_colors :
+	Load_under_image.Set_background(YELLOW)
+	Load_under_image.Set_foreground(GREEN) 
+	Make_screenshot.Set_background(LIME)
+	.
+
+METHOD after_CONSTRUCT: 
+	Show_application_button(TRUE)
+	button_colors
+	LabelHint1.Set_background(YELLOW.Mix(WHITE))
+	------------------------ 'bounds', REUSED
+	Restore_bounds(Main_.App_name, "Param", "whlt") 
+	------------------------ 'initial__spiral', REUSED	
+	All_satellites[].Clear
+	All_satellites[] << {satellite_param}(
+		Period= Period_rot.Text.Real,
+		Eccentricity= 0.5,
+		Cone_a= Cone_angle.Text.Real,
+		Rotate= Rotate_proj.Text.Real,
+		Inclin= Inclination.Text.Real,
+		StartA= Starting_angle.Text.Real,
+		SpeedK= Plasma_speed.Text.Real,
+		FinalK= Final_plasma_speed.Text.Real, 
+		Deviation = Deviation_angle.Text.Real,
+		Deviation_final = Final_deviation.Text.Real,
+		Activity= Activity_time.Text.Real,
+		Last_act= Last_activity.Text.Real,
+		Center_gal= Pt(0.5, 0.5)
+	)
+	----------------------- 'collect all languages'
+	STR lang_dir = Get_directory_lang
+    //DEBUG: "lang_dir=" lang_dir #NL ;
+	STR c|atalog_files[].Get_catalog(lang_dir)
+	FOR s IN c[] :
+	    CASE s.Ext LIKE ".lng" ? 
+	         all_languages[] << lang_dir s 
+	         STR names_l|anguages[] << s.Change_ext("") ;
+	;
+	List_lang.Set_array(names_l[])
+	----------------------- 'restore saved language'
+	{Config} conf|_temp = New_read_config("Multi-spiral-model", 'USER', "")
+	CASE conf.Present("current_lang") ? 
+	     INT i|ndex_of_current_lang = names_l[].Find(conf.Str("current_lang"))
+         //DEBUG: "found i=" i " of value [" conf.Str("current_lang") "]"#NL
+         //       "among: " names_l[].Merge(", ");
+	     CASE i >= 0 ? 
+	          List_lang.Select(i) 
+	          //alize(current_lang.After("_"), "", FALSE)
+	          STR name_l|anguage = List_lang.Text
+	          Localize(name_l.After("_"), "", FALSE)
+	     ;
+	;
+	----------------------- 'to localize'
+	fill_combos
+	Screenshot_type.Select(0)
+    Grid_options.Select(0)
+    Transparency_sel.Select(1) 
+    ------------------------- 'restore saved options'
+    Screenshot_scale = conf.Int("SCREENSHOT_SCALE").Max(100)
+    Transparency_sel.Select(conf.Int("TRANSPARENCY"))
+    CASE conf.Present("LINE_WIDTH") ? 
+         Edit_line_w.Set_text(conf.Real("LINE_WIDTH").S) ;
+    .
+	
+METHOD fill_combos|_labels_and_do_other_localizations :
+PUSH in_construct = TRUE :
+	STR to_show|_what[] << "All spirals"._All_spiral
+	..[] << "All, bold current"._All_bold_current
+	..[] << "All, bold all"._All_bold_all
+	..[] << "All, bolder"._All_bolder
+	..[] << "All, bolder, glove"._All_bolder_glove
+	..[] << "Single spiral (current only)"._Single_spiral
+	..[] << "Single spiral, bold"._Singe_bold
+	..[] << "Single spiral, bolder"._Singe_bolder
+	..[] << "None (hide all spirals)"._None_to_show
+	INT was_cur|rent_item = Show_spirals.Current
+	Show_spirals.Set_array(to_show[0 TO *])
+	Show_spirals.Select(was_cur)
+	--------------------------- 'colors of arms'
+	was_cur = Arm_colors.Current
+	to_show[].Clear
+	to_show[] << "White+Silver"._White_silver 
+	..[] << "Yellow+Green"._Yellow_green
+	..[] << "Red+Orange"._Red_orange
+	..[] << "Blue+Violet"._Blue_violet
+	..[] << "Green+Emerald"._Green_emerald
+	..[] << "Sky-blue+Dark-violet"._Skyblue_darkviolet
+	..[] << "Teal+Silver-blue"._Teal_silverblue
+	..[] << "Cyan+Lime"._Cyan_lime
+	Arm_colors.Set_array(to_show[0 TO *])
+	Arm_colors.Select(was_cur)
+	----------------------- 'LABELxLANG'
+	LabelXLang.Set_text("Language"._Language " (Language):")
+	//---------------------------- 'RESET'
+	//Reset.Set_text("Reset"._Reset_button)
+	---------------------- 'show'
+	LabelShow.Set_text("Show:"._Show)
+	--------------------- 'LABEL_LINE_W'
+	Label_line_w.Set_text("Line width:"._Line_width)
+	---------------------- 'select spiral'
+	LabelSelectSpiral.Set_text("Select satellite:"._Select_spiral)
+	---------------------- 'box width'
+	Label_box_width.Set_text("Box width, light-years:"._Box_width)
+	---------------------- 'period'
+	Label_period.Set_text("Period, years:"._Period)
+	----------------------- 'name'
+	LabelName.Set_text("Name:")
+	----------------------- 'CONE_ANGLE'
+	Label_cone_angle.Set_text("Cone angle (0...90):"._Cone_angle)
+	---------------- 'LABEL_ROTATE_PROJ'
+	Label_rotate_proj.Set_text("Rotate projection (0...360):"._Rotate_projection)
+	---------------- 'LABEL_INCLINATION'
+	Label_inclination .Set_text("Inclination (-180...180):"._Inclination)
+	----------------- 'LABEL_STARTING_A'
+	Label_starting_a.Set_text("Starting angle (0...360):"._Starting_angle)
+	--------------- 'LABEL_Eccentricity'
+	Label_Eccentricity.Set_text("e, Eccentricity (0...0.99999):"._e_Eccentricity)
+	----------------------- 'LABEL_MASS'
+	Label_Mass.Set_text("Central Black Hole Mass (of Sun):"._BH_mass)
+	--------------- 'LABEL_PLASMA_SPEED'
+	Label_plasma_speed.Set_text("Plasma speed kc (k=0...1):"._Plasma_speed)
+	-------------------- 'LABEL_FINAL_K'
+	Label_final_k.Set_text("Final plasma speed (0 if the same):"._Final_plasma_k)
+	------------ 'LABEL_DEVIATION_ANGLE'
+	Label_deviation_angle.Set_text("Deviation angle (-90...90)"._Deviation_angle)
+	------------ 'LABEL_FINAL_DEVIATION'
+	Label_final_deviation.Set_text("Final deviation angle (in perihole)"
+	""._Final_deviation_angle)
+	------------------- 'LABELARMCOLORS'
+	LabelArmColors.Set_text("Spiral arms colors:"._Spiral_arms_colors)
+	-------------- 'LABEL_ACTIVITY_TIME'
+	Label_activity_time.Set_text("Activity time, years:"._Activity_time)
+	-------------- 'LABEL_LAST_ACTIVITY'
+	Label_last_activity.Set_text("Skip last activity, years:"._Last_activity)
+	------------------- 'LABEL_MAX_DIST'
+	Label_max_dist.Set_text("Maximal distance, light-years:"._Max_dist)
+	----------------------- 'LABELHINT1'
+	LabelHint1.Set_text(
+		"Hint: drag center of spiral with CONTROL move to the galaxy center"
+		""._Hint1)
+	--------------------- 'LABEL_FILTER'
+	Label_Filter.Set_text("Filter satellites:"._Filter_satellites)
+	--------------- 'LABEL_SPEED_FILTER'
+	Label_speed_filter.Set_text("Filter plasma speed"._Filter_plasma_speed)
+	------------- 'LABEL_FIRST_ACTIVITY'
+	Label_first_activity.Set_text("Skip first activity"._Skip_1st_activity)
+	------------------ 'TIME_DISTORTION'
+	Time_distortion.Set_text("Time distortion"._Time_distort)
+	----------------- 'LOAD_UNDER_IMAGE'
+	Load_under_image .Set_text("Load under image"._Load_under_image)
+	------------------ 'DRAW_BACKGROUND'
+	Draw_background.Set_text("Draw background image"._Draw_background)
+	----------------------- '4 combos'
+	Satellite_num.Select(0)
+	Show_spirals.Select(0)
+	Arm_colors.Select(0) 
+	----------------------- 'set initial values'
+	Edit_name.Set_text("")
+	Box_width.Set_text("100000")
+	Period_rot.Set_text("100000")
+	Eccentricity.Set_text("0.5")
+	Mass_BH.Set_text("1000000")
+	--------- 'emission'
+	Plasma_speed.Set_text("1")
+	Final_plasma_speed.Set_text("0.2")
+	Deviation_angle.Set_text("90")
+	Final_deviation.Set_text("") // "60")
+	Cone_angle.Set_text("90")
+	Filter_speed.Set_text("")
+	--------- 'galactic'
+	Edit_tilt.Set_text("0")
+	Rotate_proj.Set_text("0")
+	Inclination.Set_text("0")
+	Starting_angle.Set_text("0")
+	Activity_time.Set_text("120000")
+	First_activity.Set_text("0")
+	Last_activity.Set_text("0")
+	--------- 'image'
+	Rotate_image.Set_text("0")
+	Scale_image.Set_text("100")
+	------------------ 'MAKE_SCREENSHOT'
+	Make_screenshot.Set_text("Screenshot !"._Make_screenshot)
+	INT was_sel|ected = Screenshot_type.Current
+	Screenshot_type.Set_items(
+	"Usual, as is"._usual_as_is #NL
+	""("No lines in odd rows (row is 100 pixels height)"._ss_nolinesoddrows #NL)
+	""("No lines in even rows"._ss_nolinesevenrows #NL)
+	""("No lines in odd columns (column is 100 pixels width)"._ss_nolinesoddcols 
+	#NL)
+	""("No lines in even columns"._ss_nolinesevencols #NL)
+	""("Double all rows with no lines version"._ss_doublerows #NL)
+	""("Gradient visible lines (in)"._Gradient_in #NL)
+	""("Gradient visible lines (out)"._Gradient_out #NL)
+	""("Gradient visible lines (in+out)"._Gradient_in_out #NL)
+	""("Anti-gradient visible lines (in)"._Anti_gradient_in #NL)
+	""("Anti-gradient visible lines (out)"._Anti_gradient_out #NL)
+	""("Anti-gradient visible lines (in+out)"._Anti_gradient_in_out #NL)
+	""("Line around of the spiral, 100 pt wide, no lines"._AroundSpiral100nolines
+		#NL)
+	""("Line around of the spiral, 100 pt wide, with lines"._AroundSpiral100lines
+		#NL)                                                                        
+	""("Line around of the spiral, 200 pt wide, no lines"._AroundSpiral200nolines
+		#NL)
+	""("Line around of the spiral, 200 pt wide, with lines"._AroundSpiral200lines
+		)
+	)
+	Screenshot_type.Select(was_sel)
+	
+	Grid_options.Set_text("No grid"._No_grid
+	""("Grid 100x100, no notes"._Grid100x100)
+	""("Grid 200x200, no notes"._Grid200x200)
+	""("Grid 100x100, notes on top and left"._Grid100x100topleft)
+	""("Grid 200x200, notes on top and left"._Grid200x200topleft)
+	""("Grid 100x100, notes each 10 cells"._Grid100x100each10)
+	""("Grid 200x200, notes each 10 cells"._Grid200x200each10)
+	""("Grid in source, 100x100"._Grid_in_source100x100)
+	""("Grid in source, 200x200"._Grid_in_source200x200)
+	""("Grid in source, 300x300"._Grid_in_source300x300)
+	""("Grid in source, 400x400"._Grid_in_source400x400))
+; 
+	Fill_scale_rotate .
+	
+	
+METHOD Fill_scale_rotate :
+	PUSH in_construct = TRUE :
+	CASE ?
+	[Scale_rotate_spirals] ?
+	     Label_RotateImage.Set_text("Rotate all spirals (0...360)"._RotAllSpirals)
+	     Label_ScaleImage.Set_text("Scale spirals, %"._ScaleSpirals)
+	[Scale_up_shift] ?
+	     Label_RotateImage.Set_text("Rotate all (0...360)"._RotAll)
+	     Label_ScaleImage.Set_text("Scale up all, %"._ScaleUpAll)
+	ELSE Label_RotateImage.Set_text("Rotate image (0...360):"._Rotate_photo)
+	     Label_ScaleImage.Set_text("Scale image, %"._Scale_photo)
+	; 
+	; .
+	
+STR all_languages[]
+STR current_lang|uage
+
+
+OVERRIDE moved :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+
+OVERRIDE resize :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+	
+OVERRIDE closing ==> {Form}.{action} :
+	RESULT = 'DECLINE' 
+	Main_.Close .
+	
+-------------------- '{satellite_param} STRUCTURE'
+	
+STRUCTURE {satellite_param|eters} :
+	STR Name|_of_satellite
+    REAL Period|_rotation
+    REAL Eccentricity
+    REAL Cone_a|ngle
+    REAL Tilt|_before_rotate
+    REAL Rotate|_projection
+    REAL Inclin|ation
+    REAL StartA|ngle
+    REAL Deviation|_angle
+    REAL Deviation_final
+    REAL SpeedK|_plasma
+    REAL FinalK|_plasma
+    REAL Filter_speed|_plasma
+    INT ArmsColors
+    REAL Activity|_time
+    REAL First_ac|tivity
+    REAL Last_act|ivity 
+    REAL Max_dist|ance
+    {point} Center_gal|axy
+    ------------------------ 'position on orbit'
+    INT Last_i_pos
+    .
+    
+{satellite_param} All_satellites[]
+BOOL setting_spiral|_parameters    
+
+OVERRIDE selection_change :
+	CASE setting_spiral || in_construct ? ==> ;
+    CASE sender_alias ?
+    ["SCREENSHOT_TYPE"]: NONE
+    ["GRID_OPTIONS"]:
+        NxN_in_source = FALSE
+        Grid_letters = 0
+        CASE Grid_options.Current ? 
+        [0]: Grab_to_grid = 0
+        [1]: Grab_to_grid = 100
+        [2]: Grab_to_grid = 200
+        [3]: Grab_to_grid = 100
+        	 Grid_letters = 1
+        [4]: Grab_to_grid = 200
+        	 Grid_letters = 1
+        [5]: Grab_to_grid = 100
+        	 Grid_letters = 2
+        [6]: Grab_to_grid = 100
+        	 NxN_in_source = TRUE
+        	 Grid_letters = 1
+        [7]: Grab_to_grid = 200
+        	 NxN_in_source = TRUE
+        	 Grid_letters = 1
+        [8]: Grab_to_grid = 300
+        	 NxN_in_source = TRUE
+        	 Grid_letters = 1
+        [9]: Grab_to_grid = 400
+        	 NxN_in_source = TRUE
+        	 Grid_letters = 1
+        ;
+    ["TRANSPARENCY_SEL"]: Transp = Transparency_sel.Text.Int
+    ["LIST_LANG"]: current_lang = all_languages[List_lang.Current]
+        //DEBUG: "current lang=" current_lang #NL ;
+    	Set_directory_lang(current_lang.Extract_path)
+    	STR name_l|anguage = List_lang.Text
+    	Localize(name_l.After("_"), "", FALSE)
+    	fill_combos
+    	--------------------------- 'store in registry'
+    	{Config} conf|_temp = New_write_config("Multi-spiral-model", 'USER', "")
+    	conf.Set_s("current_lang", name_l)
+    ["SHOW_SPIRALS"]: NONE
+    ["SATELLITE_NUM"]: 
+        selected_satellite
+        Main_.Stack_undo[].Clear     
+    	Main_.Stack_redo[].Clear     
+
+    ["ARM_COLORS"]:
+    	CASE !setting_spiral ? 
+    	     All_satellites[Satellite_num.Current].ArmsColors = Arm_colors.Current
+    	;
+    ; 
+    Main_.Invalidate .
+    
+METHOD selected_satellite :
+    CASE setting_spiral || in_construct ? ==> ;
+	PUSH setting_spiral = TRUE :
+		 {satellite_param} s|piral_selected 
+		 s = All_satellites[Satellite_num.Current].CLONE   
+	     ---------------------------------- 'center may be local'
+	     Main_.Offset_x = s.Center_gal.X
+	     Main_.Offset_y = s.Center_gal.Y
+              //DEBUG: "selected sat:" Satellite_num.Current 
+              //       " move gal center to " s.Center_gal.S #NL 
+              //       FOR ss IN All_satellites[] :
+              //           << "[sat" ss.INDEX ".Center=" ss.Center_gal.S "]"#NL ;
+              //       ;
+	     ---------------------------------- 'name'
+		 Edit_name.Set_text(s.Name)
+		 ---------------------------------- 'galaxy parameters'  
+	     Period_rot.Set_text(s.Period.S) 
+	     Eccentricity.Set_text(s.Eccentricity.S)
+	     Cone_angle.Set_text(s.Cone_a.S)
+	     ---------------------------------- 'satellite parameters'
+	     Plasma_speed.Set_text(s.SpeedK.S)
+	     Final_plasma_speed.Set_text(if_else(s.FinalK.Near(0), "", s.FinalK.S))
+	     Filter_speed.Set_text(s.Filter_speed.S)
+	     Deviation_angle.Set_text(s.Deviation.S)
+	     Final_deviation.Set_text(if_else(s.Deviation_final.Near(0), "",
+	     	 s.Deviation_final.S))
+	     ---------------------------------- 'active time'
+	     Activity_time.Set_text(s.Activity.S)
+	     First_activity.Set_text(s.First_ac.S)
+	     Last_activity.Set_text(s.Last_act.S)
+	     CASE !Same_max_dist ? 
+	          Max_dist.Set_text(s.Max_dist.S) ;
+	     ---------------------------------- 'view parameters'
+	     Edit_tilt.Set_text(s.Tilt.S)
+	     Rotate_proj.Set_text(s.Rotate.S)
+	     Inclination.Set_text(s.Inclin.S)
+	     Starting_angle.Set_text(s.StartA.S)
+	     Arm_colors.Select(s.ArmsColors)
+	;
+    .
+    
+METHOD hint_a|_large_semiaxis_as_hint(
+INT i_s|atellite_index, BOOL set_hint|_text) ==> STR,
+OPERATORS({Vector}, {Matrix}), PUBLIC
+    :
+	{Elliptic_orbit} orbit|_of_satellite
+	REAL m_T|_period_multiplyer
+	REAL m_a|_coords_multiplyer
+	REAL m_M|ass_blak_hole_mult
+	{satellite_param} s|piral_sel = All_satellites[i_s].CLONE
+	orbit = Main_.get_orbit(s.Eccentricity, FALSE, 0)
+	CASE orbit != NONE ? 
+    	 m_T = s.Period / T0
+    	 m_M = Mass_BH.Text.Real * Sun_mass / Mass_BH0
+    	 m_a = (m_T.qq * m_M).Power(1.0/3) / 2
+    	 REAL a_max_v|elocity = orbit.Maximal_speed 
+    	 .. /= (s.Period / 100_000).Power(1/3.0)
+    	 .. *= (Mass_BH.Text.Real / 1000_000).Power(1/3.0)
+    	 STR r|esulting_text = "a = " ((orbit.Q_min + .Q_max)*m_a/LY).S_float(4) 
+         		" L.Y. q = " (orbit.Q_min*m_a/LY).S_float(4) " L.Y."
+         		" v.max=" (a_max_v/1000).Int.S " km/s"
+    	 ------------------ 'final tilt angle'
+    	 Main_.provide_matrices(s)
+    	 {Vector} line_1|_TEMP = Vector_3(0, 0, 1) * Main_.M_transform
+    	 REAL a|ngle_inclination = Arccos(line_1.[2]) * 180 / PI
+    	 CASE 180 >= a > 90 ? a = a - 180 ;
+		 r = _ " tilt:" a.S_float(1)
+    	 CASE set_hint ? LabelHint1.Set_text(r) ;
+    	 RESULT = r
+	; .
+	
+BOOL Draw_background_image = TRUE
+STR Last_box_width
+
+OVERRIDE value_change :
+	CASE setting_spiral || in_construct ? 
+	     Last_box_width = Box_width.Text ==> ;
+	{satellite_param} s|piral_selected 
+	s = All_satellites[Satellite_num.Current].CLONE
+	PUSH setting_spiral = TRUE :
+    CASE sender_alias ?
+    ["EDIT_LINE_W", "LABEL_FILE"]: NONE
+    ["DRAW_BACKGROUND"]: Draw_background_image = Draw_background.Checked
+    ["FILTER_SAT"]: NONE
+    ["TIME_DISTORTION"]: NONE
+    ["LABELHINT1"]: NONE
+    ["EDIT_NAME"]: s.Name = Edit_name.Text
+    	BOOL renaming = TRUE
+    ["MASS_BH"]: NONE = hint_a(Satellite_num.Current, TRUE)
+    ["BOX_WIDTH"]: 
+    	CASE Compensate_periods && Last_box_width != "" ?
+    		 REAL change|_koeff = (Box_width.Text.Real/Last_box_width.Real)
+    		 .. = _.Power(2/3.0)
+    		 
+    		 FOR sat IN All_satellites[] :
+    		 	 DEBUG:
+    		 	 	CASE sat.INDEX==Satellite_num.Current ? 
+    		 	 	     << "old box=" Last_box_width " new_box=" Box_width.Text
+    		 	 	     " k=" change.S " sat.Period:" sat.Period.S 
+    		 	 	     "->" (sat.Period * change).S #NL ;
+    		 	 ;
+    		     sat.Period *= change 
+    		     sat.Activity *= change
+    		 	 All_satellites[sat.INDEX] = sat.CLONE    
+    		 ;
+    		 FOR sat IN All_satellites[Satellite_num.Current TO *] :
+    		     Activity_time.Set_text(sat.Activity.S)
+    		     Period_rot.Set_text(sat.Period.S)
+    		     BREAK sat ;
+    	;
+    	Last_box_width = Box_width.Text
+        Main_.Rescale
+        Main_.Invalidate ==>
+    ["ROTATE_IMAGE", "SCALE_IMAGE"]: 
+        Main_.Rescale
+        Main_.Invalidate ==>
+    ["EDIT_TILT"]: s.Tilt = Edit_tilt.Text.Real
+    ["PERIOD_ROT"]: s.Period = Period_rot.Text.Real
+    	NONE = hint_a(Satellite_num.Current, TRUE)
+    ["ECCENTRICITY"]: s.Eccentricity = Eccentricity.Text.Real
+        //DEBUG: "set e=" s.Eccentricity #NL ;
+    	s = auto_final_speed(s)
+    	NONE = hint_a(Satellite_num.Current, TRUE)
+    ["CONE_ANGLE"]: s.Cone_a = Cone_angle.Text.Real
+    ["ROTATE_PROJ"]: s.Rotate = Rotate_proj.Text.Real
+    ["INCLINATION"]: s.Inclin = Inclination.Text.Real
+    ["STARTING_ANGLE"]: s.StartA = Starting_angle.Text.Real
+    ["PLASMA_SPEED"]: s.SpeedK = Plasma_speed.Text.Real
+    		s = auto_final_speed(s)
+    ["FINAL_PLASMA_SPEED"]: s.FinalK = Final_plasma_speed.Text.Real
+    ["DEVIATION_ANGLE"]: s.Deviation = Deviation_angle.Text.Real
+    ["FINAL_DEVIATION"]: s.Deviation_final = Final_deviation.Text.Real
+    ["ACTIVITY_TIME"]: s.Activity = Activity_time.Text.Real
+    ["FIRST_ACTIVITY"]: s.First_ac = First_activity.Text.Real
+    ["LAST_ACTIVITY"]: s.Last_act = Last_activity.Text.Real
+    ["MAX_DIST"]: s.Max_dist = Max_dist.Text.Real
+    ["FILTER_SPEED"]: s.Filter_speed = Filter_speed.Text.Real
+    ; 
+    --------------------------- 'always store center point as local center'
+    //DEBUG: "!!!!!!!!!!!!!!!!!!!change " sender_alias" sat "Satellite_num.Current 
+    //        "  center to " s.Center_gal.S #NL 
+    //         FOR ss IN All_satellites[] :
+    //             << ".[sat" ss.INDEX ".Center=" ss.Center_gal.S "]"#NL ;
+    //;
+    All_satellites[Satellite_num.Current] = s.CLONE
+    ;
+    CASE !renaming ? Copy_params_same_spiral ;
+    need_invalidate = TRUE .
+    
+METHOD auto_final_speed(
+{satellite_param} s|atellite_changing) ==> {satellite_param}
+    :
+    RESULT = s.CLONE
+	CASE !Auto_final_speed ? ==> ;
+    REAL k|oeffitient_speed = s.Eccentricity + 1
+    RESULT.FinalK = (s.SpeedK * k).Min(1)
+    CASE !down_with_shift ? RESULT.FinalK = _.S_float(3).Real ;
+    PUSH setting_spiral = TRUE :
+         Final_plasma_speed.Set_text(RESULT.FinalK.S_float(2)) ;
+    //DEBUG: "--> set FinalK=" RESULT.FinalK " (e=" s.Eccentricity 
+    //       ", k=" k ", speed_k=" s.SpeedK ") --> " Final_plasma_speed.Text #NL ;
+    need_invalidate = TRUE .
+    
+BOOL need_invalidate, PUBLIC
+STR save_scr|inshot_directory
+
+FUN next_name(STR name|_of_png_file) ==> STR :
+	//DEBUG: "next name of [" name "]"#NL ;
+    STR ex|tention = name.Ext 
+    RESULT = name.Change_ext("") 
+    FOR i IN [RESULT.Len-1 DOWNTO 0] :
+        CASE "0" <= RESULT.[i] <= "9" ? NONE
+        ELSE INT old|_n|umber = RESULT.[i+1 TO *].Int
+        	 RESULT = _.[0 TO i] (old+1).S ex 
+             //DEBUG: "next is [" RESULT "]"#NL ;
+        	 ==> ;
+    ;
+    RESULT = _ "2" ex .
+    
+METHOD After_satellite ==> STR
+ 	:
+    FOR sat IN All_satellites[] :
+        RESULT << "AFTER_" sat.Index.S ": " (sat.INDEX+1).S 
+        	"" if(sat.Name != "", ": " sat.Name) #NL ; .
+    
+
+OVERRIDE click :
+    CASE sender_alias ?
+    ["CHANGE_SCALE"]:
+        INT old_sc|ale = Scale_image.Text.Int
+        CASE Change_scale.Current ? 
+        ["Dec"]: old_sc = (_ - 50).Max(50) / 50 * 50
+        ["Inc"]: old_sc = (_ + 50) / 50 * 50 ;
+        Scale_image.Set_text(old_sc.S)
+    ["SPEED_SWITCH"]:
+    	REAL old_s|peed
+    	--------------------------------- 'speed__switch', REUSED 
+    	old_s = Plasma_speed.Text.Real
+        CASE sender.{Paint_turtle}.Current ? 
+        ["Dec"]: Plasma_speed.Set_text((old_s - 0.001).Max(0.001).S) 
+        ["Inc"]: Plasma_speed.Set_text((old_s + 0.001).Min(1).S)
+        ELSE
+         	CASE old_s >= 1 ? 
+         	     Plasma_speed.Set_text("0.2")
+        	ELSE Plasma_speed.Set_text("1") ;
+        ;
+        ---------------------------------
+    ["SPEED_SWITCH_2"]:
+    	LIKE .... 'speed__switch', BUT(Plasma==>Final_plasma)*?
+    ["LINE_WIDTH_1"]: Edit_line_w.Set_text("1")
+    ["BH_MASS_CHANGE"]:
+        CASE ?
+        [Mass_BH.Text==1_000_000.S] ? Mass_BH.Set_text(4_270_000.S)
+        ELSE Mass_BH.Set_text(1_000_000.S)
+        ;
+    ["STAR_FILTER"]:
+        CASE Enable_filtering && Filter_sat.Text=="*" ? 
+             Filter_sat.Set_text("#") 
+        ELSE Filter_sat.Set_text("*") ;
+    	Enable_filtering = TRUE
+    ["MAKE_SCREENSHOT"]:
+        CASE Screenshot_scale > 200 ?
+	         REAL k|oeffitient_scale 
+	         k = Screenshot_scale.Pixels_to_points/Main_.PBox.Width
+        ELSE k = Screenshot_scale / 100.0 ;
+        CASE !Key.Control ? 
+	         {Bitmap} bmp|_temp = New_bitmap(
+	         	(Main_.PBox.Width * k).Points_to_pixels,
+	         	(Main_.PBox.Height * k).Points_to_pixels, 32)
+	        	 
+	         Main_.View_size = Pt(bmp.Width.Pixels_to_points,
+	          					 bmp.Height.Pixels_to_points)
+	         DEBUG: "created bitmap " bmp.Width " x " bmp.Height #NL ;
+	        	 
+    	     PUSH Main_.Paint_squares_NxN :
+    	          CASE NxN_in_source ? 
+    	               Main_.Paint_squares_NxN = Grab_to_grid;
+    	          					  
+    	          Main_.Paint_to(bmp.Canvas, TRUE) 
+                  //DEBUG: "call Paint_to Paint_squares_NxN=" 
+                  // ""Main_.Paint_squares_NxN " Grab_to_grid=" Grab_to_grid #NL 
+                  // {Png}.To_file(bmp, "before_grab.png", 100)
+                  // ;
+    	          
+    	     ;
+        	 CASE Cell_lines > 0 ? 
+        	      {Bitmap} src_c|lear_temp = New_bitmap(
+        	        Main_.PBox.Width.Points_to_pixels,
+	        	 	Main_.PBox.Height.Points_to_pixels, 32) 
+	        	 
+        	      PUSH Main_.Skip_all_sat = TRUE :
+        	      PUSH Main_.Paint_squares_NxN :
+        	           CASE NxN_in_source ? 
+        	                Main_.Paint_squares_NxN = Grab_to_grid;
+        	      	   Main_.Paint_to(src_c.Canvas, TRUE)
+        	      ;
+        	      ;
+        	 ;
+        	 CASE !NxN_in_source { 
+    	     CASE Grab_rotated ? 
+    	          bmp = bmp.Rotate_flip(90, FALSE, FALSE) ;
+    	     PUSH Transp :
+    	       CASE Transp==0 ? Transp=98 ;
+    	       INT dt|elta_transparency = 17     
+    	       CASE Screenshot_type.Current ?
+    	       [0]: NONE
+    	       [1]: no_lines_in_odd_rows(bmp)
+    	       [2]: no_lines_in_even_rows(bmp)
+    	       [3]: no_lines_in_odd_cols(bmp)
+    	       [4]: no_lines_in_even_cols(bmp)
+    	       [5]: bmp = double_all_rows_with_no_lines_rows(bmp)
+    	       [6]: bmp = gradient_lines_shot(bmp, -1, Transp, delta_tr=-dt)
+    	       [7]: bmp = gradient_lines_shot(bmp, +1, Transp, delta_tr=-dt)
+    	       [8]: bmp = gradient_lines_shot(bmp, 0, Transp, delta_tr=-dt)
+    	       [9]: bmp = gradient_lines_shot(bmp, -1, 100-Transp, delta_tr=dt)
+    	       [10]: bmp = gradient_lines_shot(bmp, +1, 100-Transp, delta_tr=dt)
+    	       [11]: bmp = gradient_lines_shot(bmp, 0, 100-Transp, delta_tr=dt)
+    	       [12]: bmp = line_around_of_spiral(100, FALSE)
+    	       [13]: bmp = line_around_of_spiral(100, TRUE)
+    	       [14]: bmp = line_around_of_spiral(200, FALSE)
+    	       [15]: bmp = line_around_of_spiral(200, TRUE)
+    	       ;
+    	     ;
+        	 CASE Grab_to_grid > 0 ?
+        	      {Bitmap} src|_bitmap = bmp
+        	      src.Canvas.Units = 'PIXELS'
+        	      src_c.Canvas.Units = 'PIXELS'
+        	      INT gg|rid_size = Grab_to_grid
+        	      
+        	      bmp = New_bitmap(src.Width*(gg+1)/gg, .Height*(gg+1)/gg, 32)
+        	      bmp.Canvas...Units = 'PIXELS'
+						    ...Background = WHITE
+						    ...Erase
+						    ...Font.Size = (20 * gg / 50).Pixels_to_points
+						    ...Font.Face = "Times New Roman"
+        	      INT y_dest|ination = 0
+        	      FOR y IN [0 TO src.Height-1] <-------------------------
+        	      	  INT x_dest|ination = 0
+        	      	  FOR x IN [0 TO src.Width-1] :
+        	      	  	  CASE Cell_lines ? 
+        	      	  	  [0]: {Canvas} canva|s_source = src.Canvas 
+        	      	  	  [1]: 
+        	      	  	      	CASE (x/gg+y/gg) % 2 == 1 ? 
+        	      	  	      	     canva = src.Canvas
+        	      	  	      	ELSE canva = src_c.Canvas ;
+        	      	  	  [2]: 
+        	      	  	      	CASE (x/gg+y/gg) % 2 != 1 ? 
+        	      	  	      	     canva = src.Canvas
+        	      	  	      	ELSE canva = src_c.Canvas ;
+        	      	  	  ;
+        	      	      bmp.Canvas.Copy_rect(
+        	      	      		{rect}(Loc=Pt(x_dest,y_dest), W=gg, H=gg),
+        	      	      		canva, 
+        	      	      		{rect}(Loc=Pt(x, y), W=gg, H=gg))
+        	      	      		
+        	      	      x_dest += gg+1
+        	      	      NEXT x += gg 
+        	      	  ;
+        	      	  y_dest += gg+1
+        	      	  NEXT y += gg
+        	      ------------------------------------------------------>
+
+				  PUSH bmp.Canvas.Foreground = WHITE {
+					   FOR y IN [-1 TO src.Height-1] <----------------
+					       bmp.Canvas.Line(Pt(0, y), Pt(bmp.Width, y))
+					       CASE Grid_letters > 0 ?
+					            REAL gd_x|_grid_digits = 0
+					       	   --------------------- 'grid__digits', REUSED     
+        	      	      	   PUSH bmp.Canvas.Foreground = BLACK :
+        	      	      	   FOR dd IN [0 TO 1] :
+	        	      	           bmp.Canvas.Text(
+	        	      	           	 Pt(gd_x+2-dd, 
+	        	      	           	  y + gg/2 - 10.Pixels_to_points - dd), 
+	        	      	           	 ((y+1)/(gg+1) + 1).S)
+	        	      	           	  
+        	      	      	   	   bmp.Canvas.Foreground = WHITE
+        	      	      	   ;
+    	      	               ;
+    	      	               ---------------------
+        	      	      ;
+        	      	      NEXT y += gg+1
+					   ----------------------------------------------->
+					   FOR x IN [-1 TO src.Width-1] <-----------------
+					       bmp.Canvas.Line(Pt(x, 0), Pt(x, bmp.Height))
+        	      	       CASE Grid_letters > 0 ?
+        	      	       		REAL gd_y|_grid_digits = 0     
+        	      	       		STR letter|_to_draw
+        	      	       		------------------- 'grid__letters', REUSED
+        	      	      	    PUSH bmp.Canvas.Foreground = BLACK :
+        	      	      	    FOR dd IN [0 TO 1] :
+        	      	      	    	letter = ((x+1)/(gg+1) % 26 + "A".Ord).Char
+        	      	      	    	CASE (x+1)/(gg+1) >= 26 ? 
+        	      	      	    	     letter = _ ((x+1)/(gg+1) / 26).S ;
+	        	      	           	bmp.Canvas.Text(
+	        	      	           		Pt(x + gg/2 - 10.Pixels_to_points -dd, 
+	        	      	           			gd_y+2-dd), 
+	        	      	           		letter)
+	        	      	           		
+        	      	      	   	    bmp.Canvas.Foreground = WHITE
+        	      	      	    ;
+    	      	                ;
+    	      	                -------------------
+        	      	       ;
+					       NEXT x += gg+1
+					   ----------------------------------------------->
+					   CASE Grid_letters==2 && src.Width/gg > 10 ? 
+					   		FOR x IN [(gg+1)*10 TO src.Width-gg-1] :
+					   		    gd_x = x
+					   			FOR y IN [-1 TO src.Height-1] :
+					   				LIKE ....... 'grid__digits'
+					   				NEXT y += gg+1
+					   			;
+					   			NEXT x += (gg+1)*10
+					   		;
+					   		gd_x = ((src.Width*1.0/gg).Int - 1) * (gg+1) + gg*0.8
+					   		FOR y IN [-1 TO src.Height-1] :
+					   		    LIKE ....... 'grid__digits'
+					   		    NEXT y += gg+1
+					   		;
+					   ;
+					   CASE Grid_letters==2 && src.Height/gg > 10 ? 
+					   		FOR y IN [(gg+1)*10 TO src.Height-gg-1] :
+					   		    gd_y = y
+					   			FOR x IN [-1 TO src.Width-1] :
+					   				LIKE ....... 'grid__letters'
+					   				NEXT x += gg+1
+					   			;
+					   			NEXT y += (gg+1)*10
+					   		;
+					   		gd_y = ((src.Height*1.0/gg).Int - 1) * (gg+1) + gg*0.7
+					   		FOR x IN [-1 TO src.Width-1] :
+					   		    LIKE ....... 'grid__letters'
+					   		    NEXT x += gg+1
+					   		;
+					   ;
+				  }
+        	 ;
+        	 }
+        ELSE 
+             NONE = hint_a(Satellite_num.Current, TRUE)
+        	 {Geometry}.{rect} source|_rectangle_on_screen
+        	 source.Loc = Client_pos.Offset(
+        	 	0, Satellite_num.Bounds.Top)
+        
+        	 bmp = New_bitmap(Client_width.Points_to_pixels, 
+        	 	(LabelHint1.Bounds.Bottom - Satellite_num.Bounds.Top
+        	 	).Points_to_pixels, 32)
+        	 	
+        	 bmp = draw_to(bmp)
+        ;
+        CASE Key.Shift ? 
+             CASE save_scr == "" ? 
+                  CASE !Dialog_save_scr.Select_file ? ==> ;
+                  save_scr = Dialog_save_scr.File_name
+             ELSE save_scr = next_name(_) ;
+             {Png}.To_file(bmp, save_scr, 100)
+        ELSE NONE = bmp.To_clipboard 
+        	 save_scr = "" ;
+        
+    ["BACK_DIRECTION"]:
+        Period_rot.Set_text((-Period_rot.Text.Real).S)
+    ["LOAD_UNDER_IMAGE"]:
+        CASE Locked_images ? ==> ;
+    	Main_.Scaled_image = NONE
+    	CASE Images_path != "" ? 
+    	     Dialog_image.Initial_path = Images_path ;
+        CASE !Dialog_image.Select_file ? 
+             CASE Main_.All_images[].Count==0 ? ==> ;
+             CASE !ask("Remove all images?"._Remove_all_img) ? ==> ;
+             Main_.Clear_images
+             Thumbnails.Invalidate_all
+             Main_.Invalidate ==> ;
+        Images_path = Dialog_image.Filename.Extract_path
+        Main_.Save_current_image(TRUE)
+        STR f|ilename = Dialog_image.Filename  
+        INT ch|ecksum = Calculate_checksum(f)
+        INT ch2|ecksum = Calculate_checksum2(f)
+        DEBUG:
+        	CASE ch==0 ? 
+        	     << "could not clalculate checksum!" #NL ;
+        ;
+        STR format|_actual = Actual_format(f)
+        CASE format ? 
+        [".png"]: Main_.Image = {Png}.From_file(f, 'FULL')
+        [".bmp"]: .. = {Bmp}.From_file(f)
+        [".gif"]: .. = {Gif}.Load(Path= f).Bitmap
+        [".jpg", ".jpeg", ".jpe"]: .. = {Jpeg}.From_file(f, 'FULL')
+        [".tif", ".tiff"]: .. = {Tiff}.From_file(f) 
+        [".webp"]: .. = {WebP}.From_file(f) 
+        	CASE Main_.Image.Width==0 ? 
+        	     message("To open WEBP images format properly the libwebp64.dll"
+        	     " should be available either via the system Path environment "
+        	     "variable or placed in the same directpry where the "
+        	     "GalaxyModel.exe is located. You can freely obtain it with "
+        	     "some 3rd party applications or seoarately. PLEASE DON'T "
+        	     "DOWNLOAD this file from arbitrary and unverified sources, "
+        	     "malware is often distributed under the guise of this dll. ") ;
+        ;
+        //DEBUG: "loaded: =" Main_.Image.Width " x " .Height #NL ;
+        ------------------- 'loaded image'
+        Main_.Update_caption(f.Extract_file_name)
+        Main_.Checksums_of_images[.Current_image] = ch
+        Main_.Checksums2_of_images[.Current_image] = ch2
+        CASE Main_.Image.Width * .Height > 13_000_000 ? 
+             CASE ask("Image size (" Main_.Image.Width.S 
+                  " x " Main_.Image.Height.S ") is very big. "
+                  "Downscale it to fit 10M pixels ?"
+                  ) 
+                  ?
+                  FOR r IN [2 TO Main_.Image.Width] :
+                      CASE Main_.Image.Width*.Height/(r*0.5).q2 <= 10_000_000 ? 
+                           Main_.Image = Downscale(_, r*0.5, f, Format=format)
+                           BREAK r ;
+                  ;
+             ;
+        ;
+        DEBUG:
+              FOR i IN [0 TO Main_.All_images[].Count-1] :
+                  << i.S #TAB 
+                  << Main_.All_img_names[i] #TAB 
+                  << Main_.Checksums_of_images[i].Hex(8) #TAB 
+                  << Main_.Checksums2_of_images[i].Hex(8) #NL 
+              ;
+              ;
+        Main_.Invalidate
+        button_colors
+        Thumbnails.Invalidate_all
+        CASE Url_loaded != "" ? 
+             CASE !ask("Assign the URL stored with the model to the image "
+                  "just loaded?"#NL Url_loaded) 
+                  ? 
+                  Url_loaded = "" ==> ;
+             Main_.All_img_URLs[.Current_image] = Url_loaded
+             Url_loaded = ""
+        ;
+        Auto_stamp
+    ["OP_IMAGE"]:
+        CASE Locked_images ? ==> ;
+        Thumbnails.Invalidate_all     
+        //DEBUG: << Op_image.Current ": " Main_.Current_image #NL ;
+        CASE Op_image.Current ? 
+        ["Prev"]:
+		      CASE Main_.Current_image > 0 ? 
+		           Exchange_img(Main_.Current_image-1)
+		           Go_to_prev_image ==>
+		      ELSE ==> ;
+        ["Next"]:
+		 	  CASE Main_.Current_image < Main_.All_images[].Count-1 ?
+		           Exchange_img(Main_.Current_image)
+		 	       Go_to_next_image ==>
+		 	  ELSE ==> ;
+        ["Delete"]:
+            CASE Key.Control ? 
+                 Main_.Protected_img = Main_.Current_image 
+                 message("Images from this and above are protected!"
+                 		 ""._Protected) ==>
+            ;
+            CASE Main_.Current_image >= Main_.Protected_img >= 0 ? 
+                 CASE !ask("Image is protected. Remove protection and delete?"
+                      ""._Remove_protection) ? ==> 
+                 ;
+                 Main_.Protected_img = -1 ;     
+            Delete_current_image 
+            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count
+            	" Checksums: " Main_.Checksums_of_images[].Merge(",")
+            	" Ch2: " Main_.Checksums2_of_images[].Merge(",") 
+            	#NL ;
+            ==>
+        ["Dup"]:
+            CASE Main_.All_images[].Count==0 ? ==> ;
+            Main_.Save_current_image(TRUE) 
+            Main_.Update_caption(Main_.All_img_names[.Current_image]
+              "" if(.All_img_URLs[.Current_image] != "",
+              " URL: " .All_img_URLs[.Current_image]))
+              
+            CASE Key.Control ? 
+                 Main_.All_images[.Current_image] = Main_.Image.Inverse_colors
+                 Main_.All_scaled[.Current_image] = NONE
+                 Go_to_another_image
+                 CASE Main_.Protected_img >= 0 ? 
+                      Main_.Protected_img += 1 ;
+                 ;
+        	------------------------
+            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
+            		" Checksums: " Main_.Checksums_of_images[].Merge(",")
+            		" Ch2: " Main_.Checksums2_of_images[].Merge(",") #NL ;
+            ==>
+        ["Stamp"]:
+            Provide_stamp_param
+        	Stamp_param.Show
+            DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
+            		" Checksums: " Main_.Checksums_of_images[].Merge(",")
+            		" Ch2: " Main_.Checksums2_of_images[].Merge(",") #NL ;
+            ==>
+        ;
+        Go_to_another_image
+    ["ADD_SPIRAL"]:
+        CASE Add_spiral.Current ? 
+        ["Add"]:
+	        {satellite_param} s|piral_selected 
+	        NONE = Satellite_num.Add_item((All_satellites[].Count+1).S)
+	        PUSH setting_spiral = TRUE :
+		         s = All_satellites[Satellite_num.Current].CLONE
+	        	 CASE Key.Shift ? 
+	        		  All_satellites[].Insert(Satellite_num.Current+1, s.CLONE)     
+	        	 ELSE All_satellites[] << s.CLONE ;
+	        ;
+        	CASE Key.Shift ? 
+        	     Satellite_num.Select(.Current+1)
+        	ELSE Satellite_num.Select(.Count-1)
+        		 s.Name = ""
+        		 Edit_name.Set_text("")
+        		 All_satellites[*] = s.CLONE 
+        	;
+	        Main_.Rescale
+	        Main_.Invalidate
+        ELSE 
+        	------------------ 'menu spirals'
+        	popup_menu(
+
+	""	Item(	"DEL_SPIRAL",
+				"Delete spiral"._Del_spiral
+		).Disabled(
+		Satellite_num.Count <= 1
+		)
+
+	""	Item(	"DEL_RIGHT",
+				"Delete from this satellite to the end"
+		).Disabled(
+		Satellite_num.Count <= 1
+		)
+
+	""	Item(	"MOVE_UP",
+				"Move up"._Move_up
+		).Disabled(
+		Satellite_num.Current <= 0
+		)
+
+	""	Item(	"MOVE_DOWN",
+				"Move down"._Move_dn
+		).Disabled(
+		Satellite_num.Current >= .Count-1
+		)
+
+	""	Item(	"",
+				"Move after..."
+		)
+
+	""	Begin
+
+	""	Custom(After_satellite)
+
+	""	End
+
+	""	Separator
+
+	""	Item(	"ALL_CENTERS_HERE",
+				"Move all centers of spiral after current satellite here"
+		)
+
+	""	Item(	"COPY_CENTER",
+				"Copy current satellite center"
+		)
+
+	""	Item(	"PASTE_CENTER",
+				"Use copied center as the spiral center"
+		))
+
+
+
+        ;
+	["ADD_TO_ACTIVITY"]:
+        //DEBUG: "ADD_TO_ACTIVITY clicked"#NL ;
+		REAL p|eriod_rotation = Period_rot.Text.Real.Abs
+		REAL mul|tiplayer = 1
+		CASE Key.Shift ? mul = 0.05 ;
+    	CASE Add_to_activity.Current ? 
+    	["Inc"]:
+    		Activity_time.Set_text((.Text.Real + p * mul).S)    
+    	["Dec"]: 
+    		CASE Activity_time.Text.Real > Period_rot.Text.Real ? 
+    			 mul = 1
+    			 CASE Key.Shift ? mul = 0.1 ;
+    		     Activity_time.Set_text((.Text.Real - p * mul).S)
+    		;
+    	;
+    	CASE Key.Control ?
+    	     FOR sat IN All_satellites[] :
+    	         CASE sat.INDEX == Satellite_num.Current ? 
+    	              CONTINUE sat ;
+    	         CASE Add_to_activity.Current ?
+    	         ["Inc"]: sat.Activity += p * mul
+    	         ["Dec"]: sat.Activity -= p * mul ;
+    	     ;
+    	;
+
+    ["SAVE_LOAD"]:
+        CASE Save_load.Current ? 
+        ["Save"]:
+            CASE Transform_model.Visible 
+                 && (Transform_model.Rotation.Text != "" 
+                 	|| Transform_model.Scaleing.Text !IN ["", "100"]
+                 	|| !((Transform_model.X_offset-0.5)*(.Y_offset-0.5)).Near(0)) 
+                 	?
+                    //DEBUG: "Rot=" Transform_model.Rotation.Text
+                    //    " Scale=" Transform_model.Scaleing.Text
+                    //    " X=" Transform_model.X_offset
+                    //    " Y=" Transform_model.Y_offset ;
+                 	message("Transformations did not applied. Either apply "
+                 	"them first or close Trasform model window.") ==> ;
+    	    {In_file_config} c|onfiguration_temp
+    		----------------------- 'select', REUSED     
+    	    CASE !Dialog_file_save.Select_file ? ==> ;
+    	    c = New_write_in_file_config(Dialog_file_save.Filename, "")
+    	    -----------------------
+    	    PUSH c.No_write = TRUE :
+	    	     ----------------------- 'common parameters'
+	    	     c.Set_r("Box_width", Box_width.Text.Real)
+	    	     c.Set_i("Count_spirals", Satellite_num.Count)
+	    	     c.Set_r("Mass_BH", Mass_BH.Text.Real)
+	    	     ----------------------- '+image'
+	    	     c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
+	    	     c.Set_r("Offset_x", Main_.Offset_x)	
+	    	     c.Set_r("Offset_y", Main_.Offset_y)
+	    	     //CASE !Scale_up_shift ? 
+		    	      c.Set_r("Image_rotate", Rotate_image.Text.Real)
+		    	      c.Set_r("Image_scale", Scale_image.Text.Real) //;
+	    	     c.Set_b("Mirrored", Image_mirrored)
+	    	     ----------------------- 'loop on all spirals'
+	    	     FOR i IN [0 TO Satellite_num.Count-1] :
+	    	         PUSH c.Section = (i+1).S :
+		    	          s = All_satellites[i].CLONE
+		    	          c...Set_s("Name", s.Name)
+		    	           ...Set_r("Period", s.Period)
+		    	           ...Set_r("Eccentricity", s.Eccentricity)
+		    	           ...Set_r("Deviation", s.Deviation)
+		    	           ...Set_r("Deviation_final", s.Deviation_final)
+		    	           ...Set_r("Cone_a", s.Cone_a)
+		    	           ...Set_r("Tilt", s.Tilt)
+		    	           ...Set_r("Rotate", s.Rotate)
+		    	           ...Set_r("Inclin", s.Inclin)
+		    	           ...Set_r("StartA", s.StartA)
+		    	           ...Set_r("SpeedK", s.SpeedK)
+		    	           ...Set_r("FinalK", s.FinalK)
+		    	           ...Set_r("Filter_speed", s.Filter_speed)
+		    	           ...Set_r("Activity", s.Activity)
+		    	           ...Set_r("First_ac", s.First_ac) 
+		    	           ...Set_r("Last_act", s.Last_act) 
+		    	           ...Set_r("Max_dist", s.Max_dist) 
+		    	           ...Set_i("Arms_colors", s.ArmsColors)
+		    	           ...Set_r("CenterX", s.Center_gal.X)
+		    	           ...Set_r("CenterY", s.Center_gal.Y)
+		    	           ...Set_b("LAST", i == Satellite_num.Count-1)
+	    	         ;
+	    	     ;
+	    	     CASE Commands_s[].Count > 0 ?
+	    	     	  DEBUG: "storing with commands (" Commands_s[].Count 
+	    	     	  		 ")"#NL ;
+	    	          FOR i IN [0 TO Main_.All_images[].Count-1] :
+                          //CASE Main_.All_img_names[i].Lower.Starting("st") ? 
+                          //     CONTINUE i ;
+	    	              ch = Main_.Checksums_of_images[i]
+	    	              ch2 = Main_.Checksums2_of_images[i]
+	    	              CASE ch != 0 || ch2 != 0 ? BREAK i ;
+	    	          ;
+	    	          DEBUG: "checksums=" ch "," ch2 #NL ;
+	    	          FOR i IN [0 TO 1000] :
+	    	              STR old_c|ommands[] << c.Str("Command" i.S) 
+	    	          	  CASE old_c[*] != Commands_s[i] ? 
+	    	          	       BOOL commands_changed = TRUE ;
+	    	          	  CASE old_c[*]=="" ? BREAK i ;
+	    	          ;
+	    	          CASE commands_changed && old_c[].Count > 1 ? 
+	    	               CASE ask("Another 3D-stamp commands are stored in "
+	    	               "the replacing .gal model. Preserve it?") 
+	    	               ?
+	    	                    BOOL preserve|_previous_commands = TRUE  ;
+	    	          ;
+	    	          FOR i IN [0 TO Commands_s[].Count] :
+	    	              CASE ch==0 && ch2==0 ? BREAK i ;
+	    	              CASE i==0 ? 
+	    	                   c.Set_s("Checksum", ch.Hex(8)) 
+	    	                   c.Set_s("Checksum2", ch2.Hex(8)) 
+	    	              ;
+	    	              CASE preserve ? BREAK i ;
+	    	              c.Set_s("Command" i.S, Commands_s[i])     
+	    	          ;
+	    	     ;
+	    	     ----------------------- 'store URL if it is single'
+	    	     STR url|_assigned = ""
+	    	     FOR u IN Main_.All_img_URLs[] :
+	    	     	 DEBUG: "i=" u.INDEX " u=" u " url=" url #NL ;
+	    	         CASE u=="" ? CONTINUE u ;
+	    	         //CASE url != u  ? INT count_u|rls += 1 ;
+	    	         //CASE count_u > 1 ? BREAK u ;
+	    	         url = u
+	    	         BREAK u     
+	    	     ;
+	    	     c.Section = ""
+	    	     CASE url!="" ? 
+	    	          c.Set_s("URL", url) 
+	    	          BOOL url_saved = TRUE
+	    	     ELSE c.Set_s("URL", "");
+    	    ;
+    	    c.Update
+    	    ------------------ 'update__caption', REUSED
+    	    Label_file.Set_text(Dialog_file_save.Filename.Extract_file_name
+    	    	.Change_ext(""))
+    	    ------------------
+    	    CASE url_saved ? 
+    	         message("Saved togeher with URL: " url) ;
+        ["Load"]: 
+            Url_loaded = ""
+        	INT was_cur|rent_spiral = Satellite_num.Current
+        	LIKE .................. 'select', 
+        		 BUT(_write_==>_read_), (Dialog_file_save==>Dialog_load)*2
+        		 
+        	//SE Dialog_file_save.Filename == "" ? 
+        	     Dialog_file_save.Filename = Dialog_load.Filename //;
+        	c.Section = ""
+        	----------------------- 'renumber satellites sections'
+        	STR sec|tions_list[]
+        	c.List_subkeys(sec[])
+        	FOR i IN [1 TO sec[].Count-1] :
+        	    sec[i-1] = i.S ;
+        	c.Rename_subkeys(sec[0 TO *])
+        	----------------------- 'common:'
+        	CASE !Key.Shift ? 
+        	     Box_width.Set_text(c.Real("Box_width").S)
+        	     Satellite_num.Clear
+	        	 Main_.Offset_x = c.Real("Offset_x")
+	        	 Main_.Offset_y = c.Real("Offset_y")    
+	        	 Scale_rotate_spirals = c.Bool("Scale_rotate_spirals")
+	        	 Fill_scale_rotate
+        	     All_satellites[].Clear 
+	        	 CASE c.Present("Mass_BH") ? 
+	        	      Mass_BH.Set_text(c.Real("Mass_BH").S) ;
+	        	 ----------------------- 'image rotate, scale'
+	        	 Rotate_image.Set_text(c.Real("Image_rotate").S)
+	        	 REAL i_sc|ale_image = c.Real("Image_scale")
+	        	 CASE !i_sc.Near(0) ? Scale_image.Set_text(i_sc.S) ;
+        	;
+        	----------------------- 'load all spirals:'
+        	FOR i IN [0 TO sec[].Count-1] :
+        	    c.Section = (i + 1).S
+        	    NONE= Satellite_num.Add_item((All_satellites[].Count+1).S)
+        	    All_satellites[] << {satellite_param}(
+        			Name= c.Str("Name"),
+        			Period= c.Real("Period"),
+        			Eccentricity= c.Real("Eccentricity")
+        				+ c.Real("Excentricity"),
+        			Deviation= c.Real("Deviation"),
+        			Deviation_final= c.Real("Deviation_final"),
+        			Cone_a= c.Real("Cone_a"),
+        			Tilt= c.Real("Tilt"),
+        			Rotate= c.Real("Rotate"),
+        			Inclin= c.Real("Inclin"),
+        			StartA= c.Real("StartA"),
+        			SpeedK= c.Real("SpeedK"),
+        			FinalK= c.Real("FinalK"),
+        			Filter_speed= c.Real("Filter_speed"),
+        			Activity= c.Real("Activity"),
+        			First_ac= c.Real("First_ac"),
+        			Last_act= c.Real("Last_act"),
+        			Max_dist = c.Real("Max_dist"),
+        			ArmsColors = c.Int("Arms_colors"),
+        			Center_gal = Pt(c.Real("CenterX"), c.Real("CenterY"))
+        	    	)
+        	    CASE All_satellites[*].Center_gal.X.Near(0)
+        	         && All_satellites[*].Center_gal.Y.Near(0)
+        	         ? 
+        	         All_satellites[*].Center_gal = Pt(Main_.Offset_x, .Offset_y)
+        	    ;
+        	    CASE c.Bool("LAST") ? BREAK i ;
+        	;
+        	CASE was_cur >= Satellite_num.Count ? was_cur = 0 ;
+        	Satellite_num.Select(was_cur)
+        	LIKE ............. 'update__caption', BUT (g_file_save==>g_load)*?
+        	Main_.Invalidate     
+        	Main_.Stack_undo[].Clear
+        	Main_.Stack_redo[].Clear
+        	------------------ 'load URL'
+        	c.Section = ""
+        	Image_mirrored = c.Bool("Mirrored")
+        	url = c.Str("URL")
+        	CASE url != "" ? 
+        	     FOR u IN Main_.All_img_URLs[] :
+        	         CASE u==url ? 
+        	              //url = "" 
+        	              BREAK u ;
+        	     ;
+        	     Main_.All_img_URLs[0] = url
+        	;
+        	CASE url != "" 
+        	     && ask("URL was found been stored with the model loaded. "
+        		 " Copy it to the clipboard? "#NL url) 
+        		 ? 
+	        	 Url_loaded = url
+	        	 Text_to_clipboard(url)
+        	;
+        	--------------------------- 'load comands ?'
+        	Checksum_img_loaded = 0
+        	Checksum2_img_loaded = 0
+        	CASE c.Present("Checksum") ? 
+        	     ch = c.Str("Checksum").From_hex 
+        	     Checksum_img_loaded = ch ;
+        	CASE c.Present("Checksum2") ? 
+        	     ch2 = c.Str("Checksum2").From_hex 
+        	     Checksum2_img_loaded = ch2 ;
+			Provide_stamp_param
+        	Commands_s[].Clear
+    		FOR i IN [0 TO MAX_INT-1] :
+    		 	STR sc|ommand = c.Str("Command" i.S)
+    		 	CASE sc=="" ? BREAK i ;
+    		    Commands_s[] << sc
+    		;
+        	Auto_stamp
+        ["Additionally"]:
+            popup_menu(
+
+	""	Item(	"BRIGHT_BY_K",
+				"Bright/width by plasma speed"._Bright_by_plasma_speed
+		).Checked(
+		Bright_by_plasma_speed
+		)
+
+	""	Item(	"",
+				"Change bright each ..."._Bright_each
+		)
+
+	""	Begin
+
+	""	Item(	"EACH_0",
+				"No"._No_years
+		).Checked(
+		Each_10000_years==0
+		)
+
+	""	Item(	"EACH_10000_Y",
+				"10 000 years"._10000_years
+		).Checked(
+		Each_10000_years==10000
+		)
+
+	""	Item(	"EACH_5000_Y",
+				"5000 years"._5000_years
+		).Checked(
+		Each_10000_years==5000
+		)
+
+	""	Item(	"EACH_3000_Y",
+				"3000 years"._3000_years
+		).Checked(
+		Each_10000_years==3000
+		)
+
+	""	Item(	"EACH_2000_Y",
+				"2000 years"._2000_years
+		).Checked(
+		Each_10000_years==2000
+		)
+
+	""	Item(	"EACH_1000_Y",
+				"1000 years"._1000_years
+		).Checked(
+		Each_10000_years==1000
+		)
+
+	""	Separator
+
+	""	Item(	"5000_LY",
+				"5000 light-years"._5000LY
+		).Checked(
+		Each_10000_years==-5000
+		)
+
+	""	Item(	"1000_LY",
+				"1000 light-years"._1000LY
+		).Checked(
+		Each_10000_years==-1000
+		)
+
+	""	Item(	"500_LY",
+				"500 light-years"._500LY
+		).Checked(
+		Each_10000_years==-500
+		)
+
+	""	Item(	"1000_3000_LY",
+				"1000 L.Y. on, 3000 L.Y. off"._1000on_3000off
+		).Checked(
+		Each_10000_years==-4000
+		)
+
+	""	Separator
+
+	""	Item(	"DONT_DRAW_DARK",
+				"Do not draw dark colored portions"._Don_t_draw_dark
+		).Checked(
+		Dont_draw_dark
+		)
+
+	""	End
+
+	""	Item(	"",
+				"Glove  spirals..."._Glove_spirals
+		)
+
+	""	Begin
+
+	""	Item(	"NO_GLOVE",
+				"Glove none"._Glove_NONE
+		).Checked(
+		Glove==0
+		)
+
+	""	Item(	"GLOVE_ALL",
+				"Glove all"._Glove_All
+		).Checked(
+		Glove==1
+		)
+
+	""	Item(	"GLOVE_CUR",
+				"Glove current"._Glove_Current
+		).Checked(
+		Glove==2
+		)
+
+	""	Item(	"DARK_ALL",
+				"Darken all gloves"._Darken_All
+		).Checked(
+		Glove==3
+		)
+
+	""	Item(	"DARK_CUR",
+				"Darken current glove"._Darken_Current
+		).Checked(
+		Glove==4
+		)
+
+	""	Item(	"DARK_SHADOW",
+				"Shadow all lines"._Shadow_all_lines
+		).Checked(
+		Glove==5
+		)
+
+	""	End
+
+	""	Item(	"",
+				"Draw ..."._Draw_as
+		)
+
+	""	Begin
+
+	""	Item(	"DRAW_LINES",
+				"... as lines"
+		).Checked(
+		Draw_as == 0
+		)
+
+	""	Item(	"DRAW_DOTS",
+				"... as dots"._as_dots
+		).Checked(
+		Draw_as == 1
+		)
+
+	""	Item(	"DRAW_DOTS_AND_LINES",
+				"as lines+dots"._as_lines_and_dots
+		).Checked(
+		Draw_as == -1
+		)
+
+	""	Item(	"AS_POLUGONS",
+				"... as polygons"._as_polygons
+		).Checked(
+		Draw_as == 2
+		)
+
+	""	Item(	"AS_ZIGZAG",
+				"... as zigzag (distance 2 pts)"._zigzg2
+		).Checked(
+		Draw_as == 3
+		)
+
+	""	Item(	"AS_ZIFZAG_5",
+				"... as zigzag (distance 5 pts)"._zigzag5
+		).Checked(
+		Draw_as == 4
+		)
+
+	""	End
+
+	""	Item(	"",
+				"Show arms..."._Show_spirals
+		)
+
+	""	Begin
+
+	""	Item(	"BOTH",
+				"Both"._Both
+		).Checked(
+		Which_spirals==0
+		)
+
+	""	Item(	"ONE",
+				"One"._One
+		).Checked(
+		Which_spirals==1
+		)
+
+	""	Item(	"TWO",
+				"Two"._Two
+		).Checked(
+		Which_spirals==2
+		)
+
+	""	Item(	"BOTH_2ND_LIGHTENED",
+				"Both but second is lightened"._Both_but_2nd_light
+		).Checked(
+		Which_spirals==3
+		)
+
+	""	Separator
+
+	""	Item(	"SPEED_ONLY_MAIN",
+				"Only main speed spiral"
+		).Checked(
+		Show_speed==1
+		)
+
+	""	Item(	"SPEED_ONLY_SECOND",
+				"Only secondary speed"
+		).Checked(
+		Show_speed==2
+		)
+
+	""	End
+
+	""	Separator
+
+	""	Item(	"GRAB_MARKERS",
+				"Grab scrinshots with marker lines"._Grab_marker_lines
+		).Checked(
+		Grab_markers
+		)
+
+	""	Item(	"",
+				"Draw orbits of satellites magnified x 1000"._Draw_orbits
+		)
+
+	""	Begin
+
+	""	Item(	"NO_ORBITS",
+				"No"._No_orbits
+		).Checked(
+		Draw_orbits==0
+		)
+
+	""	Item(	"CUR_ORBIT",
+				"Current satellite orbit only"._Current_satellite_orbit
+		).Checked(
+		Draw_orbits==1
+		)
+
+	""	Item(	"ALL_ORBITS",
+				"All orbits"._all_orbits
+		).Checked(
+		Draw_orbits==2
+		)
+
+	""	End
+
+	""	Item(	"GRAB_ROT",
+				"Grab rotated 90 degrees CW"._Grab_rotated
+		).Checked(
+		Grab_rotated
+		)
+
+	""	Item(	"",
+				"Screenshot resolution..."
+		)
+
+	""	Begin
+
+	""	Item(	"SCREENSHOT_100",
+				"100 % (as is on screen)"
+		).Checked(
+		Screenshot_scale==100
+		)
+
+	""	Item(	"SCREENSHOT_50",
+				"50%"
+		).Checked(
+		Screenshot_scale==50
+		)
+
+	""	Item(	"SCREENSHOT_150",
+				"150 %"
+		).Checked(
+		Screenshot_scale==150
+		)
+
+	""	Item(	"SCREENSHOT_200",
+				"200 %"
+		).Checked(
+		Screenshot_scale==150
+		)
+
+	""	Item(	"SCREENSHOT_1024",
+				"Fixed width 1024 pixels"
+		).Checked(
+		Screenshot_scale==1024
+		)
+
+	""	Item(	"SCREENSHOT_750",
+				"Fixed width 750 pixels"
+		).Checked(
+		Screenshot_scale==750
+		)
+
+	""	Item(	"SCREENSHOT_1500",
+				"Fixed width 1500 pixels"
+		).Checked(
+		Screenshot_scale==1500
+		)
+
+	""	Item(	"SCREENSHOT_3000",
+				"Fixed width 3000 pixels"
+		).Checked(
+		Screenshot_scale==3000
+		)
+
+	""	Item(	"SCREENSHOT_3800",
+				"Fixed width 3800 pixels"
+		).Checked(
+		Screenshot_scale==3800
+		)
+
+	""	End
+
+	""	Separator
+
+	""	Item(	"CTRL_TO_CHANGE",
+				"Press CONTROL while dragging mouse to change eccentricity and rotations"._Control_drag_to_change
+		).Checked(
+		Control_to_change
+		)
+
+	""	Item(	"CONTROL_TO_DRAG_CENTER",
+				"Use CONTROL to drag center"._Use_control_to_drag_center
+		).Disabled(
+		Scale_up_shift
+		).Checked(
+		Control_drag_center
+		)
+
+	""	Item(	"START_PROJ_TOGETHER",
+				"Change starting angle and projection rotation together"._Change_start_and_rotation_together
+		).Checked(
+		Start_proj_together
+		)
+
+	""	Item(	"COMPENSATE_SPEED_BY_PERIOD",
+				"Compensate plasma speed change by period"._Compensate_plasma_speed_by_period
+		).Checked(
+		Compensate_speed
+		)
+
+	""	Item(	"COMPENSATE_BOXWIDTH_MASSSMBH",
+				"Compensate box width while change mass of the SMBH"._Compensate_box
+		).Checked(
+		Compensate_box
+		)
+
+	""	Item(	"COMPENSATE_PERIODS",
+				"Compensate periods of all satellites while changing box width"._Compensate_periods_on_box_w
+		).Checked(
+		Compensate_periods
+		)
+
+	""	Item(	"ROT_TOGETHER",
+				"Rotate all spirals together"._Rotate_together
+		).Checked(
+		Rotate_together
+		)
+
+	""	Item(	"3D_FLY_RMB",
+				"3D-fly with Right Mouse Button"._3D_fly
+		).Checked(
+		Rmb_3D_fly
+		)
+
+	""	Separator
+
+	""	Item(	"SAVE_POS",
+				"Save position && size"._Save_position_size
+		)
+
+	""	Item(	"",
+				"Restore size/position..."._Restore_position_size
+		)
+
+	""	Begin
+
+	""	Custom(List_saved_positions)
+
+	""	End
+
+	""	Item(	"UNSCALE_IMAGE",
+				"Unscale/unrotate image scaling rotating all spirals"._Unscale_unrotate
+		).Disabled(
+		Scale_up_shift || Scale_image.Text.Int==100 && Rotate_image.Text.Int==0
+		)
+
+	""	Item(	"SCALE_ROTATE_ALL",
+				"Scale/rotate all spirals rather then image"._Scale_rotate_spirals
+		).Checked(
+		Scale_rotate_spirals
+		)
+
+	""	Item(	"SCALEUP_SHIFT",
+				"Scale up & shift all (magnifier mode)"._Scale_up_shift
+		).Checked(
+		Scale_up_shift
+		)
+
+	""	Item(	"SHOW_CONE",
+				"Show Cone angle"._Show_cone_angle
+		).Checked(
+		Show_cone
+		)
+
+	""	Item(	"SHOW_DEVIATION",
+				"Show deviation angles"._Show_deviation
+		).Checked(
+		Show_deviations
+		)
+
+	""	Item(	"CROSSED_TOO",
+				"Show crossing spirals too (1/2 width)"
+		).Checked(
+		Show_crossing<1
+		)
+
+	""	Item(	"CROSSED_TOO_X2",
+				"Show crossing spirals too (x2 width)"
+		).Checked(
+		Show_crossing>1
+		)
+
+	""	Item(	"CROSSED_TOO_1_1",
+				"Show crossing spirals too (same width)"
+		).Checked(
+		Show_crossing.Near(1)
+		)
+
+	""	Item(	"AUTO_SPEED_V1",
+				"Auto speed on base of eccentricity"._Auto_speed
+		).Checked(
+		Auto_final_speed
+		)
+
+	""	Item(	"SAME_MAX_DIST",
+				"Same maximal distance"._Same_max_dist
+		).Checked(
+		Same_max_dist
+		)
+
+	""	Separator
+
+	""	Item(	"USE_24",
+				"Use 24-bits grayscale bitmaps always"._Always_24bitmaps
+		).Checked(
+		Use_bitmaps_24
+		)
+
+	""	Item(	"PLASMA_SPEED_ALTER",
+				"Plasma speed alternative rule"._Plasma_alter
+		).Checked(
+		Alter_plasma_speed
+		)
+
+	""	Item(	"RETROSPECTIVE",
+				"Time retrospective to point"._Time_retrospective
+		).Checked(
+		Retrospective
+		)
+
+	""	Item(	"CALC_DIFF",
+				"Calculate brightness difference"._Calculate_brightness_diff
+		).Checked(
+		Calc_bright_diff
+		)
+
+	""	Item(	"TRANSORM_MODEL",
+				"Transform model form"
+		)
+
+	""	Separator
+
+	""	Item(	"COPY_TABLE",
+				"Copy parameters to table"._Copy_to_table
+		).Hotkey(
+		"F5"
+		)
+
+	""	Item(	"PASTE_TABLE",
+				"Paste parameters"._Paste_params
+		).Hotkey(
+		"F6"
+		)
+
+	""	Item(	"RESET",
+				"Reset"._Reset
+		))
+
+
+
+        ;
+    ; 
+    DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
+    		" Checksums: " Main_.Checksums_of_images[].Merge(",") 
+    		" Ch2: " Main_.Checksums2_of_images[].Merge(",") #NL ;
+    .
+    
+METHOD List_saved_positions ==> STR :
+    {Config} conf|_temp = New_read_config("PlasmaTides", 'USER', "sizes")
+    FOR i IN [0 TO 9] :
+        CASE !conf.Present("POS_" i.S) ? BREAK i ;
+        STR s_pos|ition[].Split(conf.Str("POS_" i.S), " ")
+        //DEBUG: << i ": " s_pos[].Merge(", ") #NL ;
+    	RESULT = _ "POS_" i.S ":" s_pos[0] "," s_pos[1] " " s_pos[2] " x " s_pos[3]
+        RESULT = _ #NL
+    ; .
+    
+BOOL Bright_by_plasma_speed 				= FALSE
+INT Each_10000_years|_change_brightness
+BOOL Dont_draw_dark							= TRUE
+BOOL Grab_markers|_lines_drawn				= TRUE
+INT Draw_orbits|_magnified
+BOOL Start_proj_together
+BOOL Compensate_speed
+BOOL Compensate_box|_width_when_change_smbh_mass
+BOOL Compensate_periods
+BOOL Alter_plasma_speed
+INT Glove|_with_white_or_black				= 0
+INT Grab_to_grid
+BOOL NxN_in_source
+INT Grid_letters = 2
+BOOL Grab_rotated|_90_CW
+INT Cell_lines
+BOOL Scale_rotate_spirals
+BOOL Scale_up_shift = TRUE
+BOOL Control_drag_center = TRUE
+BOOL Show_cone
+BOOL Show_deviations
+REAL Show_crossing = 1 //0.5
+INT Screenshot_scale = 100
+
+INT Draw_as|_1points_2polygons_3zigzag_neg1linesAndPoints
+INT Which_spirals = 0
+BOOL Retrospective
+BOOL Once_Retrospective|_was_turned_on
+BOOL Calc_bright_diff
+BOOL Rmb_3D_fly
+INT Transp|arency = 75
+BOOL Rotate_together
+BOOL Control_to_change|_while_dragging_over_main_window = TRUE
+BOOL Auto_final_speed = FALSE
+BOOL Same_max_dist
+INT Show_speed
+
+METHOD Provide_stamp_param :
+	CASE Stamp_param==NONE ?
+    	 Stamp_param = {Stamp_parameters}(Main_= Main_, Screen_=Screen_)
+	; .
+
+METHOD Auto_stamp :
+	CASE Main_.All_images[].Count==1 
+	     && (Checksum_img_loaded 
+	     == Main_.Checksums_of_images[.Current_image]
+	     || Checksum_img_loaded==0 && 0!=Checksum2_img_loaded 
+	     == Main_.Checksums2_of_images[.Current_image])  
+	     ?
+	     CASE Image_mirrored ? 
+	          CASE ask("Image loaded marked as 'mirrored'. Mirror it now?"
+	               " (Ask NO if it was mirrored already).") 
+	               ? 
+	               do_mirroring ;
+	     ;
+	     CASE Commands_s[].Count > 0 ?
+		      DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
+		        " ~ " Main_.Checksums_of_images[0 TO *].Merge(",")  #NL ;
+			  CASE !ask("The image loaded is single and it is the "
+			       "same as it was used to create the model loading. "
+			       "Create stamp now ?"._Image_detected_ask_create_stamp) 
+			       ? ==> ;
+			  Stamp_param.Close
+			  Stamp_param = NONE
+			  Provide_stamp_param
+			  Stamp_param.Show_no_activate
+			  Stamp_param.Execute_commands(Commands_s[]) ;
+	; .
+	
+INT Checksum_img_loaded	
+INT Checksum2_img_loaded	
+STR Commands_s|equence[]
+
+
+METHOD caption_loc|alizable ==> STR :
+	= "Satellite /galaxy parameters"._CAPTION .
+
+OVERRIDE mouse_down :
+CASE processing_mouse ? ==> ;
+PUSH processing_mouse = TRUE :
+    Main_.lmb_down = mouse_button == 'LMB'
+	CASE ?
+	[sender_alias == "THUMBNAILS"] ?
+		CASE mouse_button=='RMB' ?
+		     ----------------------------- 'menu on thumbnail'
+		     popup_menu(
+
+	""	Item(	"SET_URL",
+				"Set URL (from clipboard)"
+		)
+
+	""	Item(	"MIRROR_IMG",
+				"Mirror image"
+		).Checked(
+		Image_mirrored
+		))
+
+		==>
+		;
+		Main_.Save_current_image(FALSE)
+	    FOR i IN [1 TO Main_.All_images[].Count-1] :
+	        CASE mouse.Y - Thumbnails.Bounds.Top > Y_starting_thumb[i] ?
+	             CONTINUE i ;
+            //DEBUG: "i=" i " mouse.Y=" mouse.Y " Y_starting_thumb[]="
+            //    "" Y_starting_thumb[].Merge(",") #NL ;
+	        Main_.Current_image = i-1
+	        Go_to_another_image 
+	        Main_.Show ==>
+	    ;
+	    Main_.Current_image = Main_.All_images[].Count-1
+	    Go_to_another_image 
+	    Main_.Show ==>
+	[sender_alias == "LABELHINT1"] ?
+		 editing = NONE     
+	 	 STR s|tring_to_get_vals = hint_a(Satellite_num.Current, TRUE)
+	 	 CASE mouse.X < LabelHint1.Width/2 ? 
+	 	      s = s.[0 TO s.Find("q")-1] 
+	 	 ELSE s = s.After("L.Y. ") ;
+	 	 Text_to_clipboard(s) ==> 
+	[sender_alias == "MAKE_SCREENSHOT" && mouse_button=='RMB'] ?
+		 Start_program("explorer.exe", "/e,/n,"
+			 		"/select, "#QU save_scr #QU) ==> 
+	[sender_alias == "LOAD_UNDER_IMAGE" && mouse_button=='RMB'] ?
+		 DEBUG: "show explorer on [" Main_.All_img_names[.Current_image] 
+		 "]"#NL ;
+		 Start_program("explorer.exe", "/e,/n,"
+			 		"/select, "#QU 
+			 		"" Images_path.Trailing_slash 
+			 		"" Main_.All_img_names[.Current_image] #QU) ==> 
+	;
+	CASE sender_alias.Starting("LABEL_") ? 
+	     dragging = sender 
+		 mouse_pos0 = mouse
+		 is_0_360 = FALSE
+		 CASE sender_alias ? 
+		 ["LABEL_LINE_W"]: editing = Edit_line_w
+		 	range_fr = 0.5
+		 	range_to = 10     
+		 ["LABEL_BOX_WIDTH"]: editing = Box_width
+		 	-------------------------------- 'box__width', REUSED
+		 	range_fr = editing.Text.Real / 2
+		 	range_to = editing.Text.Real * 2 
+		 	--------------------------------
+		 ["LABEL_MAX_DIST"]: editing = Max_dist 
+		     LIKE .......... 'box__width'
+		     range_to = _.Max(10000)
+		 ["LABEL_PERIOD"]: editing = Period_rot
+		 	LIKE ...................... 'box__width'
+		 ["LABEL_ECCENTRICITY"]: editing = Eccentricity
+		 	range_fr = 0
+		 	range_to = 0.99999
+		 ["LABEL_MASS"]: editing = Mass_BH
+		 	LIKE ...................... 'box__width'
+		 ["LABEL_CONE_ANGLE"]: editing = Cone_angle
+		 	range_fr = 0
+		 	range_to = 90
+		 ["LABEL_ROTATE_PROJ"]: editing = Rotate_proj
+		 	-------------------------------- '0__360', REUSED
+            is_0_360 = TRUE
+		 	range_fr = -180 // (editing.Text.Real - 90)
+		 	range_to = +180 // (editing.Text.Real + 90)
+		 	--------------------------------
+		 ["LABEL_INCLINATION"]: editing = Inclination
+            //range_fr = -180
+            //range_to = 180
+		 	LIKE ........................... '0__360'
+		 ["LABEL_TILT"]: editing = Edit_tilt
+            //range_fr = -180
+            //range_to = 180
+		 	LIKE ........................... '0__360'
+		 ["LABEL_STARTING_A"] : editing = Starting_angle
+		 	LIKE ........................... '0__360'
+		 ["LABEL_PLASMA_SPEED"]:editing = Plasma_speed
+		 	range_fr = 0.001
+		 	range_to = 1
+		 ["LABEL_FINAL_K"]:editing = Final_plasma_speed
+		 	range_fr = 0
+		 	range_to = 1
+		 ["LABEL_DEVIATION_ANGLE"]: editing = Deviation_angle
+		    range_fr = -180
+		    range_to = 180
+		 ["LABEL_FINAL_DEVIATION"]: editing = Final_deviation
+		    range_fr = -180
+		    range_to = 180
+		 ["LABEL_ACTIVITY_TIME"]: editing = Activity_time
+		 	range_fr = (editing.Text.Real - Period_rot.Text.Real.Abs).Max(0)
+		 	range_to = editing.Text.Real + Period_rot.Text.Real.Abs
+            //DEBUG: "editing=" editing.Text.Real #NL
+            //        " fr=" range_fr " to=" range_to #NL ;
+		 ["LABEL_FIRST_ACTIVITY"]: editing = First_activity
+		 	---------------------------------- 'activity__cut', REUSED
+		 	range_fr = (editing.Text.Real / 5)
+		 	range_to = (editing.Text.Real + 10000) 
+		 	.. = _.Max(Activity_time.Text.Real.Min(editing.Text.Real * 2)) 
+		 	-------------------------------
+		 ["LABEL_LAST_ACTIVITY"]: editing = Last_activity
+		 	LIKE ............................. 'activity__cut'
+		 ["LABEL_ROTATEIMAGE"]:	editing = Rotate_image
+		 	LIKE ........................ '0__360'
+		 ["LABEL_SCALEIMAGE"]: editing = Scale_image
+		 	LIKE ........................... 'box__width'
+		 ["LABEL_SPEED_FILTER"]:
+		    CASE mouse_button == 'RMB' ? 
+		         Filtering_by_speed = !_
+		    ELSE
+			 	 editing = Filter_speed
+			 	 range_fr = (editing.Text.Real - 0.2).Max(0)
+			 	 range_to = (editing.Text.Real + 0.2).Min(1)
+		    ;
+		 ["LABEL_FILTER"]: Enable_filtering = !_
+		 				   Timer_activate_filter.Set_active(TRUE)
+		 				   need_invalidate = TRUE ==>
+		 ELSE dragging = NONE ==> ;
+		 -------------------------------- 'save initial values'
+		 value_start = editing.Text.Real
+		 start_value_period = Period_rot.Text.Real
+		 start_value_plasma_speed = Plasma_speed.Text.Real
+		 start_value_activity = Activity_time.Text.Real
+		 start_value_box_width = Box_width.Text.Real
+		 Main_.Stack_undo[] << All_satellites[Satellite_num.Current].CLONE
+	; 
+	down_with_shift = Key.Shift
+	CASE Key.Shift ? 
+	     range_fr = editing.Text.Real - (.Real - _)/5 
+	     range_to = editing.Text.Real + (_ - .Real)/5
+	     ;
+;	.
+	
+BOOL Enable_filtering = TRUE
+BOOL Filtering_by_speed = TRUE
+
+{Label} dragging|_label_left_right
+{Edit} editing|_control
+REAL value_start|_editing
+REAL range_fr|om
+REAL range_to
+BOOL is_0_360|_degrees_rotation
+{point} mouse_pos0|ition_start_dragging
+
+REAL start_value_plasma_speed
+REAL start_value_period
+REAL start_value_activity
+REAL start_value_box_width
+BOOL down_with_shift
+
+BOOL processing_mouse
+
+
+OVERRIDE mouse_move :
+CASE processing_mouse ? ==> ;
+PUSH processing_mouse = TRUE :
+    CASE dragging==NONE || !Main_.Global_L_button ? ==> ;
+	BOOL neg|ative = value_start < 0 
+		 .. &&= Deviation_angle != editing != Inclination
+		 .. &&= Final_deviation != editing
+	BOOL is_m180_180 = range_fr.Near(-180) && range_to.Near(180)
+	CASE neg && !is_m180_180 ?
+		 CASE mouse.X < mouse_pos0.X ? 
+			  REAL new_val|ue = value_start.Abs
+			  - (value_start.Abs - range_fr.Abs) * (mouse_pos0.X - mouse.X) 
+			 							 / (mouse_pos0.X - dragging.Bounds.Left)
+		 ELSE new_val = value_start.Abs 
+			  + (range_to.Abs - value_start.Abs) * (mouse.X - mouse_pos0.X)
+			 							 / (dragging.Bounds.Right - mouse_pos0.X)
+		 ;
+		 CASE ?
+		 [new_val < range_fr.Abs] ? new_val = range_fr.Abs 
+		 [new_val > range_to.Abs] ? new_val = range_to.Abs ;
+		 new_val = -_
+	ELSE
+	     REAL vs|tart_value = value_start
+	     //BOOL is_0_360 = range_fr.Near(0) && range_to.Near(360)
+		       
+		 CASE mouse.X < mouse_pos0.X ? 
+		      CASE ?
+              //[is_0_360 && vs <= 0] ?
+              //    DEBUG: "correct vs: " vs " to " (vs+360) #NL ;
+              //    vs += 360
+		      [is_m180_180 && vs.Near(-180)] ? vs = 180 ;
+			  new_val = vs
+			  - (vs - range_fr) * (mouse_pos0.X - mouse.X) 
+			  					/ (mouse_pos0.X - dragging.Bounds.Left)
+		 ELSE 
+		      CASE ?
+              //[is_0_360 && vs >= 360] ?
+              //    DEBUG: "correct vs: " vs " to " (vs-360) #NL ;
+              //    vs -= 360
+		      [is_m180_180 && vs.Near(180)] ? vs = -180 ;
+		 	  new_val = vs 
+			  + (range_to - vs) * (mouse.X - mouse_pos0.X)
+			  					/ (dragging.Bounds.Right - mouse_pos0.X)
+		 ;
+		 CASE ?
+		 [new_val < range_fr] ? new_val = range_fr 
+		 [new_val > range_to] ? new_val = range_to ;
+	;
+	PUSH sender_ = editing :
+		 CASE ?
+		 [!down_with_shift] ?
+		      CASE ?
+		      [editing == Edit_line_w] ?
+		           new_val = (_ * 10).Int / 10.0
+		      [Final_plasma_speed == editing || editing == Plasma_speed] ?
+		           new_val = (_ * 1000).Int / 1000.0 
+		      [editing == Eccentricity || editing == Filter_speed] ?
+		           new_val = (_ * 10_000).Int / 10_000.0
+		      ELSE new_val = _.Int ;
+		 ;
+	     CASE editing == Rotate_proj ?
+	          CASE new_val > 180 ? new_val = new_val - 360 ;
+	          CASE Rotate_together ?
+		           REAL diff|erence = new_val - editing.Text.Real
+		           FOR a IN All_satellites[] :
+		          	   CASE a.INDEX == Satellite_num.Current ? CONTINUE a ;
+		               a.Rotate += diff 
+		          	   All_satellites[a.INDEX] = a.CLONE    
+		           ;
+	          ;
+	     ;
+	     editing.Set_text(new_val.S)
+	     CASE ?
+	     [Compensate_speed && editing == Final_plasma_speed] ?
+	     	  REAL k_mul|tiplayer = new_val / value_start     
+	     	  CASE !k_mul.Near(0) ? 
+		           REAL new_plasma_speed = start_value_plasma_speed * k_mul 
+		           PUSH sender_ = Plasma_speed :
+		                Plasma_speed.Set_text(new_plasma_speed.S) ;
+		           REAL new_period = start_value_period / k_mul.Power(2.0/3) 
+		           PUSH sender_ = Period_rot :
+		                Period_rot.Set_text(new_period.S) ;
+
+		           REAL new_activity = start_value_activity / start_value_period
+		           .. = _ * new_period 
+		           PUSH sender_ = Activity_time :
+		                Activity_time.Set_text(new_activity.S) ;
+	     	  ;
+	     [Compensate_box && editing == Mass_BH] ?
+	         k_mul = new_val / value_start
+	         CASE !k_mul.Near(0) ? 
+	              REAL new_bw|box_width 
+	              = start_value_box_width * k_mul.Power(1/3.0)
+	              
+	              Box_width.Set_text(new_bw.Int.S) 
+	         ;
+	     ;
+	;
+	Copy_params_same_spiral
+	Main_.PBox.Invalidate_all 
+	Main_.Process
+;	.
+	
+METHOD Copy_params_same_spiral :
+	INT ncur|rent_satellite = Satellite_num.Current
+	{satellite_param} cur_sat|ellite = All_satellites[ncur].CLONE
+    FOR sat1 IN All_satellites[] :
+        {satellite_param} sat|ellite_temp = sat1.CLONE
+        CASE sat1.INDEX == ncur 
+             || sat.Name != cur_sat.Name
+             || sat.Name=="" || cur_sat.Name=="" 
+             ? CONTINUE sat1 ;
+        sat...Period = cur_sat.Period
+        ...Eccentricity = cur_sat.Eccentricity
+        ...Cone_a = cur_sat.Cone_a
+        ...Tilt = cur_sat.Tilt
+        ...Rotate = cur_sat.Rotate
+        ...Inclin = cur_sat.Inclin
+        ...StartA = cur_sat.StartA
+        ...Deviation = cur_sat.Deviation
+        ...Deviation_final = cur_sat.Deviation_final
+        ...Activity = cur_sat.Activity
+        ...Center_gal = cur_sat.Center_gal.CLONE
+        All_satellites[sat1.INDEX] = sat.CLONE
+    ; .
+	     
+INT hint_n|umber
+
+METHOD Change_hint :
+	hint_n = (_ + 1) % 19
+    //DEBUG: "set hint #" hint_n #NL ;
+	CASE hint_n ? 
+	[0]: 
+	  LabelHint1...Set_text("Hint: drag center of spiral to the galaxy center"._H)
+	[1]:...Set_text("Hint: drag over label above to change value"._H1)
+	[2]:...Set_text("Hint: drag with SHIFT pressed to change value smoothly"._H2)
+	[3]:...Set_text("Hint: drag on 4 edges of the main view box to change shown "
+		"values"._H3)
+		
+	[4]:...Set_text("Hint: press SHIFT or ALT to view a distance from the "
+		"center in the projection plane"._H4)
+		
+	[5]: ...Set_text("Hint: Ctrl+Screenshot! button screenshots this window"._H5)
+	[6]: ...Set_text("Hint: Ctrl+Z/Shift+Ctrl+Z to undo/redo one change"._H6)
+	[7]: ...Set_text("Hint: Click on hint left/right side to copy a/q values"._H7)
+	[8]: ...Set_text("Hint: Click on period value to show a&q values in hint"._H8)
+	[9]: ...Set_text("Hint: type N1-N2 or list of Nums space separated"._H9)
+	[10]: ...Set_text("Hint: use also names in filters instead of numbers"._H10)
+	[11]: ...Set_text("Hint: * in filters refers to a current satellite"._H11)
+	[12]: ...Set_text("Hint: drag with RMB in box to fly/reset camera"._H12)
+	[13]: ...Set_text("Hint: drag with Shift+RMB in box to fly/reset camera "
+			"along only X or Y axis"._H13)
+			
+	[14]: ...Set_text("Hint: click on hint to copy a / q values"._H14)
+	[15]: ...Set_text("Hint: Control+mouse_wheel to switch between last loaded "
+			"images"._H15)
+			
+	[16]: ...Set_text("Hint: When in <Scale Up Shift All> magnifier mode, "
+		    "drag with LMB from a center to move both a model and an image"._H16)
+
+	[17]: ...Set_text("Hint: mouse_wheel to switch between satellites"._H17)
+	[18]: ...Set_text("Hint: press Screenshot button with SHIFT to save a "
+			"sequence of frames to a directory"._H18)
+	; .
+
+OVERRIDE mouse_up :
+CASE processing_mouse ? ==> ;
+PUSH processing_mouse = TRUE :
+    CASE editing != NONE ?
+	         REAL new_val|ue = editing.Text.Real
+			 CASE is_0_360 ? 
+			      CASE new_val >= 180 ? new_val -= 360 ;
+			      CASE new_val < -180 ? new_val += 360 ;
+			      editing.Set_text(new_val.Int.S)
+			 ;
+	    ;
+	dragging = NONE 
+	need_invalidate = TRUE
+	Main_.lmb_down = FALSE
+	CASE sender_alias IN ["LABELHINT1", "PERIOD_ROT", "Eccentricity", "MASS_BH"] ? 
+	     NONE = hint_a(Satellite_num.Current, TRUE)
+	     editing = NONE
+	ELSE Change_hint ;
+	button_colors ; .
+	
+METHOD copy_to_table :
+    STR t|able_result[] << "Parameter \ Satellite"
+    ..[] << "Period" << "e" << "v1" << "v2" << "d1" << "d2" << "cone"
+    ..[] << "Rot projection" << "Inclination" << "Starting angle"
+    ..[] << "a" << "q"
+    STR filter|_sat[]
+    Main_.Get_filters(filter[], Filter_sat.Text)
+    FOR sat IN All_satellites[] :
+        CASE Enable_filtering && (sat.INDEX+1).S !IN filter[] ? 
+             CONTINUE sat ;
+        CASE sat.Name != "" ? 
+             t[0] = _ #TAB sat.Name
+        ELSE t[0] = _ #TAB (sat.INDEX+1).S ;
+        t[1] = _ #TAB sat.Period.S
+        t[2] = _ #TAB sat.Eccentricity.S
+        t[3] = _ #TAB sat.SpeedK.S
+        t[4] = _ #TAB sat.FinalK.S
+        -------------------------- '2'
+        t[5] = _ #TAB sat.Deviation.S
+        t[6] = _ #TAB sat.Deviation_final.S
+        t[7] = _ #TAB sat.Cone_a.S
+        t[8] = _ #TAB sat.Rotate.S
+        t[9] = _ #TAB sat.Inclin.S
+        t[10] = _ #TAB sat.StartA.S
+        --------------------------- '3'
+        STR s|tring_a_q = hint_a(sat.INDEX, FALSE)
+        //DEBUG: "s=" s #NL ;
+        STR q|_value_only = s.After("q =")
+        q = q[0 TO q.Find("L.Y.")-1].Trim
+        s = s.[0 TO s.Find("q =")-1].After("a =").Trim
+        s = s.Remove_ending("L.Y.").Trim
+        t[11] = _ #TAB s 
+        t[12] = _ #TAB q 
+        //DEBUG:"s=" s " q=" q #NL ;
+    ;
+    FOR tt IN t[] :
+        STR lines|_all << tt #NL ;
+    lines.Text_to_clipboard .
+    
+METHOD paste_from_table :
+    STR lines|_all = Text_from_clipboard
+    STR t|able_result[].Split(lines, #NL)
+    STR list_sat|ellites[].Split(t[0], #TAB)
+    CASE list_sat[0] <> "Parameter \ Satellite" ? ==> ;
+    //DEBUG: "PASTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"#NL ;
+    --------------------------------------- 'parse 1'     
+    STR pe|riods_list[].Split(t[1], #TAB)
+    STR ex|centrisits[].Split(t[2], #TAB)
+    STR sK|_speeds_1[].Split(t[3], #TAB)
+    STR fK|_final_speeds[].Split(t[4], #TAB)
+    STR d1|_deviations[].Split(t[5], #TAB)       
+    STR d2|_deviations[].Split(t[6], #TAB)       
+    --------------------------------------- 'parse 2'
+    STR co|nes_list[].Split(t[7], #TAB)       
+    STR ro|tates_list[].Split(t[8], #TAB)       
+    STR in|clines_list[].Split(t[9], #TAB)
+    STR st|artes_list[].Split(t[10], #TAB)
+    PUSH setting_spiral = TRUE :
+    	FOR n IN [1 TO list_sat[].Count-1] :
+    	    INT i_sat|ellite = list_sat[n].Int - 1 
+    		{satellite_param} sp|arameters = All_satellites[i_sat].CLONE
+    		sp.Period = pe[n].Real
+    		sp.Eccentricity = ex[n].Real
+    		sp.SpeedK = sK[n].Real
+    		sp.FinalK = fK[n].Real
+    		------------------------ 'values 2'    
+    		sp.Deviation = d1[n].Real
+    		sp.Deviation_final = d2[n].Real
+    		sp.Cone_a = co[n].Real
+    		sp.Rotate = ro[n].Real
+    		sp.Inclin = in[n].Real
+    		sp.StartA = st[n].Real
+    		All_satellites[i_sat] = sp.CLONE
+            //DEBUG: "set satellite " i_sat " sp.Inclin=" sp.Inclin #NL ;
+    	;
+    ;
+    ------------------------- 'finish'
+    selected_satellite
+    need_invalidate = TRUE
+    Main_.Invalidate .
+    
+BOOL Use_bitmaps_24 = TRUE
+{point} Center_copied
+
+{Transform_model} Transform_model
+
+METHOD Show_transform_model :
+	CASE Transform_model == NONE ? 
+	     Transform_model = {Transform_model}(Main_= Main_, Screen_=Screen_)
+	;
+	Transform_model.Show .
+
+
+BOOL Image_mirrored
+
+METHOD do_mirroring :
+	Main_.Image = _.Rotate_flip(0, TRUE, FALSE)
+	Main_.Scaled_image = NONE
+	Main_.All_images[.Current_image] = Main_.Image
+	Main_.All_scales[.Current_image] = NONE
+	Thumbnails.Invalidate_all
+	need_invalidate = TRUE
+	Main_.Invalidate .
+
+OVERRIDE menu_item :
+    CASE menu_alias ?
+    ["MIRROR_IMG"]: Image_mirrored = !_
+    	do_mirroring
+    ["TRANSORM_MODEL"]: Show_transform_model
+    ["SET_URL"]: STR url|_to_set = Text_from_clipboard
+    		CASE !url.Lower.Starting("http")
+    		     && !url.Lower.Starting("ftp")
+    		     || ":" !IN url?
+    		     message("URL must start from 'http' or 'ftp' and contain ':'!") 
+    		     ==> ;
+    		Main_.All_img_URLs[.Current_image] = url
+    ["SCREENSHOT_1024"]: Screenshot_scale = 1024
+    ["SCREENSHOT_50"]: Screenshot_scale = 50
+    ["SCREENSHOT_100"]: Screenshot_scale = 100
+    ["SCREENSHOT_150"]: Screenshot_scale = 150
+    ["SCREENSHOT_200"]: Screenshot_scale = 200
+    ["SCREENSHOT_3000"]: Screenshot_scale = 3000
+    ["SCREENSHOT_1500"]: Screenshot_scale = 1500
+    ["SCREENSHOT_750"]:Screenshot_scale = 750
+    ["SCREENSHOT_3800"]: Screenshot_scale = 3800
+    ["CROSSED_TOO"]:
+        CASE Show_crossing < 1 ? Show_crossing=0 ELSE .. = 0.5 ;
+    ["CROSSED_TOO_X2"]:
+        CASE Show_crossing > 1 ? Show_crossing=0 ELSE .. = 2 ;
+    ["CROSSED_TOO_1_1"]:
+        CASE Show_crossing.Near(1) ? Show_crossing=0 ELSE .. = 1 ;
+    ["SPEED_ONLY_MAIN"]: 
+        CASE Show_speed != 1 ? Show_speed=1 ELSE Show_speed=0 ;
+    ["SPEED_ONLY_SECOND"]:
+        CASE Show_speed != 2 ? Show_speed=2 ELSE Show_speed=0 ;
+    ["SAME_MAX_DIST"]: Same_max_dist = !_
+    ["COPY_CENTER"]:
+        Center_copied = All_satellites[Satellite_num.Current].Center_gal.CLONE
+    ["PASTE_CENTER"]:
+        CASE Center_copied.X.Near(0)&&Center_copied.Y.Near(0) ? NONE 
+        ELSE {satellite_param} sp|aram_current 
+             sp = All_satellites[Satellite_num.Current].CLONE
+             sp.Center_gal = Center_copied.CLONE
+             All_satellites[Satellite_num.Current] = sp.CLONE
+             Main_.Offset_x = sp.Center_gal.X
+             Main_.Offset_y = sp.Center_gal.Y
+        ;
+    ["USE_24"]: Use_bitmaps_24 = !_
+    ["ALL_CENTERS_HERE"]:
+        FOR sat IN All_satellites[Satellite_num.Current+1 TO *] :
+            sat.Center_gal.X = Main_.Offset_x 
+            sat.Center_gal.Y = Main_.Offset_y 
+        	All_satellites[sat.INDEX] = sat.CLONE ;
+    ["AUTO_SPEED_V1"]: Auto_final_speed = !_
+    ["CTRL_TO_CHANGE"]: Control_to_change = !_
+    
+    ["ODD_CELLS_LINES"]: 
+        CASE Cell_lines == 1 ? Cell_lines = 0 ELSE Cell_lines = 1 ;
+    ["EVEN_CELLS_LINES"]:
+        CASE Cell_lines == 2 ? Cell_lines = 0 ELSE Cell_lines = 2 ;
+    ["NO_ORBITS"]: Draw_orbits = 0
+    ["CUR_ORBIT"]: Draw_orbits = 1
+    ["ALL_ORBITS"]: Draw_orbits = 2
+    ["ROT_TOGETHER"]: Rotate_together = !_
+
+    ["SAVE_POS"]:
+        {Config} conf|_temp = New_write_config("PlasmaTides", 'USER', "sizes")
+        FOR i IN [9 DOWNTO 1] :
+            CASE !conf.Present("POS_" (i-1).S) ? CONTINUE i ;
+            STR sav|ed_size = conf.Str("POS_" (i-1).S)
+            conf.Set_s("POS_" i.S, sav)
+        ;
+        conf.Set_s("POS_0",
+        Main_.Left.Points_to_pixels.S " " Main_.Top.Points_to_pixels.S 
+        " " Main_.PBox.Width.Points_to_pixels.S
+        " " Main_.PBox.Height.Points_to_pixels.S)
+    ["COPY_TABLE"]:
+        copy_to_table ==>
+    ["PASTE_TABLE"]:
+		paste_from_table ==>
+    ["RESET"]:
+        CASE !ask("All values will be set to default. Continue?"
+             ""._Reset_continue) ?
+             ==> ;
+        FOR sp_r IN All_satellites[* DOWNTO 1] :
+            All_satellites[].Delete(sp_r.INDEX) ;
+        Satellite_num.Set_items("1")
+        fill_combos
+        LIKE after_CONSTRUCT ............. 'initial__spiral'
+        Set_caption(caption_loc)
+        Main_.Rescale
+    ["EACH_10000_Y"]: Each_10000_years = 10000
+    ["EACH_5000_Y"]:  Each_10000_years = 5000
+    ["EACH_3000_Y"]:  Each_10000_years = 3000
+    ["EACH_2000_Y"]:  Each_10000_years = 2000
+    ["EACH_1000_Y"]:  Each_10000_years = 1000
+    ["EACH_0"]:		  Each_10000_years = 0
+    ["500_LY"]:		  Each_10000_years = -500
+    ["1000_LY"]:	  Each_10000_years = -1000
+    ["5000_LY"]:	  Each_10000_years = -5000
+    ["1000_3000_LY"]: Each_10000_years = -4000
+    ["DONT_DRAW_DARK"]: Dont_draw_dark = !_
+    ["BRIGHT_BY_K"]: Bright_by_plasma_speed = !_
+    ["GRAB_MARKERS"]: Grab_markers = !_
+
+    ["START_PROJ_TOGETHER"]: Start_proj_together = !_
+    ["COMPENSATE_SPEED_BY_PERIOD"]: Compensate_speed = !_
+    ["COMPENSATE_BOXWIDTH_MASSSMBH"]: Compensate_box = !_
+    	Compensate_periods = FALSE
+    ["COMPENSATE_PERIODS"]: Compensate_periods = !_
+    	Compensate_box = FALSE
+    ["PLASMA_SPEED_ALTER"]: Alter_plasma_speed = !_    	
+    ["NO_GLOVE"]: Glove = 0
+    ["GLOVE_ALL"]: Glove = 1
+    ["GLOVE_CUR"]: Glove = 2
+    ["DARK_ALL"]: Glove = 3
+    ["DARK_CUR"]: Glove = 4
+    ["DARK_SHADOW"]: Glove = 5
+    
+    
+    ["GRAB_ROT"]: Grab_rotated = !_
+    
+    ["DRAW_LINES"]: Draw_as = 0
+    ["DRAW_DOTS"]: Draw_as = 1
+    ["DRAW_DOTS_AND_LINES"]: Draw_as = -1
+    
+    ["AS_POLUGONS"]: Draw_as = 2
+    ["AS_ZIGZAG"]: Draw_as = 3
+    ["AS_ZIFZAG_5"]: Draw_as = 4
+    
+    ["BOTH"]: Which_spirals = 0
+    ["ONE"]:  Which_spirals = 1
+    ["TWO"]:  Which_spirals = 2
+    ["BOTH_2ND_LIGHTENED"]: Which_spirals = 3
+    ["3D_FLY_RMB"]: Rmb_3D_fly = !_
+    ["CALC_DIFF"]: Calc_bright_diff = !_
+    	CASE Calc_bright_diff ? 
+    	     Main_.Calculations_diff = {Calculations_diff}(
+    	     	Main_= Main_, Screen_= Screen_)
+    	     	 
+    	     Main_.Calculations_diff.Show
+    	ELSE Main_.Calculations_diff = NONE ;
+    ["RETROSPECTIVE"]: Retrospective = !_
+    	CASE Retrospective ? Once_Retrospective = TRUE ;
+    ["SCALE_ROTATE_ALL"]: Scale_rotate_spirals = !_
+    	Scale_up_shift = FALSE
+    	Main_.Cache_image = NONE
+    	Fill_scale_rotate
+    ["SCALEUP_SHIFT"]:
+    	Scale_up_shift = !_
+    	CASE Scale_up_shift ? Scale_rotate_spirals = FALSE ;
+    	Fill_scale_rotate
+    ["CONTROL_TO_DRAG_CENTER"]: Control_drag_center = !_
+    ["SHOW_CONE"]: Show_cone = !_
+    ["SHOW_DEVIATION"]: Show_deviations = !_
+    ["UNSCALE_IMAGE"]:
+        REAL si|mage_scale = 100 / Scale_image.Text.Real
+        REAL ri|image_rotate = Rotate_image.Text.Real
+        FOR sp_r IN All_satellites[] :
+            sp_r.Period = _ * si.Power(3/2.0)
+            sp_r.Activity = _ * si.Power(3/2.0)
+            sp_r.Last_act = _ * si.Power(3/2.0)
+            sp_r.Rotate -= ri
+            All_satellites[sp_r.INDEX] = sp_r.CLONE  
+        ;
+        PUSH setting_spiral = TRUE :
+	         Main_.All_scales[.Current_image] = 100
+	         Main_.All_rotations[.Current_image] = 0
+	         Scale_image.Set_text("100")
+	         Rotate_image.Set_text("0")
+        ;
+        selected_satellite
+    ["DEL_SPIRAL"]:
+        CASE !ask("Spiral number " Satellite_num.Text " will be deleted."
+             " Continue?") 
+             ? ==> ;
+        INT dn|umber_spiral_to_remove = Satellite_num.Current
+        STR nn|umbers_in_combo[]
+        ------------------------------- 'delete__dn', REUSED
+        All_satellites[].Delete(dn)
+        nn[].Clear
+        FOR i IN [0 TO All_satellites[].Count-1] :
+            nn[] << (i+1).S ;
+        Satellite_num.Set_array(nn[])
+        Satellite_num.Select(dn.Min(Satellite_num.Count-1))
+        -------------------------------
+    ["DEL_RIGHT"]:
+        CASE !ask("Spirals from " Satellite_num.Text " yo the end will be deleted."
+             " (total " (All_satellites[].Count - Satellite_num.Current).S
+             "). Continue?") 
+             ? ==> ;
+        FOR di IN [All_satellites[].Count-1 DOWNTO Satellite_num.Current] :
+            dn = di
+            LIKE .................... 'delete__dn'
+        ;
+    ["MOVE_UP"]:
+        {satellite_param} msp|_to_move 
+        .. = All_satellites[Satellite_num.Current].CLONE
+        All_satellites[].Delete(Satellite_num.Current)
+        All_satellites[].Insert(Satellite_num.Current-1, msp)
+        Satellite_num.Select(.Current-1)
+    ["MOVE_DOWN"]:
+        msp = All_satellites[Satellite_num.Current].CLONE
+        All_satellites[].Delete(Satellite_num.Current)
+        All_satellites[].Insert(Satellite_num.Current+1, msp)
+        Satellite_num.Select(.Current+1)
+    ELSE
+    	CASE ?
+    	[menu_alias.Starting("POS_")] ?
+    	     conf = New_read_config("PlasmaTides", 'USER', "sizes")
+    	     STR sizes_r|estore[].Split(conf.Str("POS_" menu_alias.After("_")), 
+    	     	 " ")
+    	
+    	     Main_.Set_size(sizes_r[2].Int.Pixels_to_points
+    	     			+ Main_.Width - Main_.PBox.Width, 
+    	     		  sizes_r[3].Int.Pixels_to_points
+    	     		    + Main_.Height - Main_.PBox.Height,
+    	     		  'SIZE_AS_IS')
+    	     		  
+    	     Main_.Set_position(sizes_r[0].Int.Pixels_to_points,
+    	     			  sizes_r[1].Int.Pixels_to_points,
+    	     			  'POSITION_AS_IS')
+    	[menu_alias.Starting("AFTER_")] ?
+    	     INT after|_what = menu_alias.After("_").Int
+    	     msp = All_satellites[Satellite_num.Current].CLONE
+    	     CASE after < Satellite_num.Current ? after += 1 ;
+    	     All_satellites[].Delete(Satellite_num.Current)
+    	     All_satellites[].Insert(after, msp)
+    	     Satellite_num.Select(after)
+    	;
+    ; 
+    need_invalidate = TRUE
+    Main_.Invalidate 
+    ------------------------- 'save options'
+    conf = New_write_config("Multi-spiral-model", 'USER', "")
+    conf.Set_i("SCREENSHOT_SCALE", Screenshot_scale)
+    conf.Set_r("LINE_WIDTH", Edit_line_w.Text.Real)
+    conf.Set_i("TRANSPARENCY", Transparency_sel.Current)
+    .
+    
+    
+
+
+OVERRIDE timer :
+    CASE sender_alias ?
+    ["TIMER_ACTIVATE_FILTER"]:
+    	 sender.{Timer}.Set_active(FALSE)
+    	 Set_active(Filter_sat)
+    ["TIMER_INVALIDATE"]:
+        CASE need_invalidate ?
+             need_invalidate = FALSE
+             Main_.Invalidate ;
+    ELSE BASE ; .
+    
+    
+    
+
+OVERRIDE key_down ==> {Form}.{action} :
+	CASE Key.Control ?
+	     CASE Key.Special ?
+	     [LETTER_Z]: 
+	         CASE Key.Shift ? Redo ELSE Undo ; 
+	     [LETTER_T]:
+	     	 CASE !Transform_model.Visible ? Show_transform_model ;
+	     ;
+	ELSE
+		 CASE Key.Special ? 
+		 [F_5]: copy_to_table 
+		 [F_6]: paste_from_table
+		 ;
+	; .
+	     
+	     
+METHOD Undo|_one_change :
+	CASE Main_.Stack_undo[].Count == 0 ? ==> ;
+    All_satellites[Satellite_num.Current] = Main_.Stack_undo[*].CLONE 
+    Main_.Stack_redo[] << Main_.Stack_undo[*].CLONE
+    Main_.Stack_undo[].Delete(Main_.Stack_undo[].Count-1)
+    selected_satellite
+    need_invalidate = TRUE .
+    
+METHOD Redo|_one_change :
+    CASE Main_.Stack_redo[].Count == 0 ? ==> ;
+    All_satellites[Satellite_num.Current] = Main_.Stack_redo[*].CLONE 
+    Main_.Stack_undo[] << Main_.Stack_redo[*].CLONE
+    Main_.Stack_redo[].Delete(Main_.Stack_redo[].Count-1)
+    selected_satellite
+    need_invalidate = TRUE .
+    
+METHOD draw_to|_bitmap(
+{Bitmap} to|_bitmap) ==> {Bitmap}, NEW
+    :
+	{Canvas} c|anvas_destination = to.Canvas
+    c.Background = SILVER
+    c.Erase
+    c.Background = WHITE
+    c.Font.Size = 12
+    {Control} contr|ols_to_draw[] << LabelSelectSpiral << Satellite_num
+    CASE Edit_name.Text != "" ? 
+         ..[] << LabelName << Edit_name ;
+    ..[] << Label_period << Period_rot
+    ..[] << Label_Eccentricity << Eccentricity
+    ..[] << Label_Mass << Mass_BH
+    ..[] << Label_plasma_speed<<Plasma_speed <<Label_final_k<<Final_plasma_speed
+    ..[] << Label_deviation_angle << Deviation_angle 
+    ..[] << Label_final_deviation << Final_deviation
+    ..[] << Label_cone_angle << Cone_angle
+    ..[] << Label_rotate_proj << Rotate_proj
+    ..[] << Label_inclination << Inclination
+    ..[] << Label_starting_a << Starting_angle
+    ..[] << Label_activity_time << Activity_time
+    CASE First_activity.Text.Real > 0 ? 
+         ..[] << Label_first_activity << First_activity ;
+    CASE Last_activity.Text.Real > 0 ? 
+         ..[] << Label_last_activity << Last_activity ;
+    ..[] << LabelHint1
+    ------------------------------- 'draw all controls'
+    REAL y|_position = 0
+    FOR con IN contr[] :
+        {rect} b|ounds_dest = con.Bounds.Offset(0,-Satellite_num.Bounds.Top)
+        b.Loc.Y = y
+        b.Height = 16
+        CASE con.{Label}==NONE ? 
+             c.Rect(b) 
+             REAL offset_x = 4
+             y += b.Height + 1
+        ELSE offset_x = c.Measure(con.Text).W
+        	 offset_x = b.Width - 4 - _
+        ;
+        c.Text(b.Loc.Offset(2 + offset_x, 2), con.Text)     
+    ;
+    RESULT = New_bitmap(to.Width, y.Points_to_pixels, 32)
+    to.Draw(RESULT.Canvas, Pt(0, 0))
+    .
+	     
+
+OVERRIDE disabled ==> BOOL :
+    CASE sender_alias ?
+    ["MAKE_SCREENSHOT", "LOAD_UNDER_IMAGE"]: RESULT = Locked_images
+    //["DEL_IMAGE"]: RESULT = Main_.All_images[].Count <= 1
+    ["OP_IMAGE"]: 
+        RESULT = Locked_images 
+        || Main_.All_images[].Count <= 0 && Main_.Image==NONE
+        
+    ["FILTER_SPEED"]: RESULT = !Filtering_by_speed
+    ["FILTER_SAT"]: RESULT = !Enable_filtering
+    ; .
+    
+   
+BOOL last_hidden_dev|iation
+BOOL last_hidden_cone
+//BOOL use_last_hidden|_cone_and_deviation
+
+OVERRIDE hidden ==> BOOL :
+    CASE sender_alias ?
+    ["LABEL_FINAL_K", "FINAL_PLASMA_SPEED"]:
+    	RESULT = !Show_deviations && Final_plasma_speed.Text.Real.Near(0)
+    ["LABEL_DEVIATION_ANGLE", "DEVIATION_ANGLE", 
+     "LABEL_FINAL_DEVIATION", "FINAL_DEVIATION"]:
+        //CASE use_last_hidden || setting_spiral ? 
+        CASE setting_spiral ? 
+             RESULT = last_hidden_dev ==> ;
+        RESULT = !Show_deviations && (
+        	Deviation_angle.Text==Final_deviation.Text
+        	|| Final_deviation.Text=="")
+        last_hidden_dev = RESULT
+    ["LABEL_CONE_ANGLE", "CONE_ANGLE"]: 
+        //CASE use_last_hidden || setting_spiral ? 
+        CASE setting_spiral ? 
+             RESULT = last_hidden_cone ==> ;
+        RESULT = !Show_cone && Cone_angle.Text.Real >= 90
+        last_hidden_cone = RESULT
+    ; .
+    
+{Stamp_parameters} Stamp_param|eters
+
+METHOD Go_to_prev_image :
+	Main_.Save_current_image(FALSE)
+	CASE Main_.Current_image <= 0 ? ==> ;
+	Main_.Current_image -= 1
+	----------------------------- 'update__caption', REUSED
+	Main_.Update_caption(.All_img_names[.Current_image]
+	  "" if(.All_img_URLs[.Current_image] != "", 
+	  " URL: " .All_img_URLs[.Current_image]))
+	-----------------------------
+	Go_to_another_image . 
+	
+METHOD Go_to_next_image :
+    Main_.Save_current_image(FALSE)
+    CASE Main_.Current_image >= Main_.All_images[].Count-1 ? ==> ;
+    Main_.Current_image += 1
+    LIKE Go_to_prev_image ............ 'update__caption'
+	Go_to_another_image . 
+
+METHOD Go_to_another_image :
+	-------------------------- 'go to another image'
+	Main_.Image = Main_.All_images[.Current_image]
+	Main_.Scaled_image = Main_.All_scaled[.Current_image]
+    LIKE Go_to_prev_image ............ 'update__caption'
+	Main_.Invalidate
+    //DEBUG: ">>> " Main_.Current_image #NL ;
+    Thumbnails.Invalidate_all
+    .
+    
+METHOD Delete_current_image :
+    INT ci|image_current = Main_.Current_image
+    {Bitmap} b_d|eleting = Main_.All_images[ci]
+    Stamp_parameters.Holder.Delete(b_d)
+    b_d = NONE
+    ---------------------------------
+    Main_.All_images[].Delete(ci)
+	Main_.All_scaled[].Delete(ci)
+	--------------------------------- 'and attributes'
+    Main_.Checksums_of_images[].Delete(ci)
+    Main_.Checksums2_of_images[].Delete(ci)
+	Main_.All_img_names[].Delete(ci)
+	Main_.All_img_URLs[].Delete(ci)
+	Main_.All_scales[].Delete(ci)
+	Main_.All_rotations[].Delete(ci)
+	CASE ci >= Main_.All_images[].Count ? 
+	     Main_.Current_image -= 1 ;
+	--------------------------- 
+	Go_to_another_image .
+	
+METHOD Exchange_img(INT From|_image) :
+    CASE From >= Main_.All_images[].Count ? ==> ;
+    Main_.Save_current_image(FALSE)
+    ------------------------------------------------ 'exchange'     
+    {Bitmap} temp|_image = Main_.All_images[From]
+    Main_.All_images[From] = Main_.All_images[From+1]
+    Main_.All_images[From+1] = temp
+    STR s_temp|_name
+    ------------------------------------------------- 'xchg__s', REUSED
+    s_temp = Main_.All_img_names[From]
+    Main_.All_img_names[From] = Main_.All_img_names[From+1]
+    Main_.All_img_names[From+1] = s_temp
+    ------------------------------------------------
+    LIKE .......... 'xchg__s', BUT(img_names==>img_URLs)*4
+    ------------------------------------------------ 'update current'
+    Main_.Image = Main_.All_images[.Current_image]
+    Go_to_another_image .
+	
+BOOL Locked_images|_working
+REAL Y_starting_thumb|nails[]
+    
+
+OVERRIDE paint :
+    CASE sender_alias ?
+    ["PAINTBOX_1"]: NONE
+    ["THUMBNAILS"]:
+        {Canvas} c|anves_dest = Thumbnails.Canvas
+        c.Erase
+        c.Quality = 'LOW'
+        REAL h|eight|_of_thumbnail 
+        h = (Thumbnails.Height / (Main_.All_images[].Count+1)).Max(40)
+        REAL y|_top_pos = 1
+        FOR i IN [0 TO Main_.All_images[].Count-1] :
+            CASE Y_starting_thumb[].Count <= i ? 
+                 Y_starting_thumb[] << y
+            ELSE Y_starting_thumb[i] = y ;
+        	CASE Main_.Current_image==i ? 
+        	     REAL cur_h|eight = Main_.Image.Height
+        	ELSE cur_h = Main_.All_images[i].Height ;
+            {rect} dest|ination = {rect}(Loc=Pt(2,y), W=Thumbnails.Width-4, 
+            	H=h.Min(cur_h/10+10))
+            --------------- 'draw image'
+            CASE i == Main_.Current_image ? 
+            	 PUSH c.Foreground = RED :
+            	      c.Pen_width = 5
+            	      c.Rect(dest.Inflate(2, 2)) ;
+                 {Bitmap} b|itmap_thuming = Main_.Image 
+            ELSE b = Main_.All_images[i] ;
+            b.Stretch_draw(c, dest)
+            ----------------- 'draw size'
+            PUSH c.Foreground = BLACK :
+            PUSH c.Quality = 'HIGH' :
+                 FOR dd IN [1 DOWNTO 0] :
+                     c.Text(Pt(2 + dd.Pixels_to_points, 
+                     		   y+1 + dd.Pixels_to_points), 
+                     		b.Width.S " x " b.Height.S)
+
+                     c.Foreground = WHITE 
+                 ;
+            ;
+            ;
+        	y += dest.H + 1    
+        ;
+    ELSE BASE
+    ; .
+    
+
+OVERRIDE mouse_wheel ==> BOOL :
+	CASE Key.Control ? 
+	     CASE vertical_wheel < 0 ? 
+	          font_size += 1
+	     ELSE font_size = (_ - 1).Max(8) ;
+	     FOR c IN Children[] :
+	         CASE c.{Label} != NONE ?
+	              c.Set_font_size(font_size-2)
+	              STR t|ext_old = c.Text
+	              //c.{Label}.Set_text(t "^")
+	              c.{Label}.Set_text(t)
+	              c.Set_height(font_size)
+	         ELSE
+	              c.Set_font_size(font_size)
+	         ;
+	         CASE c.{Button} != NONE || c.{Checkbox} != NONE
+	              || c.{Paint_turtle} != NONE
+	              ? c.Set_height(font_size+2) ;
+	         ;
+	     FOR col IN columns[] :
+	         Do_adjust_controls(THIS, col) ;
+	;
+	.
+	
+REAL font_size = 12
+
+METHOD no_lines_in_odd_rows({Bitmap} bmp|_to_change) :
+	-------------------------- 'prepare__no__lines__bitmap', REUSED
+    {Bitmap} nlb|_no_lines_bitmap_TEMP = New_bitmap(bmp.Width, .Height, 24) 
+    PUSH Main_.No_lines = TRUE :
+         Main_.Paint_to(nlb.Canvas, TRUE) ;
+         nlb.Canvas.Units = 'PIXELS'
+         nlb.Canvas.Reset_transform
+         bmp.Canvas.Reset_transform
+    ---------------------------------------
+    {Bitmap} temp|_row = New_bitmap(bmp.Width, 100, 24)
+    temp.Canvas.Units = 'PIXELS'
+    PUSH bmp.Canvas.Units = 'PIXELS' :
+    FOR y IN [100 TO bmp.Height-1] :
+        nlb.Draw(temp.Canvas, Pt(0, -y))
+        temp.Draw(bmp.Canvas, Pt(0, y))
+        //DEBUG: {Png}.To_file(temp, "temp[" y.S "].png", 100)
+        //        nlb.Draw(temp.Canvas, Pt(-bmp.Width/2, -y+100))
+        //        PUSH temp.Canvas.Foreground = WHITE :
+        //             temp.Canvas.Text(Pt(0,0), "--> " y.S) ;
+        //        temp.Draw(bmp.Canvas, Pt(bmp.Width/2, y-100))    
+        //;
+        NEXT y += 200
+    ; 
+    ; .
+    
+METHOD no_lines_in_even_rows({Bitmap} bmp|_to_change) :
+	LIKE no_lines_in_odd_rows ......... 'prepare__no__lines__bitmap'
+    {Bitmap} temp|_row = New_bitmap(bmp.Width, 100, 24)
+    temp.Canvas.Units = 'PIXELS'
+    PUSH bmp.Canvas.Units = 'PIXELS' :
+    FOR y IN [0 TO bmp.Height-1] :
+        nlb.Draw(temp.Canvas, Pt(0, -y))
+        temp.Draw(bmp.Canvas, Pt(0, y))
+        //DEBUG: {Png}.To_file(temp, "temp[" y.S "].png", 100)
+        //        nlb.Draw(temp.Canvas, Pt(-bmp.Width/2, -y+100))
+        //        PUSH temp.Canvas.Foreground = WHITE :
+        //             temp.Canvas.Text(Pt(0,0), "--> " y.S) ;
+        //        temp.Draw(bmp.Canvas, Pt(bmp.Width/2, y-100))    
+        //;
+        NEXT y += 200
+    ; 
+    ; .
+    
+METHOD no_lines_in_odd_cols(
+{Bitmap} bmp|_to_change)
+    :
+	LIKE no_lines_in_odd_rows.......... 'prepare__no__lines__bitmap'
+    {Bitmap} temp|_row = New_bitmap(100, bmp.Height, 24)
+    temp.Canvas.Units = 'PIXELS'
+    PUSH bmp.Canvas.Units = 'PIXELS' :
+    FOR x IN [100 TO bmp.Width-1] :
+        nlb.Draw(temp.Canvas, Pt(-x, 0))
+        temp.Draw(bmp.Canvas, Pt(x, 0))
+        NEXT x += 200
+    ; 
+    ; .
+    
+METHOD no_lines_in_even_cols(
+{Bitmap} bmp|_to_change)
+    :
+	LIKE no_lines_in_odd_rows.......... 'prepare__no__lines__bitmap'
+    {Bitmap} temp|_row = New_bitmap(100, bmp.Height, 24)
+    temp.Canvas.Units = 'PIXELS'
+    PUSH bmp.Canvas.Units = 'PIXELS' :
+    FOR x IN [0 TO bmp.Width-1] :
+        nlb.Draw(temp.Canvas, Pt(-x, 0))
+        temp.Draw(bmp.Canvas, Pt(x, 0))
+        NEXT x += 200
+    ; 
+    ; .
+    
+METHOD double_all_rows_with_no_lines_rows(
+{Bitmap} bmp|_source_bitmap) ==> {Bitmap}, NEW
+    :
+    RESULT = New_bitmap(bmp.Width, .Height * 2 * 101 / 100, 24)
+    RESULT.Canvas...Background = WHITE
+    	  		 ...Erase  
+    	  		 ...Units = 'PIXELS'
+	LIKE no_lines_in_odd_rows .................. 'prepare__no__lines__bitmap',
+		BUT (.Height==> . Height * 201 / 200)
+	{Bitmap} temp|_row = New_bitmap(bmp.Width, 100, 24)
+	temp.Canvas.Units = 'PIXELS'
+	PUSH bmp.Canvas.Units = 'PIXELS' :
+	FOR y IN [0 TO bmp.Height-1] :
+	    bmp.Draw(temp.Canvas, Pt(0, -y)) 
+		temp.Draw(RESULT.Canvas, Pt(0, (y*201/100)))
+		nlb.Draw(temp.Canvas, Pt(0, -y))
+		temp.Draw(RESULT.Canvas, Pt(0, (y*201/100+100)))
+		NEXT y += 100    
+	;
+    ; .
+    
+METHOD gradient_lines_shot(
+{Bitmap} bmp|_source, INT direction, 
+INT transparency|_start, INT delta_tr|ansparency) ==> {Bitmap_direct}, NEW
+    :
+	---------------------------------- 'save all satellites'
+	FOR s IN All_satellites[] :
+	    {satellite_param} save_sat[] << s.CLONE ;
+	BOOL to_b|itmap_1 = TRUE
+	---------------------------------- 'background image --> RESULT'
+    RESULT = New_bitmap_direct(bmp.Width, .Height, 32) 
+	PUSH Main_.No_lines = TRUE :
+	     Main_.Paint_to(RESULT.Canvas, to_b) ;
+	--------------------------------- '1st line --> alb'
+	{Bitmap_direct} alb|_all_lines_only_bitmap_TEMP 
+	alb = New_bitmap_direct(bmp.Width, .Height, 32)
+	alb.Canvas.Background = BLACK
+	alb.Canvas.Erase
+    //PUSH Draw_background_image = FALSE :
+    //     Main_.Paint_to(alb.Canvas, to_b) ;
+	PUSH Transp = transparency :
+		---------------------------- 'provide primary alb mask'
+		FOR y IN [0 TO alb.Height-1] :
+		    alb.Lock_rows(y, 1, TRUE)
+		    INT xx|_position_in_row = 0 
+			FOR x IN [0 TO alb.Width-1] :
+				CASE alb.Pixels[xx]==alb.Pixels[xx+1]==alb.Pixels[xx+2]=='00' ? 
+				     alb.Pixels[xx+3] = '00' 
+			;
+				xx += 4
+			;
+			alb.Unlock(TRUE)
+		;
+		------------------ 'create lob = lines only image'
+		{Bitmap_direct} lob|_all_lines_only_bitmap_TEMP 
+		lob = New_bitmap_direct(bmp.Width, .Height, 32)
+		lob.Canvas.Background = BLACK
+		------------------ 'create lai = lines anf image'
+		{Bitmap_direct} iob|_imag_only_bitmap_TEMP
+		iob = New_bitmap_direct(bmp.Width, .Height, 32)
+		iob.Canvas.Background = BLACK
+			Main_.Paint_to(iob.Canvas, to_b)
+		
+		REAL ii|_multiplier = 1.7
+		FOR i IN [1 TO 10] :
+			Progress_long.Set_progress(i*10)
+			Long_operation.Indicate(TRUE)
+			ii += 1     
+			CASE direction != 0 ? 
+				 ---------------------------- 'provide__transparency__mask', REUSED
+             //DEBUG: "i=" i " ii=" ii " Activity=" All_satellites[0].Activity 
+             //    "(" (All_satellites[0].Activity - save_sat[0].Activity) ")"
+             //    " Transp=" Transp #NL ;
+				 lob.Canvas.Erase
+				 Main_.Paint_to(lob.Canvas, to_b)
+				 FOR y IN [0 TO lob.Height-1] :
+				     iob.Lock_rows(y, 1, TRUE)
+				     lob.Lock_rows(y, 1, TRUE)
+				     alb.Lock_rows(y, 1, TRUE)
+				     xx = 0 
+					 FOR x IN [0 TO lob.Width-1] :
+						 CASE lob.Pixels[xx]==iob.Pixels[xx]
+						      && lob.Pixels[xx+1]==iob.Pixels[xx+1]
+						      && lob.Pixels[xx+2]==iob.Pixels[xx+2] 
+						      || lob.Pixels[xx].Int < 10
+						      && lob.Pixels[xx+1].Int < 10 
+						      && lob.Pixels[xx+2].Int < 10
+						      ?
+						      NONE 
+						 ELSE alb.Pixels[xx] = lob.Pixels[xx]
+						      alb.Pixels[xx+1] = lob.Pixels[xx+1]
+						      alb.Pixels[xx+2] = lob.Pixels[xx+2]
+							  alb.Pixels[xx+3] = lob.Pixels[xx+3] ;
+						 xx += 4
+					 ;
+					 lob.Unlock(FALSE)
+					 iob.Unlock(FALSE)
+					 alb.Unlock(TRUE)
+				 ;
+				 ----------------------- 'shift activity', REUSED
+			;
+			CASE direction != 0 ? 
+			     FOR s IN All_satellites[] :
+			         s.Activity += 2000 * direction
+			         All_satellites[s.INDEX] = s.CLONE 
+			     ;
+			ELSE 
+				 --------------- 'shift__activity', REUSED
+			     FOR s IN All_satellites[] :
+			         s.Activity = save_sat[s.INDEX].Activity -2000*ii
+			         All_satellites[s.INDEX] = s.CLONE 
+			     ;
+			     ---------------
+			     LIKE ........... 'provide__transparency__mask'
+			     //LIKE ........... 'shift__activity', BUT(-2000*i+2000==>+2000*i) 
+			     LIKE ........... 'shift__activity', BUT(-2000==>+2000) 
+			     LIKE ........... 'provide__transparency__mask'
+			;
+			Transp += delta_tr
+			CASE delta_tr > 0 && Transp >= 60 
+			     || delta_tr < 0 && Transp < 10
+			     ? BREAK i ;
+		;
+        //DEBUG: {Png}.To_file(alb, "alb.png", 100)
+        //        {Png}.To_file(RESULT, "RESULT-before.png", 100) 
+        //;
+		RESULT.Canvas.Reset_transform
+		alb.Draw(RESULT.Canvas, Pt(0,0))
+		---------------------------------- 'restore all satellites'
+		FOR s IN save_sat[] :
+		    All_satellites[s.INDEX] = s.CLONE ;
+		Progress_long.Set_progress(0)
+	;
+    .
+    
+METHOD line_around_of_spiral(
+INT points|_wide, BOOL with_lines) 
+==> {Bitmap}, NEW
+    :
+	{Bitmap_direct} bmp|_temp = New_bitmap_direct(
+			Main_.PBox.Width.Points_to_pixels,
+			Main_.PBox.Height.Points_to_pixels, 24)
+			
+	PUSH Main_.No_lines = TRUE : 
+	     CASE with_lines ? Main_.No_lines = FALSE ;
+	     Main_.Paint_to(bmp.Canvas, TRUE)
+	     //DEBUG: {Png}.To_file(bmp, "before_-line-shot.png", 100) ;
+	;
+    RESULT = New_bitmap(bmp.Width, .Height * 2, 24) 
+    RESULT.Canvas.Background = WHITE
+    RESULT.Canvas.Erase
+    PUSH RESULT.Canvas.Units = 'PIXELS' :
+         PUSH RESULT.Canvas.Foreground = RED :
+         PUSH RESULT.Canvas.Pen_width = 5 :
+         RESULT.Canvas.Ellipse({rect}(
+         	Loc= Pt(RESULT.Width/2 - 500, .Height/2-500), W=1000, H=1000))
+         ;
+         ;
+    ------------------------- 'dummy bitmap'
+	{Bitmap} temp|_lines_only = New_bitmap(bmp.Width, .Height, 24)
+	temp.Canvas.Units = 'PIXELS'
+	-------------------- 'small portion bitmap to copy a square around a point'
+	{Bitmap_direct} rect|angle_TEMP = New_bitmap_direct(
+		points.Points_to_pixels * 2, points.Points_to_pixels * 2, 24)
+	rect.Canvas.Units = 'PIXELS'
+	rect.Canvas.Quality = 'LOW'
+	-------------------- 'small portion bitmap to draw rect above rotated'
+	{Bitmap} rrot|ated_bitmap_temp = New_bitmap(
+		points.Points_to_pixels, points.Points_to_pixels, 24)
+	rrot.Canvas.Units = 'PIXELS'
+		
+	{point} dest|ination = Pt(RESULT.Width/2, .Height/2)
+	INT direction|_drawing = +1
+		
+	PUSH Draw_background_image = FALSE :
+	PUSH Main_.Store_dots = TRUE :
+	PUSH Which_spirals = 1 :
+	     {point} src|_point
+	     {point} next|_point
+	     {point} vec|tor_direction
+	     REAL size|_vector
+	     REAL angle|_rotation
+	     BOOL use_prev|ious
+	     REAL from_prog|ress = 0
+	     INT total|_dots
+	     ------------------------------------ 'draw__spiral__1', REUSED
+	     PUSH Main_.Only_cur = TRUE :
+	          Main_.Paint_to(temp.Canvas, TRUE) ;
+	     use_prev = FALSE
+	     total = Main_.All_dots[].Count
+	     FOR i IN [total-1 DOWNTO 1] :
+	     	 CASE i % 100 == 0 ? 
+	     	      Progress_long.Set_progress(
+	     	      	from_prog + (total - i) * 50 / total)
+	     	      
+	     	      Long_operation.Indicate(TRUE)
+	     	 ;
+	     //FOR i IN [Main_.All_dots[].Count.Min(300)-1 DOWNTO 1] :
+	         CASE !use_prev ?
+		          src = Pt(Main_.All_dots[i].X.Points_to_pixels,
+		         		   Main_.All_dots[i].Y.Points_to_pixels)
+	         ELSE use_prev = FALSE ;
+	         next = Pt(Main_.All_dots[i-1].X.Points_to_pixels,
+	         		   Main_.All_dots[i-1].Y.Points_to_pixels) 
+	         		   
+	         vec = Pt(next.X - src.X, next.Y - src.Y)
+	     	 size = Sqrt(vec.X.qq + vec.Y.qq)
+	     	 CASE size <= 0.001 ?
+	     	      use_prev = TRUE
+	     	      CONTINUE i ;
+	     	 angle = Arctan2(-vec.Y/size, vec.X/size) * 180 / PI
+	     	 CASE direction < 0 ? angle += 180 ;
+	     	 ----------------- 'now copy next portion from bmp to RESULT'
+             bmp.Draw(rect.Canvas,
+                Pt(-src.X + rect.Width/2, -src.Y + rect.Height/2))
+	     	 	
+             //bmp.Copy_to_bitmap_direct((src.X - rect.Width/2).Int,
+             //   (src.Y-rect.Height/2).Int, rect)
+	     	 	
+	     	 rrot.Canvas.Reset_transform
+	     	 rrot.Canvas.Offset(rrot.Width*0.5, rrot.Height*0.5)
+	     	 rrot.Canvas.Rotate(angle)
+	     	 rrot.Canvas.Offset(-rrot.Width*0.5, -rrot.Height*0.5)
+	     	 rect.Draw(rrot.Canvas, Pt(-rrot.Width/2, -rrot.Height/2))
+	     	 ----------------- 'now draw rotated portions'
+	     	 rrot.Canvas.Reset_transform
+	     	 rrot.Draw(RESULT.Canvas, dest.Offset(-rrot.Width/2, -rrot.Height/2))
+	     	 DEBUG: 
+	     	 	CASE i <= 100 ? 
+	     	       << "dot " i " from " Main_.All_dots[].Count
+	     	 		" src=" src.Sp " vec=" vec.Sp " size=" size 
+	     	 		" a=" angle #NL
+	     	 	//{Png}.To_file(rect, "rect-src" (i*direction).S ".png", 100)
+	     	 	//{Png}.To_file(rrot, "rect-rot" (i*direction).S ".png", 100)
+	     	 	;
+	     	 ;
+	     	 dest.X += direction * size
+	     	 CASE ?
+	     	 [direction > 0 && dest.X >= RESULT.Width - size] ?
+	     	      dest.X = 0 
+	     	      dest.Y += rrot.Height + 2
+	     	      CASE dest.Y >= RESULT.Height ? BREAK i ;
+	     	      rrot.Draw(RESULT.Canvas, 
+	     	      	dest.Offset(-rrot.Width/2, -rrot.Height/2))
+	     	      	
+	     	      dest.X += direction * size
+	     	 [direction < 0 && dest.X <= 0] ?
+	     	      dest.X = RESULT.Width - rrot.Width
+	     	      dest.Y -= rrot.Height + 2
+	     	      CASE dest.Y <= 0 ? BREAK i ;
+	     	      rrot.Draw(RESULT.Canvas, 
+	     	      	dest.Offset(-rrot.Width/2, -rrot.Height/2))
+	     	      	
+	     	      dest.X += direction * size
+	     	 ;
+	     ;
+	     ------------------------------------
+	     Which_spirals = 2
+	     direction = -1
+	     dest = Pt(RESULT.Width/2, .Height/2)
+	     from_prog = 50
+	     LIKE ................................. 'draw__spiral__1'
+	     Progress_long.Set_progress(0)
+	;
+	;
+	;
+	
+    ;
+    .
+    
+    
+FUN Calculate_checksum(STR Path|_of_file) ==> INT :
+    {File_stream} f|ile_temp= Read_file_stream(Path) 
+    BYTE buf|fer_64K[].Allocate(65536)
+    RESULT = 0
+    FOR i IN [0 TO f.Size.To_int/65536] :
+        INT size|_read = f.Read_bytes(buf[0 TO *]) 
+        FOR j IN [0 TO size-1] :
+            RESULT = _.ShiftL(1) ^ buf[j].Int ;
+    ;
+    RESULT &= 0x7FFF_FFFF .
+
+FUN Calculate_checksum2(STR Path|_of_file) ==> INT :
+    {File_stream} f|ile_temp= Read_file_stream(Path) 
+    BYTE buf|fer_64K[].Allocate(65536)
+    RESULT = 0
+    FOR i IN [0 TO f.Size.To_int/65536] :
+        INT size|_read = f.Read_bytes(buf[0 TO *]) 
+        FOR j IN [0 TO size-1] :
+            RESULT = _.ShiftL(1) ^ buf[j].Int ^ (RESULT.ShiftR(31) & 1) ;
+    ;
+    RESULT &= 0x7FFF_FFFF .
+
+
+FUN Downscale(
+{Bitmap} B|itmap_to_reduce, REAL K|oefficient_2_or_more,
+STR Filename|_source,
+STR Format|_actual) ==> {Bitmap}, NEW
+    :
+    DEBUG: "Filename=" Filename #NL
+     	   << "Format=" Format " K=" K #NL ;
+    CASE Filename != "" && Format==".jpg" ? 
+         CASE (K*2).Int ?
+         [1, 2, 3, 4]: NONE
+         [5, 6, 7, 8]: {Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
+         [9, 10, 11, 12, 13, 14, 15, 16]: re = {Jpeg}.From_file(Filename, 'QUAR') 
+         ELSE re = {Jpeg}.From_file(Filename, 'EIGH') ;
+    ;
+    CASE re == NONE ? 
+    	 re = New_bitmap((B.Width / K).Int, (B.Height / K).Int, 24) 
+    	 B.Stretch_draw(re.Canvas, 
+    	 	{rect}(Width=re.Width.Pixels_to_points,
+    		Height=re.Height.Pixels_to_points))
+    ;
+    RESULT = re .
+    
+FUN Actual_format(STR Path|_to_image_file) ==> STR :
+    {File_stream} in|_temp_file = Read_file_stream(Path) 
+    BYTE start|_bytes[]
+    NONE = in.Load_bytes(start[], 20)
+    in.Close
+    STR ss|tart_chars = Bytes_to_ascii(start[0 TO *]).Upper
+    CASE ?
+    ["PNG" IN ss] ? RESULT = ".png" ==> 
+    ["JFIF" IN ss] ? .. = ".jpg" ==>
+    ["TIF" IN ss] ? .. = ".tif" ==>
+    ["GIF" IN ss] ? .. = ".gif" ==>
+    ["WEBP" IN ss] ? ..= ".webp" ==>
+    [ss.Starting("BM")] ? ..=".bmp" ==> 
+    ;
+    RESULT = Path.Lower.Ext .
+    
+FUN q2|_square(REAL x|_to_square) ==> REAL := x * x .
+    
+	
+END
+
+*/
+
+
+
+
+

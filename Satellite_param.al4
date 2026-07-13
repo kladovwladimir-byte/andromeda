@@ -1626,9 +1626,8 @@ OVERRIDE click :
 	    	     c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
 	    	     c.Set_r("Offset_x", Main_.Offset_x)	
 	    	     c.Set_r("Offset_y", Main_.Offset_y)
-	    	     //CASE !Scale_up_shift ? 
-		    	      c.Set_r("Image_rotate", Rotate_image.Text.Real)
-		    	      c.Set_r("Image_scale", Scale_image.Text.Real) //;
+	    	     c.Set_r("Image_rotate", Rotate_image.Text.Real)
+	    	     c.Set_r("Image_scale", Scale_image.Text.Real)
 	    	     c.Set_b("Mirrored", Image_mirrored)
 	    	     ----------------------- 'loop on all spirals'
 	    	     FOR i IN [0 TO Satellite_num.Count-1] :
@@ -1661,8 +1660,6 @@ OVERRIDE click :
 	    	     	  DEBUG: "storing with commands (" Commands_s[].Count 
 	    	     	  		 ")"#NL ;
 	    	          FOR i IN [0 TO Main_.All_images[].Count-1] :
-                          //CASE Main_.All_img_names[i].Lower.Starting("st") ? 
-                          //     CONTINUE i ;
 	    	              ch = Main_.Checksums_of_images[i]
 	    	              ch2 = Main_.Checksums2_of_images[i]
 	    	              CASE ch != 0 || ch2 != 0 ? BREAK i ;
@@ -1695,8 +1692,6 @@ OVERRIDE click :
 	    	     FOR u IN Main_.All_img_URLs[] :
 	    	     	 DEBUG: "i=" u.INDEX " u=" u " url=" url #NL ;
 	    	         CASE u=="" ? CONTINUE u ;
-	    	         //CASE url != u  ? INT count_u|rls += 1 ;
-	    	         //CASE count_u > 1 ? BREAK u ;
 	    	         url = u
 	    	         BREAK u     
 	    	     ;
@@ -1718,9 +1713,8 @@ OVERRIDE click :
         	INT was_cur|rent_spiral = Satellite_num.Current
         	LIKE .................. 'select', 
         		 BUT(_write_==>_read_), (Dialog_file_save==>Dialog_load)*2
-        		 
-        	//SE Dialog_file_save.Filename == "" ? 
-        	     Dialog_file_save.Filename = Dialog_load.Filename //;
+
+        	Dialog_file_save.Filename = Dialog_load.Filename
         	c.Section = ""
         	----------------------- 'renumber satellites sections'
         	STR sec|tions_list[]
