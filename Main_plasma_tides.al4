@@ -899,6 +899,11 @@ METHOD Paint_to2(
 				      s = "Eccentricity"._Eccentricity
 				     		 #NL Satellite_param.Eccentricity.Text
 				     		 
+				  [last_mouse_shift.X <= 0 >= .Y 
+				   && PBox.Bounds.Inflate(-.Width*0.335, -.Height*0.335)
+				   .Contains(mouse)] ?
+				   		s = "+"
+				     		 
 				  [last_mouse_shift.X > 0 < .Y] ?
 				    CASE To_bitmap ? last_mouse_shift = Pt(0, 0) ;
 	 			    xx = center_pt.X
@@ -910,7 +915,10 @@ METHOD Paint_to2(
 	 			         dist = dist1 / d_o.Width * box_size
 	 			    ELSE dist = dist1 / scale_size * box_size ;
 	 			    s = dist.Int.S " L.Y." 
+	 			    BOOL text_anyway|_show = TRUE
 				  ;
+				  CASE !text_anyway && !Bounds.Contains(Mouse_cur) ? 
+				       s = "" ;
 				  REAL m_size|_text = c.Measure(s).W
 				  CASE tp.X + m_size > ww ? tp.X = ww - m_size - 5 ;
 				  CASE tp.Y < 0 ? tp.Y = 0 ;

@@ -2308,6 +2308,12 @@ OVERRIDE click :
 		"F6"
 		)
 
+	""	Item(	"ALLOW_JPEG_THUMB",
+				"Allow loading JPEG thumbnails while reduce size on load"
+		).Checked(
+		Allow_JPEG_thumb
+		)
+
 	""	Item(	"RESET",
 				"Reset"._Reset
 		))
@@ -2856,7 +2862,7 @@ METHOD Show_transform_model :
 	;
 	Transform_model.Show .
 
-
+BOOL Allow_JPEG_thumb = FALSE
 BOOL Image_mirrored
 
 METHOD do_mirroring :
@@ -2870,6 +2876,7 @@ METHOD do_mirroring :
 
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["ALLOW_JPEG_THUMB"]: Allow_JPEG_thumb = !_
     ["MIRROR_IMG"]: Image_mirrored = !_
     	do_mirroring
     ["TRANSORM_MODEL"]: Show_transform_model
@@ -3746,18 +3753,21 @@ FUN Calculate_checksum2(STR Path|_of_file) ==> INT :
     RESULT &= 0x7FFF_FFFF .
 
 
-FUN Downscale(
+METHOD Downscale(
 {Bitmap} B|itmap_to_reduce, REAL K|oefficient_2_or_more,
 STR Filename|_source,
 STR Format|_actual) ==> {Bitmap}, NEW
     :
     DEBUG: "Filename=" Filename #NL
      	   << "Format=" Format " K=" K #NL ;
-    CASE Filename != "" && Format==".jpg" ? 
+    CASE Filename != "" && Format==".jpg" && Allow_JPEG_thumb ? 
          CASE (K*2).Int ?
          [1, 2, 3, 4]: NONE
-         [5, 6, 7, 8]: {Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
-         [9, 10, 11, 12, 13, 14, 15, 16]: re = {Jpeg}.From_file(Filename, 'QUAR') 
+         [5, 6, 7, 8]: NONE 
+             //{Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
+         [9, 10, 11, 12, 13, 14, 15, 16]: 
+             {Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
+         [32, 33, 34, 35, 36, 37, 38, 39]: re = {Jpeg}.From_file(Filename, 'QUAR') 
          ELSE re = {Jpeg}.From_file(Filename, 'EIGH') ;
     ;
     CASE re == NONE ? 
