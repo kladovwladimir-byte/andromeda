@@ -1511,6 +1511,7 @@ REAL start_a|ngel_degrees) ==> {Matrix}, NEW
     RESULT = New_matrix_3x3(line_1, line_2, line_3)  
     .
     
+{date_time} down_time
 BOOL lmb_down, PUBLIC
 BOOL rmb_down
 BOOL drag_center|_of_galaxy
@@ -1539,7 +1540,8 @@ REAL excen0|tricity
 
 OVERRIDE mouse_down :
 CASE processing_mouse ? ==> ;
-PUSH processing_mouse = TRUE :	lmb_down = mouse_button == 'LMB'
+PUSH processing_mouse = TRUE : down_time = Now	
+    lmb_down = mouse_button == 'LMB'
 	rmb_down = mouse_button == 'RMB'
     rotate_p0 = rotate_p
     rotate_s0 = rotate_s
@@ -1595,7 +1597,10 @@ PUSH processing_mouse = TRUE :
 	------------------------- 'invalidation'
 	PBox.Invalidate_all 
 	Satellite_param.Change_hint 
-	Satellite_param.Show ; .
+	Satellite_param.Show 
+	CASE Satellite_param.Transform_model.Visible ? 
+	     Satellite_param.Transform_model.Show ;
+	; .
 	
 {point} last_mouse_shift
 
@@ -1700,6 +1705,9 @@ PUSH processing_mouse = TRUE :
 	          rotate_p = new_val.mod360
 	          last_camera_rot = Now ;
 	[rmb_down || !lmb_down] ? NONE
+	[Now.Milliseconds_diff(down_time) < 400 
+	&& (mouse.X-mouse_down0.X).Abs + (mouse.Y-mouse_down0.Y) <= 10] ?
+	    NONE
 	[drag_center] ?
 		 CASE ?
 		 [Satellite_param.Scale_up_shift && !Key.Control] ?

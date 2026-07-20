@@ -104,7 +104,7 @@ METHOD before_CONSTRUCT: .
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://11D483E4 Do not change manually (created by Form Designer)
+CONSTRUCT://71E53254 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -174,7 +174,7 @@ PUSH in_construct = TRUE :
 	---------------------- 'DIALOG_LOAD'
 	Dialog_load = New_dialog_open(THIS, "DIALOG_LOAD")
 
-	...Filter = "Galaxy settings (*.gal)|*.gal"
+	...Filter = "Galaxy settings (*.gal)|*.gal;*.gal2"
 	...Default_ext = "gal"
 	----------------- 'DIALOG_FILE_SAVE'
 	Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE_SAVE")
@@ -258,9 +258,9 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", #LF
-"#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
+"#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -2386,25 +2386,28 @@ METHOD Auto_stamp :
 	     || Checksum_img_loaded==0 && 0!=Checksum2_img_loaded 
 	     == Main_.Checksums2_of_images[.Current_image])  
 	     ?
-	     CASE Image_mirrored ? 
-	          CASE ask("Image loaded marked as 'mirrored'. Mirror it now?"
-	               " (Ask NO if it was mirrored already).") 
-	               ? 
-	               do_mirroring ;
-	     ;
-	     CASE Commands_s[].Count > 0 ?
-		      DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
-		        " ~ " Main_.Checksums_of_images[0 TO *].Merge(",")  #NL ;
-			  CASE !ask("The image loaded is single and it is the "
-			       "same as it was used to create the model loading. "
-			       "Create stamp now ?"._Image_detected_ask_create_stamp) 
-			       ? ==> ;
-			  Stamp_param.Close
-			  Stamp_param = NONE
-			  Provide_stamp_param
-			  Stamp_param.Show_no_activate
-			  Stamp_param.Execute_commands(Commands_s[]) ;
+	     Do_commands_auto(TRUE)
 	; .
+	
+METHOD Do_commands_auto(BOOL Answer|_if_to_create_stamp) :
+    CASE Image_mirrored ? 
+         CASE ask("Image loaded marked as 'mirrored'. Mirror it now?"
+              " (Ask NO if it was mirrored already).") 
+              ? 
+              do_mirroring ;
+    ;
+    CASE Commands_s[].Count > 0 ?
+	     DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
+	       " ~ " Main_.Checksums_of_images[0 TO *].Merge(",")  #NL ;
+		 CASE Answer && !ask("The image loaded is single and it is the "
+		      "same as it was used to create the model loading. "
+		      "Create stamp now ?"._Image_detected_ask_create_stamp) 
+		      ? ==> ;
+		 Stamp_param.Close
+		 Stamp_param = NONE
+		 Provide_stamp_param
+		 Stamp_param.Show_no_activate
+		 Stamp_param.Execute_commands(Commands_s[]) ; .
 	
 INT Checksum_img_loaded	
 INT Checksum2_img_loaded	

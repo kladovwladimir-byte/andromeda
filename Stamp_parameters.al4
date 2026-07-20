@@ -5,7 +5,7 @@ CLASS {Stamp_parameters}, UNTESTED, BITWISE:
 IMPORT {Form_common}, {Satellite_param}, {HSV} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}}, {Stamp3D}, {Main_plasma_tides} .
 IMPORT: {Jpeg}, {Png}, {Localize_str}, {Bitmap_direct}, {Bitmap_24} .
-IMPORT: {Holder_bitmaps} .
+IMPORT: {Holder_bitmaps}, {In_file_config} .
 IMPORT, DEBUG: {Bmp} .
 
 BASE CLASS: {Form_common} .
@@ -51,10 +51,11 @@ BASE CLASS: {Form_common} .
 {Label} Label_1 | _86755_726243
 {Combo} Post_processing_2
 {Paint_turtle} Run_post_process_1
+{Dialog_file} Dialog_gal
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://08B18374 Do not change manually (created by Form Designer)
+CONSTRUCT://35D81256 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -169,13 +170,19 @@ PUSH in_construct = TRUE :
 	---------------------- 'COPY_BITMAP'
 	Copy_bitmap = New_paint_turtle_button(THIS,
  "COPY_BITMAP",
- "5RD(60LL)4 UL30 RD("
-  "60LL)4")
+ "25R30LL (D5LL5LL5LL"
+  "5LLU25)3")
 , >> grayable[]
 
 	...Set_width(18)
 
 	...Set_height(16)
+	----------------------- 'DIALOG_GAL'
+	Dialog_gal = New_dialog_open(THIS, "DIALOG_GAL")
+	...Title = "Select .gal file with commands"
+
+	...Filter = "Galaxy model files|*.gal;*.gal2"
+	...Default_ext = ".gal"
 	----------------------- 'PAINTBOX_1'
 	Paintbox_1 = New_paintbox(THIS, "PAINTBOX_1", "")
 
@@ -208,7 +215,10 @@ PUSH in_construct = TRUE :
 "19: Retouch"
 "20. Average all next from current"
 "21. To least different from average of 4 neightbors"
-"22. To least different from average of 8 neightbors")
+"22. To least different from average of 8 neightbors"
+"23. To least different from average of 9 neightbors"
+"24. To least different from average of 12 neightbors"
+"25. To least different from average of 17 neightbors")
 	--------------- 'RUN_POST_PROCESS_1'
 	Run_post_process_1 = New_paint_turtle_button(THIS,
  "RUN_POST_PROCESS_1",
@@ -246,7 +256,10 @@ PUSH in_construct = TRUE :
 "19: Retouch"
 "20. Average all next from current"
 "21. To least different from average of 4 neightbors"
-"22. To least different from average of 8 neightbors")
+"22. To least different from average of 8 neightbors"
+"23. To least different from average of 9 neightbors"
+"24. To least different from average of 12 neightbors"
+"25. To least different from average of 17 neightbors")
 	--------------- 'RUN_POST_PROCESS_2'
 	Run_post_process_2 = New_paint_turtle_button(THIS,
  "RUN_POST_PROCESS_2",
@@ -284,7 +297,10 @@ PUSH in_construct = TRUE :
 "19: Retouch"
 "20. Average all next from current"
 "21. To least different from average of 4 neightbors"
-"22. To least different from average of 8 neightbors")
+"22. To least different from average of 8 neightbors"
+"23. To least different from average of 9 neightbors"
+"24. To least different from average of 12 neightbors"
+"25. To least different from average of 17 neightbors")
 	--------------- 'RUN_POST_PROCESS_3'
 	Run_post_process_3 = New_paint_turtle_button(THIS,
  "RUN_POST_PROCESS_3",
@@ -381,9 +397,9 @@ METHOD after_CONSTRUCT:
 	Downscale_first.Select(0)
 	//hannel_fix.Select(0)
 	Convert_colors.Select(0)
-	Post_processing_1.Select(4-1)
+	Post_processing_1.Select(3-1)
 	Post_processing_2.Select(7-1)
-	Post_processing_3.Select(17-1)
+	Post_processing_3.Select(23-1)
 	Holder = {Holder_bitmaps}
 	.
 
@@ -548,27 +564,25 @@ OVERRIDE click :
     ["COPY_BITMAP"]:
         CASE Main_.Satellite_param.Locked_images ? ==> ;
         {Bitmap} image_s|aving_TEMP = Main_.Image
-        CASE Key.Shift ?
-             CASE !Dialog_file_save.Select_file ? ==> ;
-             CASE Transparency_percents.Text.Real > 0 ? 
-                  {Bitmap} overlay|_temp = Make_scaled_prev2 
-                  image_s = New_bitmap(image_s.Width, .Height, 24)
-                  Main_.Image.Draw(image_s.Canvas, Pt(0,0))
-                  overlay.Draw(image_s.Canvas, Pt(0, 0))
-             ;
-             CASE Dialog_file_save.Filename.Ext.Lower ? 
-             [".jpg"]: 
-                 {Jpeg}.To_file(image_s, Dialog_file_save.Filename, 100)
-             [".png"]:
-                 CASE image_s.{Bitmap_24}!=NONE ? 
-                      image_s.{Bitmap_24}.To_png(Dialog_file_save.Filename) 
-                 ELSE {Png}.To_file(image_s, Dialog_file_save.Filename, 100)
-                 ;
-             ;
-             Main_.Update_caption(Dialog_file_save.Filename
-             	.Extract_file_name.Change_ext(""))
+        CASE Key.Shift ? Save_to_file
         ELSE
-        	NONE = image_s.To_clipboard     
+        	//NONE = image_s.To_clipboard
+        	popup_menu(
+
+	""	Item(	"COPY_TO_CLIPBOARD",
+				"Copy to clipboard"
+		)
+
+	""	Item(	"SAVE_TO_FILE",
+				"Save to file (or use Shift+LMB)"
+		)
+
+	""	Item(	"COMMAND_FROM_FILE",
+				"Run commands from .gal file"
+		))
+
+
+
         ;
     ; 
     DEBUG: "Holder[]:" Holder.Count 
@@ -948,7 +962,10 @@ METHOD Run_button(INT Operation) :
 	    	  	  [19]: b = retouch(b)
 	    	  	  [20]: b = avg_of_next_stamps(b) //-only 24
 	    	  	  [21]: b = least_diff_4(b)
-	    	  	  [22]: b = least_diff_8(b)
+	    	  	  [22]: b = least_diff_8(b, 8)
+	    	  	  [23]: b = least_diff_8(b, 9)
+	    	  	  [24]: b = least_diff_12(b, 12)
+	    	  	  [25]: b = least_diff_12(b, 17)
 	    	      ;
 			 ;
 		     Progress_1.Set_progress(0)
@@ -1855,8 +1872,9 @@ METHOD least_diff_4|_neightbors(
 	;
 	.
 
-METHOD least_diff_8|_neightbors(
-{Bitmap_direct} in_b|itmap) ==> {Bitmap_24}, NEW
+METHOD least_diff_8|_or_9_neightbors(
+{Bitmap_direct} in_b|itmap, INT N|umber_of_neighbors_8_or_9) ==> {Bitmap_24}, 
+NEW
     :
     {Bitmap_24} b|itmap_in|TEMP = need_bitmap_24(in_b)
 	RESULT = New_bitmap_24(b.Width, b.Height, Holder)
@@ -1901,12 +1919,14 @@ METHOD least_diff_8|_neightbors(
 		    	 + b.Pixels[xx+6+b.Row_width*2].Int/65536.0
 		    
 		    	 
-		    REAL v0|_center_val 
-                //= b.Pixels[xx+5+b.Row_width].Int
-                // + b.Pixels[xx+4+b.Row_width].Int/256.0
-                // + b.Pixels[xx+3+b.Row_width].Int/65536.0
-		    	 
-		    REAL avg|_value = (v1+v2+v3+v4+v5+v6+v7+v8)/8
+		    CASE N==9 ? 
+			     REAL v0|_center_val = b.Pixels[xx+5+b.Row_width].Int
+					  + b.Pixels[xx+4+b.Row_width].Int/256.0
+					  + b.Pixels[xx+3+b.Row_width].Int/65536.0
+			    	  
+			     REAL avg|_value = (v1+v2+v3+v4+(v5+v6+v7+v8)*0.7 +v0*2)/8.8
+	    		 CASE (v0 - avg).Abs < (v1 - avg).Abs ? v1 = v0 ;
+		    ELSE avg = (v1+v2+v3+v4+v5+v6+v7+v8)/8 ;
 		    -------------------- 'select least deifferent'
 	    	CASE (v2 - avg).Abs < (v1 - avg).Abs ? v1 = v2 ;
 	    	CASE (v3 - avg).Abs < (v1 - avg).Abs ? v1 = v3 ;
@@ -1926,12 +1946,137 @@ METHOD least_diff_8|_neightbors(
 	    RESULT.Unlock(TRUE)
 	;
 	.
+	
+METHOD least_diff_12|_or_17_neightbors(
+{Bitmap_direct} in_b|itmap, INT N|umber_of_neighbors_12_or_17) ==> {Bitmap_24}, 
+NEW
+    :
+    {Bitmap_24} b|itmap_in|TEMP = need_bitmap_24(in_b)
+	RESULT = New_bitmap_24(b.Width, b.Height, Holder)
+	INT threshold = Iterations_count1.Text.Int
+	INT rw|idth_of_b_row = b.Row_width
+	FOR y IN [2 TO b.Height-3] :
+		Progress_1.Set_progress(y * 100 / b.Height)
+		Long_operation.Indicate(TRUE)
+	    b.Lock_rows(y-2, 5, TRUE)
+	    RESULT.Lock_rows(y, 1, FALSE)
+		INT xx|_position = 0
+		FOR x IN [2 TO b.Width-3] :
+		    REAL v1|_left_val = b.Pixels[xx+rw*2+5].Int 
+		    	 + b.Pixels[xx+rw*2+4].Int/256.0
+		    	 + b.Pixels[xx+rw*2+3].Int/65536.0
+		    	 
+		    REAL v2|_right_val = b.Pixels[xx+rw*2+11].Int 
+		    	 + b.Pixels[xx+rw*2+10].Int/256.0
+		    	 + b.Pixels[xx+rw*2+9].Int/65536.0
+		    	 
+			REAL v3|_up_val = b.Pixels[xx+8+rw].Int
+		    	 + b.Pixels[xx+7+rw].Int/256.0
+		    	 + b.Pixels[xx+6+rw].Int/65536.0
+		    	 
+		    REAL v4|_down_val = b.Pixels[xx+8+rw*3].Int 
+		    	 + b.Pixels[xx+7+rw*3].Int/256.0
+		    	 + b.Pixels[xx+6+rw*3].Int/65536.0
+		    ------------------ 'v5...v8'
+		    REAL v5|_up_left_val = b.Pixels[xx+5+rw].Int 
+		    	 + b.Pixels[xx+4+rw].Int/256.0
+		    	 + b.Pixels[xx+3+rw].Int/65536.0
+		    	 
+		    REAL v6|_up_right_val = b.Pixels[xx+11+rw].Int 
+		    	 + b.Pixels[xx+10+rw].Int/256.0
+		    	 + b.Pixels[xx+9+rw].Int/65536.0
+		    	 
+			REAL v7|_down_left = b.Pixels[xx+5+rw*3].Int
+		    	 + b.Pixels[xx+4+rw*3].Int/256.0
+		    	 + b.Pixels[xx+3+rw*3].Int/65536.0
+		    	 
+		    REAL v8|_down_right = b.Pixels[xx+11+rw*3].Int 
+		    	 + b.Pixels[xx+10+rw*3].Int/256.0
+		    	 + b.Pixels[xx+9+rw*3].Int/65536.0
+		    ------------------- 'v9...v12'
+		    REAL v9|_up_up = b.Pixels[xx+8].Int
+		    	 + b.Pixels[xx+7].Int/256.0
+		    	 + b.Pixels[xx+6].Int/65536.0
+		    	 
+		    REAL v10|_down_down = b.Pixels[xx+8+rw*4].Int 
+		    	 + b.Pixels[xx+7+rw*4].Int/256.0
+		    	 + b.Pixels[xx+6+rw*4].Int/65536.0
+		    	 
+		    REAL v11|_left_left = b.Pixels[xx+rw*2+2].Int 
+		    	 + b.Pixels[xx+rw*2+1].Int/256.0
+		    	 + b.Pixels[xx+rw*2].Int/65536.0
+		    	 
+		    REAL v12|_right_right = b.Pixels[xx+rw*2+14].Int 
+		    	 + b.Pixels[xx+rw*2+13].Int/256.0
+		    	 + b.Pixels[xx+rw*2+12].Int/65536.0
+		    
+		    	 
+		    CASE N==17 ? 
+			     REAL v0|_center_val = b.Pixels[xx+8+rw*2].Int
+					  + b.Pixels[xx+7+rw*2].Int/256.0
+					  + b.Pixels[xx+6+rw*2].Int/65536.0
+			     ----------------------- 'v13...v16'
+			     REAL v13|_up2_left2 = b.Pixels[xx+2].Int 
+		    	 + b.Pixels[xx+1].Int/256.0
+		    	 + b.Pixels[xx].Int/65536.0
+		    	 
+		    	 REAL v14|_up2_right2 = b.Pixels[xx+14].Int 
+		    	 + b.Pixels[xx+13].Int/256.0
+		    	 + b.Pixels[xx+12].Int/65536.0
+		    	 
+		    	 REAL v15|_down2_left2 = b.Pixels[xx+2+rw*4].Int
+		    	 + b.Pixels[xx+1+rw*4].Int/256.0
+		    	 + b.Pixels[xx+rw*4].Int/65536.0
+		    	 
+		    	 REAL v16|_down2_right2 = b.Pixels[xx+14+rw*4].Int 
+		    	 + b.Pixels[xx+13+rw*4].Int/256.0
+		    	 + b.Pixels[xx+12+rw*4].Int/65536.0
+		    	 ----------------------- 'avg among 17'
+			     REAL avg|_value = (v0*4 
+			     + v1+v2+v3+v4 * 2 
+			     +(v5+v6+v7+v8)*1.4
+			     + v9+v10+v11 
+			     + (v12+v13+v14+v15)*0.7)/20.4
+	    		 CASE (v0 - avg).Abs < (v1 - avg).Abs ? v1 = v0 ;
+		    ELSE avg = (v1+v2+v3+v4+v5+v6+v7+v8+v9+v10+v11+v12)/12 ;
+		    -------------------- 'select least deifferent'
+	    	CASE (v2 - avg).Abs < (v1 - avg).Abs ? v1 = v2 ;
+	    	CASE (v3 - avg).Abs < (v1 - avg).Abs ? v1 = v3 ;
+	    	CASE (v4 - avg).Abs < (v1 - avg).Abs ? v1 = v4 ;
+	    	CASE (v5 - avg).Abs < (v1 - avg).Abs ? v1 = v5 ;
+	    	CASE (v6 - avg).Abs < (v1 - avg).Abs ? v1 = v6 ;
+	    	CASE (v7 - avg).Abs < (v1 - avg).Abs ? v1 = v7 ;
+	    	CASE (v8 - avg).Abs < (v1 - avg).Abs ? v1 = v8 ;
+	    	-------------- '+ v9...v16'     
+	    	CASE (v9 - avg).Abs < (v1 - avg).Abs ? v1 = v9 ;
+	    	CASE (v10 - avg).Abs < (v1 - avg).Abs ? v1 = v10 ;
+	    	CASE (v11 - avg).Abs < (v1 - avg).Abs ? v1 = v11 ;
+	    	CASE (v12 - avg).Abs < (v1 - avg).Abs ? v1 = v12 ;
+	    	CASE N==17 ? 
+	    		 CASE (v13 - avg).Abs < (v1 - avg).Abs ? v1 = v13 ;
+	    		 CASE (v14 - avg).Abs < (v1 - avg).Abs ? v1 = v14 ;
+	    		 CASE (v15 - avg).Abs < (v1 - avg).Abs ? v1 = v15 ;
+	    		 CASE (v16 - avg).Abs < (v1 - avg).Abs ? v1 = v16 ;
+	    	;
+			-------------------------- 'store final value'
+		    v0 = v1
+			RESULT.Pixels[xx+8] = v0.Int.Byte
+			RESULT.Pixels[xx+7] = (v0 * 256).Int.Byte
+			RESULT.Pixels[xx+6] = (v0 * 65536).Int.Byte
+		    xx += 3
+		;
+		b.Unlock(FALSE)
+	    RESULT.Unlock(TRUE)
+	;
+	.
+	
 
 INT Executing|_commands_stored
 	
 METHOD Execute_commands|_stored_earlier(STR Commands_s|equence[]) :
 	PUSH Executing = 1 :
 	     FOR i_c|ommand IN [0 TO Commands_s[].Count-1] :
+	     	 CASE Cancelling ? BREAK i_c ;
 	     	 Executing = i_c+1
 	         STR instr|uctions[].Split(Commands_s[i_c], ";") 
 	         hint_from_commands
@@ -2000,6 +2145,55 @@ OVERRIDE paint :
     	;
     ELSE BASE
     ; .
+
+OVERRIDE menu_item :
+    CASE menu_alias ?
+    ["COPY_TO_CLIPBOARD"]:
+    	{Bitmap} image_s|aving_TEMP = Main_.Image
+        NONE = image_s.To_clipboard
+    ["SAVE_TO_FILE"]: Save_to_file 
+    ["COMMAND_FROM_FILE"]: Commands_from_file
+    ; .
+    
+METHOD Save_to_file :
+    CASE !Dialog_file_save.Select_file ? ==> ;
+    CASE Transparency_percents.Text.Real > 0 ? 
+         {Bitmap} overlay|_temp = Make_scaled_prev2 
+         {Bitmap} image_s|aving_TEMP = Main_.Image
+         image_s = New_bitmap(image_s.Width, .Height, 24)
+         Main_.Image.Draw(image_s.Canvas, Pt(0,0))
+         overlay.Draw(image_s.Canvas, Pt(0, 0))
+    ;
+    CASE Dialog_file_save.Filename.Ext.Lower ? 
+    [".jpg"]: 
+        {Jpeg}.To_file(image_s, Dialog_file_save.Filename, 100)
+    [".png"]:
+        CASE image_s.{Bitmap_24}!=NONE ? 
+             image_s.{Bitmap_24}.To_png(Dialog_file_save.Filename) 
+        ELSE {Png}.To_file(image_s, Dialog_file_save.Filename, 100)
+        ;
+    ;
+    Main_.Update_caption(Dialog_file_save.Filename
+        .Extract_file_name.Change_ext(""))
+    .
+    
+METHOD Commands_from_file :
+	CASE !Dialog_gal.Select_file ? ==> ;
+	{In_file_config} c|onfiguration_temp = New_read_in_file_config(
+		Dialog_gal.Filename, "")
+	
+	Main_.Satellite_param.Commands_s[].Clear
+	FOR i IN [0 TO MAX_INT-1] :
+	 	STR sc|ommand = c.Str("Command" i.S)
+	 	CASE sc=="" ? BREAK i ;
+	    Main_.Satellite_param.Commands_s[] << sc
+	;
+	CASE Main_.Satellite_param.Commands_s[].Count==0 ? 
+	     message("There are no stamp commands stored in the .gal file selected") 
+	     ==> ;
+	Main_.Satellite_param.Do_commands_auto(FALSE) .
+    
+    
 END
 
 */
