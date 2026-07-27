@@ -1,0 +1,82 @@
+/*
+
+CLASS {Select_gif_frame}, UNTESTED:
+
+IMPORT {Dialog_common} .
+IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
+
+
+BASE CLASS: {Dialog} .
+{Label} Label_frame
+{Edit} Frame|_number
+
+FUN Select_gif_frame(
+{Form} Main_f|orm, 
+INT N|umber_frames|_total, 
+INT Last|_frame_selected) ==> INT
+    :
+    {Select_gif_frame} temp_d|ialog 
+    temp_d = {Select_gif_frame}(Screen_=Main_f.Screen_, total_frames = N) 
+    temp_d.Set_caption("Total frames: " N.S)
+	temp_d.Frame.Set_text(Last.Min(N-1).S)
+	NONE = temp_d.Show_modal(Main_f)
+	RESULT = temp_d.Frame.Text.Int .
+    
+{Paint_turtle} Inc_dec|_frame
+{Button} Button_ok
+
+METHOD before_CONSTRUCT: .
+
+CONSTRUCT://3C44B1AC Do not change manually (created by Form Designer)
+	before_CONSTRUCT
+PUSH in_construct = TRUE :
+	------------------------------------------------------------------ 'column '
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=100))
+
+	---------------------- 'LABEL_FRAME'
+	Label_frame = {Label}(Form_=THIS, Alias="LABEL_FRAME")
+
+	...Set_text("Select frame:")
+	---------------------------- 'FRAME'
+	Frame = New_edit(THIS, "FRAME")
+	-------------------------- 'INC_DEC'
+	Inc_dec = New_paint_turtle_button(THIS,
+ "INC_DEC",
+ "20R30DFL40BR80BR40UNBR160DF"
+  "BR40BR80BR40")
+
+
+	...Set_width(36)
+
+	...Set_height(18)
+
+	...Set_multi_button("Dec,Inc")
+	------------------------ 'BUTTON_OK'
+	Button_ok = New_button(THIS, "BUTTON_OK", "OK")
+	...Make_default
+	----------------------------------------'form size / position'
+	Set_size(200, 0, 'FIT_TO_DISPLAY')
+
+	after_CONSTRUCT
+	Auto_height
+; .
+
+
+METHOD after_CONSTRUCT: .
+
+INT total_frames
+
+OVERRIDE click :
+    CASE sender_alias ?
+    ["BUTTON_OK"]: ready("OK") 
+    ["INC_DEC"]:
+        CASE Inc_dec.Current ? 
+        ["Dec"]: Frame.Set_text((Frame.Text.Int - 1).Max(0).S)
+        ["Inc"]: Frame.Set_text((Frame.Text.Int + 1).Min(total_frames-1).S)
+        ;
+    ELSE BASE
+    ; .
+    
+END
+
+*/

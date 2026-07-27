@@ -3,7 +3,7 @@
 CLASS {Main_plasma_tides}, UNTESTED, BITWISE .
 
 IMPORT {Form_common}, {Satellite_param}, {Elliptic_orbit}, {Localize_str} .
-IMPORT: {{Visual}}, {{Standard}}, {{Files}}, {HSV} .
+IMPORT: {{Visual}}, {{Standard}}, {{Files}}, {HSV}, {Collection_gal} .
 IMPORT: {Vector}, {Matrix}, {Calculations_diff}, {Bitmap_direct} .
 IMPORT: {Transform_model} .
 IMPORT, DEBUG: {Bmp} .
@@ -78,11 +78,15 @@ OVERRIDE resize :
 	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
 	
 {date_time} resize_time
+BOOL Lock_invalidations
+
 	
 OVERRIDE Invalidate :
+	CASE Lock_invalidations ? ==> ;
 	BASE
 	Cache_image = NONE
-    PBox.Invalidate_all .
+    PBox.Invalidate_all 
+    Satellite_param.Thumbnails.Invalidate_all .
     
 METHOD Rescale|_image :
 	Scaled_image = NONE .
@@ -330,10 +334,13 @@ METHOD color_of_arm(INT Arm_c|olor) ==> INT :
 	
 BOOL No_lines|_while_paint
 BOOL Only_cur|rent_line
+INT count_satellites_drawn
+INT Last_satellites_drawn
 	
 METHOD Paint_to2(
 {Canvas} C|anvas_to || c, BOOL To_bitmap), OPERATORS({Matrix})
     :
+	count_satellites_drawn = 0
 	c.Reset_transform
 	c.Background = BLACK
 	c.Erase
@@ -357,6 +364,9 @@ METHOD Paint_to2(
 	CASE Only_cur ? 
 	     filt[].Clear 
 	     filt[] << (Satellite_param.Satellite_num.Text);
+	CASE Satellite_param.Satellite_num.Current < 0 ? 
+	     filt[].Clear
+	     filt[] << "#" ;
 	------------------- 'size of PBox'
 	h = View_size.Y.Min(View_size.X)
 	h_box = View_size.Y
@@ -552,6 +562,7 @@ METHOD Paint_to2(
 	FOR sat1 IN Satellite_param.All_satellites[] :
 	    CASE filt[].Count > 0 && (sat1.INDEX+1).S !IN filt[] ? CONTINUE sat1 ;
 	    speed_max = _.Max(sat1.SpeedK).Max(sat1.FinalK)
+	    count_satellites_drawn += 1
 	;
 	--------------------------------- 'sun position (for retrospective in Milky Way)'
 	sun = Pt(
@@ -968,6 +979,7 @@ METHOD Paint_to2(
 	; 
 	CASE do_calc ? 
 	     final_calculations ;
+	Last_satellites_drawn = count_satellites_drawn
 	.
 	
 BOOL Skip_all_sat|ellites
@@ -1868,6 +1880,14 @@ OVERRIDE key_down ==> {Form}.{action} :
 	              ?
 	              Satellite_param.Show_transform_model ;
 	     ;
+	ELSE 
+		 CASE Key.Special ?
+		 [F_12]:
+		     CASE Satellite_param.Collection_gal == NONE ?
+		          Satellite_param.Collection_gal = {Collection_gal}(
+		          	Main_=THIS, Screen_=Screen_) ;
+    		 Satellite_param.Collection_gal.Show
+		 ;
 	; .
 	     
 
@@ -1875,6 +1895,7 @@ OVERRIDE key_down ==> {Form}.{action} :
 
 OVERRIDE mouse_wheel ==> BOOL :
 	CASE Key.Control ?
+		 CASE Satellite_param.Lock_img_select ? ==> ;
 		 Save_current_image(FALSE)     
 		 CASE vertical_wheel > 0 ?
 		      CASE Current_image > 0 ? 
@@ -1885,6 +1906,7 @@ OVERRIDE mouse_wheel ==> BOOL :
 		 	       Current_image += 1	
 		 	  ELSE ==> ;
 		 ;
+		 Satellite_param.Update_URL
 		 Image = All_images[Current_image]
 		 Scaled_image = All_scaled[Current_image]
 		 ---------------------- 'set individual scale/rotate'

@@ -8,7 +8,7 @@ IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
 IMPORT: {Bmp}, {Gif}, {Jpeg}, {Png}, {Tiff}, {WebP} .
 IMPORT: {Elliptic_orbit}, {Calculations_diff}, 
 		{Stamp_parameters}, {Bitmap_direct}, {Holder_bitmaps} ,
-		{Matrix}, {Vector} .
+		{Matrix}, {Vector}, {Select_gif_frame}, {Collection_gal} .
 IMPORT: {Transform_model} .
 
 
@@ -64,7 +64,6 @@ BASE CLASS: {Form_common} .
 {Edit} Final_deviation
 {Edit} Mass_BH|ole
 {Button} Make_screenshot
-{Checkbox} Time_distortion
 {Paint_turtle} Add_to_activity|_or_subtract
 {Timer} Timer_activate_filter
 {Label} LabelName
@@ -86,10 +85,7 @@ BASE CLASS: {Form_common} .
 {Progress} Progress_long|_operation
 {Paint_turtle} Op_image
 {Paintbox} Paintbox_1
-{Edit} Label_file
-{Label} Label_line_w|idth
-{Edit} Edit_line_w|idth
-{Paint_turtle} Line_width_1
+{Memo} Label_file
 {Paint_turtle} Speed_switch
 {Paint_turtle} Speed_switch_2
 {Paint_turtle} Change_scale
@@ -98,13 +94,18 @@ BASE CLASS: {Form_common} .
 {Label} Label_Filter
 {Edit} Filter_sat|ellites
 {Paint_turtle} Star_filter
+{Label} Label_line_w|idth
+{Edit} Edit_line_w|idth
+{Paint_turtle} Line_width_1
+{Memo} Label_url
+{Checkbox} Time_distortion
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://71E53254 Do not change manually (created by Form Designer)
+CONSTRUCT://572AECF2 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -117,20 +118,6 @@ PUSH in_construct = TRUE :
 	...Default_ext = "png"
 	----------------- 'TIMER_INVALIDATE'
 	Timer_invalidate = New_timer(THIS, "TIMER_INVALIDATE", 50)
-	--------------------- 'LABEL_LINE_W'
-	Label_line_w = {Label}(Form_=THIS, Alias="LABEL_LINE_W")
-
-	...Set_text("Line width:")
-	---------------------- 'EDIT_LINE_W'
-	Edit_line_w = New_edit(THIS, "EDIT_LINE_W")
-
-	...Set_text("1")
-	--------------------- 'LINE_WIDTH_1'
-	Line_width_1 = New_paint_turtle_button(THIS, "LINE_WIDTH_1", "10D80")
-
-	...Set_width(18)
-
-	...Set_height(18)
 	---------------- 'LABELSELECTSPIRAL'
 	LabelSelectSpiral = {Label}(Form_=THIS, Alias="LABELSELECTSPIRAL")
 
@@ -258,9 +245,10 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
-"#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", #LF
+"#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -397,9 +385,26 @@ PUSH in_construct = TRUE :
 	Max_dist = New_edit(THIS, "MAX_DIST")
 
 	...Set_text("0")
+	------------------------------------------------------------- 'column COL_5'
+	new_column("COL_5", 'RIGHT', {Form}.{sizes_col}(Width=190,Label=70))
+
 	------------------ 'TIME_DISTORTION'
 	Time_distortion = New_checkbox(THIS, "TIME_DISTORTION", "Time distortion")
 	...Set_checked(TRUE)
+	--------------------- 'LABEL_LINE_W'
+	Label_line_w = {Label}(Form_=THIS, Alias="LABEL_LINE_W")
+
+	...Set_text("Line width:")
+	---------------------- 'EDIT_LINE_W'
+	Edit_line_w = New_edit(THIS, "EDIT_LINE_W")
+
+	...Set_text("1")
+	--------------------- 'LINE_WIDTH_1'
+	Line_width_1 = New_paint_turtle_button(THIS, "LINE_WIDTH_1", "10D80")
+
+	...Set_width(18)
+
+	...Set_height(18)
 	----------------- 'LOAD_UNDER_IMAGE'
 	Load_under_image = New_button(THIS,
  "LOAD_UNDER_IMAGE",
@@ -498,7 +503,17 @@ PUSH in_construct = TRUE :
 "*webp"
 
 	----------------------- 'LABEL_FILE'
-	Label_file = New_read_only_edit(THIS, "LABEL_FILE")
+	Label_file = New_memo(THIS,
+ "LABEL_FILE",
+ MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY)
+
+	...Set_height(50)
+	------------------------ 'LABEL_URL'
+	Label_url = New_memo(THIS,
+ "LABEL_URL",
+ MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY)
+
+	...Set_height(50)
 	------------------------------------------------------------- 'column COL_3'
 	new_column("COL_3", 'BOTTOM', DEFAULT_SIZES)
 
@@ -1365,7 +1380,6 @@ OVERRIDE click :
         Period_rot.Set_text((-Period_rot.Text.Real).S)
     ["LOAD_UNDER_IMAGE"]:
         CASE Locked_images ? ==> ;
-    	Main_.Scaled_image = NONE
     	CASE Images_path != "" ? 
     	     Dialog_image.Initial_path = Images_path ;
         CASE !Dialog_image.Select_file ? 
@@ -1374,69 +1388,7 @@ OVERRIDE click :
              Main_.Clear_images
              Thumbnails.Invalidate_all
              Main_.Invalidate ==> ;
-        Images_path = Dialog_image.Filename.Extract_path
-        Main_.Save_current_image(TRUE)
-        STR f|ilename = Dialog_image.Filename  
-        INT ch|ecksum = Calculate_checksum(f)
-        INT ch2|ecksum = Calculate_checksum2(f)
-        DEBUG:
-        	CASE ch==0 ? 
-        	     << "could not clalculate checksum!" #NL ;
-        ;
-        STR format|_actual = Actual_format(f)
-        CASE format ? 
-        [".png"]: Main_.Image = {Png}.From_file(f, 'FULL')
-        [".bmp"]: .. = {Bmp}.From_file(f)
-        [".gif"]: .. = {Gif}.Load(Path= f).Bitmap
-        [".jpg", ".jpeg", ".jpe"]: .. = {Jpeg}.From_file(f, 'FULL')
-        [".tif", ".tiff"]: .. = {Tiff}.From_file(f) 
-        [".webp"]: .. = {WebP}.From_file(f) 
-        	CASE Main_.Image.Width==0 ? 
-        	     message("To open WEBP images format properly the libwebp64.dll"
-        	     " should be available either via the system Path environment "
-        	     "variable or placed in the same directpry where the "
-        	     "GalaxyModel.exe is located. You can freely obtain it with "
-        	     "some 3rd party applications or seoarately. PLEASE DON'T "
-        	     "DOWNLOAD this file from arbitrary and unverified sources, "
-        	     "malware is often distributed under the guise of this dll. ") ;
-        ;
-        //DEBUG: "loaded: =" Main_.Image.Width " x " .Height #NL ;
-        ------------------- 'loaded image'
-        Main_.Update_caption(f.Extract_file_name)
-        Main_.Checksums_of_images[.Current_image] = ch
-        Main_.Checksums2_of_images[.Current_image] = ch2
-        CASE Main_.Image.Width * .Height > 13_000_000 ? 
-             CASE ask("Image size (" Main_.Image.Width.S 
-                  " x " Main_.Image.Height.S ") is very big. "
-                  "Downscale it to fit 10M pixels ?"
-                  ) 
-                  ?
-                  FOR r IN [2 TO Main_.Image.Width] :
-                      CASE Main_.Image.Width*.Height/(r*0.5).q2 <= 10_000_000 ? 
-                           Main_.Image = Downscale(_, r*0.5, f, Format=format)
-                           BREAK r ;
-                  ;
-             ;
-        ;
-        DEBUG:
-              FOR i IN [0 TO Main_.All_images[].Count-1] :
-                  << i.S #TAB 
-                  << Main_.All_img_names[i] #TAB 
-                  << Main_.Checksums_of_images[i].Hex(8) #TAB 
-                  << Main_.Checksums2_of_images[i].Hex(8) #NL 
-              ;
-              ;
-        Main_.Invalidate
-        button_colors
-        Thumbnails.Invalidate_all
-        CASE Url_loaded != "" ? 
-             CASE !ask("Assign the URL stored with the model to the image "
-                  "just loaded?"#NL Url_loaded) 
-                  ? 
-                  Url_loaded = "" ==> ;
-             Main_.All_img_URLs[.Current_image] = Url_loaded
-             Url_loaded = ""
-        ;
+        Load_image(Dialog_image.Filename, TRUE)
         Auto_stamp
     ["OP_IMAGE"]:
         CASE Locked_images ? ==> ;
@@ -1577,14 +1529,12 @@ OVERRIDE click :
         //DEBUG: "ADD_TO_ACTIVITY clicked"#NL ;
 		REAL p|eriod_rotation = Period_rot.Text.Real.Abs
 		REAL mul|tiplayer = 1
-		CASE Key.Shift ? mul = 0.05 ;
+		CASE Key.Shift ? mul = 0.025 ;
     	CASE Add_to_activity.Current ? 
     	["Inc"]:
     		Activity_time.Set_text((.Text.Real + p * mul).S)    
     	["Dec"]: 
-    		CASE Activity_time.Text.Real > Period_rot.Text.Real ? 
-    			 mul = 1
-    			 CASE Key.Shift ? mul = 0.1 ;
+    		CASE Key.Control || Activity_time.Text.Real > Period_rot.Text.Real ? 
     		     Activity_time.Set_text((.Text.Real - p * mul).S)
     		;
     	;
@@ -1595,6 +1545,7 @@ OVERRIDE click :
     	         CASE Add_to_activity.Current ?
     	         ["Inc"]: sat.Activity += p * mul
     	         ["Dec"]: sat.Activity -= p * mul ;
+    	         All_satellites[sat.INDEX] = sat.CLONE
     	     ;
     	;
 
@@ -1612,207 +1563,22 @@ OVERRIDE click :
                     //    " Y=" Transform_model.Y_offset ;
                  	message("Transformations did not applied. Either apply "
                  	"them first or close Trasform model window.") ==> ;
-    	    {In_file_config} c|onfiguration_temp
-    		----------------------- 'select', REUSED     
+    		----------------------- 'select'   
     	    CASE !Dialog_file_save.Select_file ? ==> ;
-    	    c = New_write_in_file_config(Dialog_file_save.Filename, "")
-    	    -----------------------
-    	    PUSH c.No_write = TRUE :
-	    	     ----------------------- 'common parameters'
-	    	     c.Set_r("Box_width", Box_width.Text.Real)
-	    	     c.Set_i("Count_spirals", Satellite_num.Count)
-	    	     c.Set_r("Mass_BH", Mass_BH.Text.Real)
-	    	     ----------------------- '+image'
-	    	     c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
-	    	     c.Set_r("Offset_x", Main_.Offset_x)	
-	    	     c.Set_r("Offset_y", Main_.Offset_y)
-	    	     c.Set_r("Image_rotate", Rotate_image.Text.Real)
-	    	     c.Set_r("Image_scale", Scale_image.Text.Real)
-	    	     c.Set_b("Mirrored", Image_mirrored)
-	    	     ----------------------- 'loop on all spirals'
-	    	     FOR i IN [0 TO Satellite_num.Count-1] :
-	    	         PUSH c.Section = (i+1).S :
-		    	          s = All_satellites[i].CLONE
-		    	          c...Set_s("Name", s.Name)
-		    	           ...Set_r("Period", s.Period)
-		    	           ...Set_r("Eccentricity", s.Eccentricity)
-		    	           ...Set_r("Deviation", s.Deviation)
-		    	           ...Set_r("Deviation_final", s.Deviation_final)
-		    	           ...Set_r("Cone_a", s.Cone_a)
-		    	           ...Set_r("Tilt", s.Tilt)
-		    	           ...Set_r("Rotate", s.Rotate)
-		    	           ...Set_r("Inclin", s.Inclin)
-		    	           ...Set_r("StartA", s.StartA)
-		    	           ...Set_r("SpeedK", s.SpeedK)
-		    	           ...Set_r("FinalK", s.FinalK)
-		    	           ...Set_r("Filter_speed", s.Filter_speed)
-		    	           ...Set_r("Activity", s.Activity)
-		    	           ...Set_r("First_ac", s.First_ac) 
-		    	           ...Set_r("Last_act", s.Last_act) 
-		    	           ...Set_r("Max_dist", s.Max_dist) 
-		    	           ...Set_i("Arms_colors", s.ArmsColors)
-		    	           ...Set_r("CenterX", s.Center_gal.X)
-		    	           ...Set_r("CenterY", s.Center_gal.Y)
-		    	           ...Set_b("LAST", i == Satellite_num.Count-1)
-	    	         ;
-	    	     ;
-	    	     CASE Commands_s[].Count > 0 ?
-	    	     	  DEBUG: "storing with commands (" Commands_s[].Count 
-	    	     	  		 ")"#NL ;
-	    	          FOR i IN [0 TO Main_.All_images[].Count-1] :
-	    	              ch = Main_.Checksums_of_images[i]
-	    	              ch2 = Main_.Checksums2_of_images[i]
-	    	              CASE ch != 0 || ch2 != 0 ? BREAK i ;
-	    	          ;
-	    	          DEBUG: "checksums=" ch "," ch2 #NL ;
-	    	          FOR i IN [0 TO 1000] :
-	    	              STR old_c|ommands[] << c.Str("Command" i.S) 
-	    	          	  CASE old_c[*] != Commands_s[i] ? 
-	    	          	       BOOL commands_changed = TRUE ;
-	    	          	  CASE old_c[*]=="" ? BREAK i ;
-	    	          ;
-	    	          CASE commands_changed && old_c[].Count > 1 ? 
-	    	               CASE ask("Another 3D-stamp commands are stored in "
-	    	               "the replacing .gal model. Preserve it?") 
-	    	               ?
-	    	                    BOOL preserve|_previous_commands = TRUE  ;
-	    	          ;
-	    	          FOR i IN [0 TO Commands_s[].Count] :
-	    	              CASE ch==0 && ch2==0 ? BREAK i ;
-	    	              CASE i==0 ? 
-	    	                   c.Set_s("Checksum", ch.Hex(8)) 
-	    	                   c.Set_s("Checksum2", ch2.Hex(8)) 
-	    	              ;
-	    	              CASE preserve ? BREAK i ;
-	    	              c.Set_s("Command" i.S, Commands_s[i])     
-	    	          ;
-	    	     ;
-	    	     ----------------------- 'store URL if it is single'
-	    	     STR url|_assigned = ""
-	    	     FOR u IN Main_.All_img_URLs[] :
-	    	     	 DEBUG: "i=" u.INDEX " u=" u " url=" url #NL ;
-	    	         CASE u=="" ? CONTINUE u ;
-	    	         url = u
-	    	         BREAK u     
-	    	     ;
-	    	     c.Section = ""
-	    	     CASE url!="" ? 
-	    	          c.Set_s("URL", url) 
-	    	          BOOL url_saved = TRUE
-	    	     ELSE c.Set_s("URL", "");
-    	    ;
-    	    c.Update
+    	    Save_gal(Dialog_file_save.Filename, FALSE)
+    	    CASE Collection_gal != NONE ? 
+    	         Collection_gal.Update_current(Dialog_file_save.Filename) ;
     	    ------------------ 'update__caption', REUSED
     	    Label_file.Set_text(Dialog_file_save.Filename.Extract_file_name
     	    	.Change_ext(""))
     	    ------------------
     	    CASE url_saved ? 
     	         message("Saved togeher with URL: " url) ;
-        ["Load"]: 
-            Url_loaded = ""
-        	INT was_cur|rent_spiral = Satellite_num.Current
-        	LIKE .................. 'select', 
-        		 BUT(_write_==>_read_), (Dialog_file_save==>Dialog_load)*2
-
-        	Dialog_file_save.Filename = Dialog_load.Filename
-        	c.Section = ""
-        	----------------------- 'renumber satellites sections'
-        	STR sec|tions_list[]
-        	c.List_subkeys(sec[])
-        	FOR i IN [1 TO sec[].Count-1] :
-        	    sec[i-1] = i.S ;
-        	c.Rename_subkeys(sec[0 TO *])
-        	----------------------- 'common:'
-        	CASE !Key.Shift ? 
-        	     Box_width.Set_text(c.Real("Box_width").S)
-        	     Satellite_num.Clear
-	        	 Main_.Offset_x = c.Real("Offset_x")
-	        	 Main_.Offset_y = c.Real("Offset_y")    
-	        	 Scale_rotate_spirals = c.Bool("Scale_rotate_spirals")
-	        	 Fill_scale_rotate
-        	     All_satellites[].Clear 
-	        	 CASE c.Present("Mass_BH") ? 
-	        	      Mass_BH.Set_text(c.Real("Mass_BH").S) ;
-	        	 ----------------------- 'image rotate, scale'
-	        	 Rotate_image.Set_text(c.Real("Image_rotate").S)
-	        	 REAL i_sc|ale_image = c.Real("Image_scale")
-	        	 CASE !i_sc.Near(0) ? Scale_image.Set_text(i_sc.S) ;
-        	;
-        	----------------------- 'load all spirals:'
-        	FOR i IN [0 TO sec[].Count-1] :
-        	    c.Section = (i + 1).S
-        	    NONE= Satellite_num.Add_item((All_satellites[].Count+1).S)
-        	    All_satellites[] << {satellite_param}(
-        			Name= c.Str("Name"),
-        			Period= c.Real("Period"),
-        			Eccentricity= c.Real("Eccentricity")
-        				+ c.Real("Excentricity"),
-        			Deviation= c.Real("Deviation"),
-        			Deviation_final= c.Real("Deviation_final"),
-        			Cone_a= c.Real("Cone_a"),
-        			Tilt= c.Real("Tilt"),
-        			Rotate= c.Real("Rotate"),
-        			Inclin= c.Real("Inclin"),
-        			StartA= c.Real("StartA"),
-        			SpeedK= c.Real("SpeedK"),
-        			FinalK= c.Real("FinalK"),
-        			Filter_speed= c.Real("Filter_speed"),
-        			Activity= c.Real("Activity"),
-        			First_ac= c.Real("First_ac"),
-        			Last_act= c.Real("Last_act"),
-        			Max_dist = c.Real("Max_dist"),
-        			ArmsColors = c.Int("Arms_colors"),
-        			Center_gal = Pt(c.Real("CenterX"), c.Real("CenterY"))
-        	    	)
-        	    CASE All_satellites[*].Center_gal.X.Near(0)
-        	         && All_satellites[*].Center_gal.Y.Near(0)
-        	         ? 
-        	         All_satellites[*].Center_gal = Pt(Main_.Offset_x, .Offset_y)
-        	    ;
-        	    CASE c.Bool("LAST") ? BREAK i ;
-        	;
-        	CASE was_cur >= Satellite_num.Count ? was_cur = 0 ;
-        	Satellite_num.Select(was_cur)
-        	LIKE ............. 'update__caption', BUT (g_file_save==>g_load)*?
-        	Main_.Invalidate     
-        	Main_.Stack_undo[].Clear
-        	Main_.Stack_redo[].Clear
-        	------------------ 'load URL'
-        	c.Section = ""
-        	Image_mirrored = c.Bool("Mirrored")
-        	url = c.Str("URL")
-        	CASE url != "" ? 
-        	     FOR u IN Main_.All_img_URLs[] :
-        	         CASE u==url ? 
-        	              //url = "" 
-        	              BREAK u ;
-        	     ;
-        	     Main_.All_img_URLs[0] = url
-        	;
-        	CASE url != "" 
-        	     && ask("URL was found been stored with the model loaded. "
-        		 " Copy it to the clipboard? "#NL url) 
-        		 ? 
-	        	 Url_loaded = url
-	        	 Text_to_clipboard(url)
-        	;
-        	--------------------------- 'load comands ?'
-        	Checksum_img_loaded = 0
-        	Checksum2_img_loaded = 0
-        	CASE c.Present("Checksum") ? 
-        	     ch = c.Str("Checksum").From_hex 
-        	     Checksum_img_loaded = ch ;
-        	CASE c.Present("Checksum2") ? 
-        	     ch2 = c.Str("Checksum2").From_hex 
-        	     Checksum2_img_loaded = ch2 ;
-			Provide_stamp_param
-        	Commands_s[].Clear
-    		FOR i IN [0 TO MAX_INT-1] :
-    		 	STR sc|ommand = c.Str("Command" i.S)
-    		 	CASE sc=="" ? BREAK i ;
-    		    Commands_s[] << sc
-    		;
+        ["Load"]:
+        	CASE !Dialog_load.Select_file ? ==> ;
+        	Load_gal(Dialog_load.Filename, TRUE)     
         	Auto_stamp
+        	Update_URL
         ["Additionally"]:
             popup_menu(
 
@@ -2292,9 +2058,17 @@ OVERRIDE click :
 
 	""	Item(	"TRANSORM_MODEL",
 				"Transform model form"
+		).Hotkey(
+		"Ctrl+T"
 		)
 
 	""	Separator
+
+	""	Item(	"COLLECTION",
+				"Collection of galaxies"
+		).Hotkey(
+		"F12"
+		)
 
 	""	Item(	"COPY_TABLE",
 				"Copy parameters to table"._Copy_to_table
@@ -2308,11 +2082,69 @@ OVERRIDE click :
 		"F6"
 		)
 
+	""	Item(	"",
+				"Limit image size..."
+		)
+
+	""	Begin
+
+	""	Item(	"LIMIT_4",
+				"4 Mpixels"
+		).Checked(
+		Limit_image_size==4
+		)
+
+	""	Item(	"LIMIT_5",
+				"5 Mpixels"
+		).Checked(
+		Limit_image_size==5
+		)
+
+	""	Item(	"LIMIT_6",
+				"6 Mpixels"
+		).Checked(
+		Limit_image_size==6
+		)
+
+	""	Item(	"LIMIT_7",
+				"7 Mpixels"
+		).Checked(
+		Limit_image_size==7
+		)
+
+	""	Item(	"LIMIT_8",
+				"8 Mpixels"
+		).Checked(
+		Limit_image_size==8
+		)
+
+	""	Item(	"LIMIT_9",
+				"9 Mpixels"
+		).Checked(
+		Limit_image_size==9
+		)
+
+	""	Item(	"LIMIT_10",
+				"10 Mpixels"
+		).Checked(
+		Limit_image_size==10
+		)
+
+	""	Item(	"LIMIT_NO",
+				"No limit"
+		).Checked(
+		Limit_image_size<=0
+		)
+
+	""	Separator
+
 	""	Item(	"ALLOW_JPEG_THUMB",
 				"Allow loading JPEG thumbnails while reduce size on load"
 		).Checked(
 		Allow_JPEG_thumb
 		)
+
+	""	End
 
 	""	Item(	"RESET",
 				"Reset"._Reset
@@ -2386,7 +2218,8 @@ METHOD Auto_stamp :
 	     || Checksum_img_loaded==0 && 0!=Checksum2_img_loaded 
 	     == Main_.Checksums2_of_images[.Current_image])  
 	     ?
-	     Do_commands_auto(TRUE)
+	     PUSH Lock_img_select = TRUE :
+	          Do_commands_auto(TRUE) ;
 	; .
 	
 METHOD Do_commands_auto(BOOL Answer|_if_to_create_stamp) :
@@ -2412,7 +2245,7 @@ METHOD Do_commands_auto(BOOL Answer|_if_to_create_stamp) :
 INT Checksum_img_loaded	
 INT Checksum2_img_loaded	
 STR Commands_s|equence[]
-
+BOOL Lock_img_select
 
 METHOD caption_loc|alizable ==> STR :
 	= "Satellite /galaxy parameters"._CAPTION .
@@ -2439,6 +2272,7 @@ PUSH processing_mouse = TRUE :
 
 		==>
 		;
+		CASE Lock_img_select ? ==> ;
 		Main_.Save_current_image(FALSE)
 	    FOR i IN [1 TO Main_.All_images[].Count-1] :
 	        CASE mouse.Y - Thumbnails.Bounds.Top > Y_starting_thumb[i] ?
@@ -2446,6 +2280,8 @@ PUSH processing_mouse = TRUE :
             //DEBUG: "i=" i " mouse.Y=" mouse.Y " Y_starting_thumb[]="
             //    "" Y_starting_thumb[].Merge(",") #NL ;
 	        Main_.Current_image = i-1
+	        Update_URL
+			//Label_url.Set_text(Main_.All_img_URLs[i-1])
 	        Go_to_another_image 
 	        Main_.Show ==>
 	    ;
@@ -2858,6 +2694,9 @@ BOOL Use_bitmaps_24 = TRUE
 {point} Center_copied
 
 {Transform_model} Transform_model
+STR Last_transform|ation
+STR Last_img_name
+
 
 METHOD Show_transform_model :
 	CASE Transform_model == NONE ? 
@@ -2876,20 +2715,38 @@ METHOD do_mirroring :
 	Thumbnails.Invalidate_all
 	need_invalidate = TRUE
 	Main_.Invalidate .
+	
+{Collection_gal} Collection_gal|axies
 
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["LIMIT_4"]: Limit_image_size = 4
+    ["LIMIT_5"]: .. = 5
+    ["LIMIT_6"]: .. = 6
+    ["LIMIT_7"]: .. = 7
+    ["LIMIT_8"]: .. = 8
+    ["LIMIT_9"]: .. = 9
+    ["LIMIT_10"]: .. = 10
+    ["LIMIT_NO"]: .. = 0
+    ["COLLECTION"]:
+        CASE Collection_gal == NONE ? 
+             Collection_gal = {Collection_gal}(Main_=Main_, Screen_=Screen_) ;
+    	Collection_gal.Show
     ["ALLOW_JPEG_THUMB"]: Allow_JPEG_thumb = !_
     ["MIRROR_IMG"]: Image_mirrored = !_
     	do_mirroring
     ["TRANSORM_MODEL"]: Show_transform_model
-    ["SET_URL"]: STR url|_to_set = Text_from_clipboard
+    ["SET_URL"]: url = Text_from_clipboard
     		CASE !url.Lower.Starting("http")
     		     && !url.Lower.Starting("ftp")
     		     || ":" !IN url?
     		     message("URL must start from 'http' or 'ftp' and contain ':'!") 
     		     ==> ;
+    		FOR i IN [Main_.All_img_URLs[].Count TO Main_.Current_image] :
+    		    Main_.All_img_URLs[] << "" ;
     		Main_.All_img_URLs[.Current_image] = url
+    		Label_url.Set_text(url)
+    		DEBUG: "urls: " Main_.All_img_URLs[].Merge(#NL "~!!!~ ") #NL ;
     ["SCREENSHOT_1024"]: Screenshot_scale = 1024
     ["SCREENSHOT_50"]: Screenshot_scale = 50
     ["SCREENSHOT_100"]: Screenshot_scale = 100
@@ -3143,6 +3000,10 @@ OVERRIDE key_down ==> {Form}.{action} :
 		 CASE Key.Special ? 
 		 [F_5]: copy_to_table 
 		 [F_6]: paste_from_table
+		 [F_12]: 
+		     CASE Collection_gal == NONE ?
+             	Collection_gal = {Collection_gal}(Main_=Main_, Screen_=Screen_) ;
+    		 Collection_gal.Show
 		 ;
 	; .
 	     
@@ -3761,25 +3622,34 @@ METHOD Downscale(
 STR Filename|_source,
 STR Format|_actual) ==> {Bitmap}, NEW
     :
-    DEBUG: "Filename=" Filename #NL
-     	   << "Format=" Format " K=" K #NL ;
-    CASE Filename != "" && Format==".jpg" && Allow_JPEG_thumb ? 
-         CASE (K*2).Int ?
-         [1, 2, 3, 4]: NONE
-         [5, 6, 7, 8]: NONE 
-             //{Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
-         [9, 10, 11, 12, 13, 14, 15, 16]: 
-             {Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
-         [32, 33, 34, 35, 36, 37, 38, 39]: re = {Jpeg}.From_file(Filename, 'QUAR') 
-         ELSE re = {Jpeg}.From_file(Filename, 'EIGH') ;
-    ;
-    CASE re == NONE ? 
-    	 re = New_bitmap((B.Width / K).Int, (B.Height / K).Int, 24) 
-    	 B.Stretch_draw(re.Canvas, 
-    	 	{rect}(Width=re.Width.Pixels_to_points,
-    		Height=re.Height.Pixels_to_points))
-    ;
-    RESULT = re .
+	FOR n IN [0 TO 5] :
+	    REAL k|oeffitient = 1/(1/K + n)
+	    DEBUG: "Filename=" Filename #NL
+	     	   << "Format=" Format " k=" k #NL ;
+	    CASE Filename != "" && Format==".jpg" && Allow_JPEG_thumb ? 
+	         CASE (k*2).Int ?
+	         [1, 2, 3, 4]: NONE
+	         [5, 6, 7, 8]: NONE 
+	             //{Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
+	         [9, 10, 11, 12, 13, 14, 15, 16]: 
+	             {Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
+	         [32, 33, 34, 35, 36, 37, 38, 39]: re = {Jpeg}.From_file(Filename, 'QUAR') 
+	         ELSE re = {Jpeg}.From_file(Filename, 'EIGH') ;
+	         DEBUG: "re(" re.Width "x" re.Height ")"#NL ;
+	    ;
+	    CASE re == NONE ? 
+	    	 re = New_bitmap((B.Width / k).Int, (B.Height / k).Int, 24) 
+	    	 B.Stretch_draw(re.Canvas, 
+	    	 	{rect}(Width=re.Width.Pixels_to_points,
+	    		Height=re.Height.Pixels_to_points))
+	    		
+	    	 DEBUG: "stretch(" re.Width "x" re.Height ")"#NL ;
+	    ;
+	    RESULT = re
+	    CASE RESULT.Width > 1 ? ==> ;
+	; .
+    
+INT Last_frame|_selected_from_animated_gif
     
 FUN Actual_format(STR Path|_to_image_file) ==> STR :
     {File_stream} in|_temp_file = Read_file_stream(Path) 
@@ -3798,7 +3668,331 @@ FUN Actual_format(STR Path|_to_image_file) ==> STR :
     RESULT = Path.Lower.Ext .
     
 FUN q2|_square(REAL x|_to_square) ==> REAL := x * x .
+
+BOOL Preserve_scale_rot|ation
+
+METHOD Load_gal|axy(STR Filename, BOOL Can_ask|_question) :
+	//STR Filename = Dialog_load.Filename
+	INT was_cur|rent_spiral = Satellite_num.Current
+	{In_file_config} c|onfiguration_temp
+    c = New_read_in_file_config(Filename, "")
+	Dialog_file_save.Filename = Filename
+	c.Section = ""
+    Url_loaded = ""
+	----------------------- 'restore last transform'
+	Last_transform = c.Str("Last_transform")
+	Last_img_name = c.Str("Last_img_name")
+	Last_frame = c.Int("Last_frame")
+	----------------------- 'renumber satellites sections'
+	STR sec|tions_list[]
+	c.List_subkeys(sec[])
+	FOR i IN [1 TO sec[].Count-1] :
+	    sec[i-1] = i.S ;
+	c.Rename_subkeys(sec[0 TO *])
+	----------------------- 'common:'
+	CASE !Key.Shift ? 
+	     Box_width.Set_text(c.Real("Box_width").S)
+	     Satellite_num.Clear
+    	 Main_.Offset_x = c.Real("Offset_x")
+    	 Main_.Offset_y = c.Real("Offset_y")    
+    	 Scale_rotate_spirals = c.Bool("Scale_rotate_spirals")
+    	 Fill_scale_rotate
+	     All_satellites[].Clear 
+    	 CASE c.Present("Mass_BH") ? 
+    	      Mass_BH.Set_text(c.Real("Mass_BH").S) ;
+    	 ----------------------- 'image rotate, scale'
+    	 CASE !Preserve_scale_rot ? 
+	    	  Rotate_image.Set_text(c.Real("Image_rotate").S)
+	    	  REAL i_sc|ale_image = c.Real("Image_scale")
+	    	  CASE !i_sc.Near(0) ? Scale_image.Set_text(i_sc.S) ;
+    	 ;
+	;
+	----------------------- 'load all spirals:'
+	FOR i IN [0 TO sec[].Count-1] :
+	    c.Section = (i + 1).S
+	    NONE= Satellite_num.Add_item((All_satellites[].Count+1).S)
+	    All_satellites[] << {satellite_param}(
+			Name= c.Str("Name"),
+			Period= c.Real("Period"),
+			Eccentricity= c.Real("Eccentricity")
+				+ c.Real("Excentricity"),
+			Deviation= c.Real("Deviation"),
+			Deviation_final= c.Real("Deviation_final"),
+			Cone_a= c.Real("Cone_a"),
+			Tilt= c.Real("Tilt"),
+			Rotate= c.Real("Rotate"),
+			Inclin= c.Real("Inclin"),
+			StartA= c.Real("StartA"),
+			SpeedK= c.Real("SpeedK"),
+			FinalK= c.Real("FinalK"),
+			Filter_speed= c.Real("Filter_speed"),
+			Activity= c.Real("Activity"),
+			First_ac= c.Real("First_ac"),
+			Last_act= c.Real("Last_act"),
+			Max_dist = c.Real("Max_dist"),
+			ArmsColors = c.Int("Arms_colors"),
+			Center_gal = Pt(c.Real("CenterX"), c.Real("CenterY"))
+	    	)
+	    CASE All_satellites[*].Center_gal.X.Near(0)
+	         && All_satellites[*].Center_gal.Y.Near(0)
+	         ? 
+	         All_satellites[*].Center_gal = Pt(Main_.Offset_x, .Offset_y)
+	    ;
+	    CASE c.Bool("LAST") ? BREAK i ;
+	;
+	CASE was_cur >= Satellite_num.Count ? //|| Satellite_num.Current < 0 ? 
+	     was_cur = 0 ;
+	Satellite_num.Select(was_cur)
+	LIKE Go_to_prev_image ............. 'update__caption'
+	//LIKE Go_to_prev_image ............. 'update__caption', BUT (g_file_save==>g_load)*?
+	Main_.Invalidate     
+	Main_.Stack_undo[].Clear
+	Main_.Stack_redo[].Clear
+	------------------ 'load URL'
+	c.Section = ""
+	Image_mirrored = c.Bool("Mirrored")
+	url = c.Str("URL")
+	CASE url != "" ? 
+	     FOR u IN Main_.All_img_URLs[] :
+	         CASE u==url ? 
+	              //url = "" 
+	              BREAK u ;
+	     ;
+	     Main_.All_img_URLs[0] = url
+	;
+	CASE url != "" && Can_ask
+	     && ask("URL was found been stored with the model loaded. "
+		 " Copy it to the clipboard? "#NL url) 
+		 ? 
+    	 Url_loaded = url
+    	 Text_to_clipboard(url)
+	;
+	--------------------------- 'load comands ?'
+	Checksum_img_loaded = 0
+	Checksum2_img_loaded = 0
+	CASE c.Present("Checksum") ? 
+	     INT ch|ecksum = c.Str("Checksum").From_hex 
+	     Checksum_img_loaded = ch ;
+	CASE c.Present("Checksum2") ? 
+	     INT ch2|ecksum2 = c.Str("Checksum2").From_hex 
+	     Checksum2_img_loaded = ch2 ;
+	Provide_stamp_param
+	Commands_s[].Clear
+	FOR i IN [0 TO MAX_INT-1] :
+	 	STR sc|ommand = c.Str("Command" i.S)
+	 	CASE sc=="" ? BREAK i ;
+	    Commands_s[] << sc
+	;
+    .
     
+INT Limit_image_size|_Megapixels = 10 
+    
+METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
+    Images_path = Image_filename.Extract_path
+	Main_.Scaled_image = NONE
+    Main_.Save_current_image(TRUE)
+    STR f|ilename = Image_filename  
+    INT ch|ecksum = Calculate_checksum(f)
+    INT ch2|ecksum = Calculate_checksum2(f)
+    DEBUG:
+    	CASE ch==0 ? 
+    	     << "could not clalculate checksum!" #NL ;
+    ;
+    STR format|_actual = Actual_format(f)
+    CASE format ? 
+    [".png"]: {Bitmap} temp_b|itmap = {Png}.From_file(f, 'FULL')
+    	-------------------- 'halved', REUSED
+    	CASE temp_b.Width<=1 ? temp_b = {Png}.From_file(f, 'HALF') ;
+    	CASE temp_b.Width<=1 ? temp_b = {Png}.From_file(f, 'QUAR') ;
+    	CASE temp_b.Width<=1 ? temp_b = {Png}.From_file(f, 'EIGH') ;
+    	--------------------     
+    [".bmp"]: .. = {Bmp}.From_file(f)
+    [".gif"]: {Gif} temp_g|if = {Gif}.Load(Path= f)
+    	CASE temp_g.Count > 1 ? 
+    		 CASE Can_ask ? 
+	    		  INT n|umber_frame = Select_gif_frame(
+	    	     	 THIS, temp_g.Count, Last_frame)
+    		 ELSE n = Last_frame ;
+    		 FOR nn IN [0 TO n] :
+    		     temp_g.Set_frame(nn)
+    		     temp_b = temp_g.Bitmap
+    		     Last_frame = temp_g.Frame ;
+    	;
+    	temp_b = temp_g.Bitmap     
+    [".jpg", ".jpeg", ".jpe"]: .. = {Jpeg}.From_file(f, 'FULL')
+    	LIKE .... 'halved', BUT (Png==>Jpeg)*3
+    [".tif", ".tiff"]: .. = {Tiff}.From_file(f) 
+    [".webp"]: .. = {WebP}.From_file(f) 
+    	CASE Main_.Image.Width==0 && Can_ask ? 
+    	     message("To open WEBP images format properly the libwebp64.dll"
+    	     " should be available either via the system Path environment "
+    	     "variable or placed in the same directpry where the "
+    	     "GalaxyModel.exe is located. You can freely obtain it with "
+    	     "some 3rd party applications or seoarately. PLEASE DON'T "
+    	     "DOWNLOAD this file from arbitrary and unverified sources, "
+    	     "malware is often distributed under the guise of this dll. ") ;
+    ;
+    //DEBUG: "loaded: =" Main_.Image.Width " x " .Height #NL ;
+    ------------------- 'fix bpp'
+    CASE temp_b.Width * .Height > Limit_image_size * 1024 * 1024 > 0 ? 
+         CASE !Can_ask || ask("Image size (" temp_b.Width.S 
+              " x " temp_b.Height.S ") is very big. "
+              "Downscale it to fit " Limit_image_size.S "M pixels ?"
+              ) 
+              ?
+              FOR r IN [2 TO temp_b.Width] :
+                  CASE temp_b.Width*.Height/(r*0.5).q2 <= Limit_image_size 
+                       * 1024 * 1024  
+                       ?
+                       temp_b = Downscale(_, r*0.5, f, Format=format)
+                       BREAK r ;
+              ;
+         ;
+    ;
+    Main_.Image = New_bitmap_direct(temp_b.Width, .Height, 24)
+    temp_b.Draw(Main_.Image.Canvas, Pt(0,0))
+    temp_b = NONE
+    ------------------- 'loaded image'
+    Main_.Update_caption(f.Extract_file_name)
+    Main_.Checksums_of_images[.Current_image] = ch
+    Main_.Checksums2_of_images[.Current_image] = ch2
+    DEBUG:
+          FOR i IN [0 TO Main_.All_images[].Count-1] :
+              << i.S #TAB 
+              << Main_.All_img_names[i] #TAB 
+              << Main_.Checksums_of_images[i].Hex(8) #TAB 
+              << Main_.Checksums2_of_images[i].Hex(8) #NL 
+          ;
+          ;
+    Main_.Invalidate
+    button_colors
+    Thumbnails.Invalidate_all
+    CASE Url_loaded != "" && Can_ask ? 
+         CASE !ask("Assign the URL stored with the model to the image "
+              "just loaded?"#NL Url_loaded) 
+              ?
+              Url_loaded = "" ==> ;
+         Main_.All_img_URLs[.Current_image] = Url_loaded
+         Url_loaded = ""
+    ;
+    .
+    
+METHOD Save_gal|axy(STR Filename|_to_save_to, 
+BOOL Preserve_stamp|_commands_OTHERWISE_ask) 
+    :
+	DEBUG: "saving gal -- " Filename #NL ;
+    {In_file_config} c|onfiguration_temp
+    c = New_write_in_file_config(Filename, "")
+    -----------------------
+    PUSH c.No_write = TRUE :
+	     ----------------------- 'common parameters'
+	     c.Set_r("Box_width", Box_width.Text.Real)
+	     c.Set_i("Count_spirals", Satellite_num.Count)
+	     c.Set_r("Mass_BH", Mass_BH.Text.Real)
+	     ----------------------- '+image'
+	     c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
+	     c.Set_r("Offset_x", Main_.Offset_x)	
+	     c.Set_r("Offset_y", Main_.Offset_y)
+	     c.Set_r("Image_rotate", Rotate_image.Text.Real)
+	     c.Set_r("Image_scale", Scale_image.Text.Real)
+	     c.Set_b("Mirrored", Image_mirrored)
+	     ----------------------- '+last transform'
+	     c.Set_s("Last_transform", Last_transform)
+	     c.Set_s("Last_img_name", Main_.All_img_names[0])
+	     c.Set_i("Last_frame", Last_frame)
+	     ----------------------- 'loop on all spirals'
+	     FOR i IN [0 TO Satellite_num.Count-1] :
+	         PUSH c.Section = (i+1).S :
+    	          {satellite_param} s|atellite = All_satellites[i].CLONE
+    	          c...Set_s("Name", s.Name)
+    	           ...Set_r("Period", s.Period)
+    	           ...Set_r("Eccentricity", s.Eccentricity)
+    	           ...Set_r("Deviation", s.Deviation)
+    	           ...Set_r("Deviation_final", s.Deviation_final)
+    	           ...Set_r("Cone_a", s.Cone_a)
+    	           ...Set_r("Tilt", s.Tilt)
+    	           ...Set_r("Rotate", s.Rotate)
+    	           ...Set_r("Inclin", s.Inclin)
+    	           ...Set_r("StartA", s.StartA)
+    	           ...Set_r("SpeedK", s.SpeedK)
+    	           ...Set_r("FinalK", s.FinalK)
+    	           ...Set_r("Filter_speed", s.Filter_speed)
+    	           ...Set_r("Activity", s.Activity)
+    	           ...Set_r("First_ac", s.First_ac) 
+    	           ...Set_r("Last_act", s.Last_act) 
+    	           ...Set_r("Max_dist", s.Max_dist) 
+    	           ...Set_i("Arms_colors", s.ArmsColors)
+    	           ...Set_r("CenterX", s.Center_gal.X)
+    	           ...Set_r("CenterY", s.Center_gal.Y)
+    	           ...Set_b("LAST", i == Satellite_num.Count-1)
+	         ;
+	     ;
+	     	  DEBUG: "storing with commands (" Commands_s[].Count 
+	     	  		 ")"#NL
+	     	  		 << "old commands: "#NL
+	     	  		 FOR i IN [0 TO 100] :
+	     	  		     STR old_cmd|_from_c = c.Str("Command" i.S) 
+	     	  		     << "[" i "]=" old_cmd #NL
+	     	  		     CASE old_cmd=="" ? BREAK i ;
+	     	  		 ;
+	     	  ;
+	     CASE Commands_s[].Count > 0 ?
+	          FOR i IN [0 TO Main_.All_images[].Count-1] :
+	              INT ch|ecksum = Main_.Checksums_of_images[i]
+	              INT ch2|ecksum = Main_.Checksums2_of_images[i]
+	              CASE ch != 0 || ch2 != 0 ? BREAK i ;
+	          ;
+	          DEBUG: "checksums=" ch "," ch2 #NL ;
+	          FOR i IN [0 TO 1000] :
+	              STR old_c|ommands[] << c.Str("Command" i.S) 
+	          	  CASE old_c[*] != Commands_s[i] ? 
+	          	       BOOL commands_changed = TRUE ;
+	          	  CASE old_c[*]=="" ? BREAK i ;
+	          ;
+	          CASE ? 
+	          [Preserve_stamp] ? 
+	               BOOL preserve|_previous_commands = old_c[].Count > 1
+	          [commands_changed && old_c[].Count > 1] ?
+	               CASE ask("Another 3D-stamp commands are stored in "
+	               "the replacing .gal model. Preserve it?") 
+	               ?
+	               preserve = TRUE  ;
+	          ;
+	          FOR i IN [0 TO Commands_s[].Count] :
+	              CASE ch==0 && ch2==0 ? BREAK i ;
+	              CASE i==0 ? 
+	                   c.Set_s("Checksum", ch.Hex(8)) 
+	                   c.Set_s("Checksum2", ch2.Hex(8)) 
+	              ;
+	              CASE preserve ? BREAK i ;
+	              c.Set_s("Command" i.S, Commands_s[i])     
+	          ;
+	     ;
+	     ----------------------- 'store URL'
+	     url = ""
+	     FOR u IN Main_.All_img_URLs[] :
+	         CASE u=="" ? CONTINUE u ;
+	         url = u
+	     	 DEBUG: "i=" u.INDEX " u=" u " url=" url #NL ;
+	         BREAK u     
+	     ;
+	     c.Section = ""
+	     url_saved = FALSE
+	     CASE url!="" ? 
+	          c.Set_s("URL", url) 
+	          url_saved = TRUE
+	     ELSE c.Set_s("URL", "");
+    ;
+    c.Update
+    .
+    
+BOOL url_saved  
+STR url|_last
+
+METHOD Update_URL|_label :
+	Label_url.Set_text(Main_.All_img_URLs[Main_.Current_image]) .
+    
+METHOD URL_loaded ==> STR := url .
 	
 END
 

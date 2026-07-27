@@ -1,0 +1,609 @@
+/*
+
+CLASS {Collection_gal|axies}, UNTESTED:
+
+IMPORT: {Main_plasma_tides}, {Satellite_param}, {Form_common}, 
+	 	{Png}, {Bitmap_24} .
+IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
+
+
+BASE CLASS: {Form_common} .
+{Paint_turtle} Add_gal|axy
+{Listbox} List|_of_galaxies
+{Paint_turtle} Dup_gal|axy_duplicate
+{Paint_turtle} Delete_gal|axy
+{Paintbox} Paintbox_1
+{Paint_turtle} Save_col|lection
+{Paint_turtle} Open_col|lection
+{Checkbox} Auto_save|_galaxy_on_select
+{Checkbox} Create_bak|_files
+{Dialog_file} Dialog_open_gal|axy
+{Dialog_file} Dialog_save_col|lection
+{Dialog_file} Dialog_open_col|lection
+{Checkbox} Save_stamps
+{Checkbox} Cache_images
+{Checkbox} Preserve_scale_rot|ation
+{Paintbox} Paintbox_2
+{Paint_turtle} Satellite_op|erations
+{Timer} Timer_fix|_satellite_selection
+
+METHOD before_CONSTRUCT: .
+
+CONSTRUCT://640E116A Do not change manually (created by Form Designer)
+	before_CONSTRUCT
+PUSH in_construct = TRUE :
+	------------------------------------------------------------------ 'column '
+	new_column("", 'TOP', DEFAULT_SIZES)
+
+	------------------------ 'TIMER_FIX'
+	Timer_fix = New_timer(THIS, "TIMER_FIX", 400)
+
+	...Set_active(FALSE)
+	---------------------- 'DIALOG_FILE'
+	Dialog_open_col = New_dialog_open(THIS, "DIALOG_FILE")
+
+	...Filter = "Collection of galaxies(*.col)|*.col"
+	...Default_ext = ".col"
+	------------------------- 'SAVE_COL'
+	Save_col = New_paint_turtle_button(THIS,
+ "SAVE_COL",
+ "20RD(60LL)4 LL15RR15LL30L"
+  "L15 UB40RR8D(10RR)4")
+
+
+	...Set_width(18)
+
+	...Set_height(18)
+	------------------------- 'OPEN_COL'
+	Open_col = New_paint_turtle_button(THIS,
+ "OPEN_COL",
+ "20R20D40LL40L30L40BR30R40"
+  " B40RR35RR40")
+
+
+	...Set_width(18)
+
+	...Set_height(18)
+	----------------------- 'PAINTBOX_1'
+	Paintbox_1 = New_paintbox(THIS, "PAINTBOX_1", "")
+
+	...Set_width(10)
+	-------------------------- 'ADD_GAL'
+	Add_gal = New_paint_turtle_button(THIS, "ADD_GAL", "20R30DLL60B30RR30B60")
+
+	...Set_width(18)
+
+	...Set_height(18)
+	-------------------------- 'DUP_GAL'
+	Dup_gal = New_paint_turtle_button(THIS,
+ "DUP_GAL",
+ "15R65LL5RR3LL3LL23RRD S(20L"
+  "L)4+20R15R (20LL)4 GLU20D 15R (20LL)4R")
+
+
+	...Set_width(18)
+
+	...Set_height(18)
+	----------------------- 'DELETE_GAL'
+	Delete_gal = New_paint_turtle_button(THIS, "DELETE_GAL", "15D70B35LL35B70")
+
+	...Set_width(18)
+
+	...Set_height(18)
+
+	...Set_ink(RED)
+	------------------ 'DIALOG_SAVE_COL'
+	Dialog_save_col = New_dialog_save(THIS, "DIALOG_SAVE_COL")
+
+	...Filter = "Collection of galaxies(*.col)|*.col"
+	...Default_ext = ".col"
+	----------------------- 'PAINTBOX_2'
+	Paintbox_2 = New_paintbox(THIS, "PAINTBOX_2", "")
+
+	...Set_width(10)
+	--------------------- 'SATELLITE_OP'
+	Satellite_op = New_paint_turtle_button(THIS,
+ "SATELLITE_OP",
+ "R20LLB45BRD U20+4"
+  "0L3 D(64LL)4 U12LL12 D(39RR)4U12RR12 D(15LL)4")
+
+
+	...Set_width(18)
+
+	...Set_height(18)
+	------------------------------------------------------------- 'column COL_1'
+	new_column("COL_1", 'CENTER', DEFAULT_SIZES)
+
+	----------------------------- 'LIST'
+	List = New_listbox(THIS, "LIST", FALSE)
+	...Set_anchor_bottom(TRUE)
+	------------------------ 'AUTO_SAVE'
+	Auto_save = New_checkbox(THIS, "AUTO_SAVE", "Auto-save galaxy on selection")
+	...Set_checked(TRUE)
+	----------------------- 'CREATE_BAK'
+	Create_bak = New_checkbox(THIS, "CREATE_BAK", "Create bak-files on auto-save")
+	...Set_checked(TRUE)
+	---------------------- 'SAVE_STAMPS'
+	Save_stamps = New_checkbox(THIS, "SAVE_STAMPS", "Save stamp files created")
+	...Set_checked(TRUE)
+	--------------------- 'CACHE_IMAGES'
+	Cache_images = New_checkbox(THIS, "CACHE_IMAGES", "Cache images im memory")
+	...Set_checked(TRUE)
+	--------------- 'PRESERVE_SCALE_ROT'
+	Preserve_scale_rot = New_checkbox(THIS,
+ "PRESERVE_SCALE_ROT",
+ "Preserve scale&rotation")
+	...Set_checked(TRUE)
+	------------------ 'DIALOG_OPEN_GAL'
+	Dialog_open_gal = New_dialog_open(THIS, "DIALOG_OPEN_GAL")
+
+	...Filter = "*.gal|*.gal"
+	...Default_ext = ".gal"
+	----------------------------------------'form size / position'
+	Set_size(170, 0, 'FIT_TO_DISPLAY')
+	-------------------------- 'TITLE of Form'
+	Set_caption("Collection of galaxies")
+
+	after_CONSTRUCT
+; .
+
+
+{Main_plasma_tides} Main_|form_, INIT
+
+METHOD after_CONSTRUCT: 
+	Show_application_button(TRUE)
+	------------------------ 'bounds', REUSED
+	Restore_bounds(Main_.App_name, "Collection_param", "whlt") 
+	------------------------------- 
+	.
+
+OVERRIDE moved :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+
+OVERRIDE resize :
+	LIKE after_CONSTRUCT ........ 'bounds', BUT (Restore==>Save) .
+	
+
+
+OVERRIDE closing ==> {Form}.{action} :
+	RESULT = 'DECLINE'
+	Hide
+	.
+	
+INT Last_sel|ected_item = -1
+	
+
+OVERRIDE click :
+    CASE sender_alias ?
+    ["SATELLITE_OP"]:
+        popup_menu(
+
+	""	Item(	"SAT_REPL",
+				"Replicate current satellite"
+		)
+
+	""	Item(	"SAT_DEL",
+				"Remove current satellite"
+		)
+
+	""	Item(	"REGULAR_ACTIVITY",
+				"Activity in regular intervals"
+		))
+
+
+
+    ["ADD_GAL"]:
+        CASE !Dialog_open_gal.Select_file ? ==> ;
+        INT ii|tem_inserted = List.Insert_item(
+        	Last_sel+1, Dialog_open_gal.Filename.Extract_file_name
+        	#TAB Dialog_open_gal.Filename) 
+        	
+        {Bitmap} dummy|_none
+        Cache_img[].Insert(Last_sel+1, dummy)
+        Cache_stamps[].Insert(Last_sel+1, dummy)
+        List.Select(ii, TRUE)
+    ["DUP_GAL"]:
+        ii = List.Insert_item(Last_sel+1, List.Get_item(Last_sel, 0)) 
+        Cache_img[].Insert(Last_sel+1, Cache_img[Last_sel])
+        Cache_stamps[].Insert(Last_sel+1, Cache_stamps[Last_sel])
+        List.Select(ii, TRUE)
+    ["DELETE_GAL"]: 
+    	INT was_sel|ected = Last_sel
+    	Last_sel = -1
+    	CASE was_sel >= 0 ? 
+    	     List.Delete_item(was_sel)
+    	     -------------------- 'delete in caches too'
+    	     Cache_img[].Delete(was_sel)
+    	     Cache_stamps[].Delete(was_sel) ;
+        //CASE ?
+        //[List.Count > was_sel] ? List.Select(was_sel, TRUE)
+        //[List.Count > 0] ? List.Select(was_sel-1, TRUE) ;  
+    ["SAVE_COL"]: 
+        CASE List.Count <= 0 ? message("Nothing to save yet!") ==> ;
+        CASE !Dialog_save_col.Select_file ? ==> ;
+        FOR i IN [0 TO List.Count-1] :
+            STR col|lection_galaxies[] << List.Get_item(i, 0)
+            col[*] = _.[0 TO .Find(#TAB)-1] ;
+        col[].To_text_file(Dialog_save_col.Filename, 'UTF8')
+    ["OPEN_COL"]:
+        CASE !Dialog_open_col.Select_file ? ==> ;
+        List.Clear
+        col[].From_text_file(Dialog_open_col.Filename, 'UTF8')
+        Cache_img[].Clear
+        Cache_stamps[].Clear
+        {Bitmap} temp_bmp
+        FOR s IN col[] :
+            col[s.INDEX] = _ #TAB Dialog_open_col.Filename.Extract_path _
+            Cache_img[] << temp_bmp 
+            Cache_stamps[] << temp_bmp 
+        ;
+        List.Set_text(col[0 TO *].Merge(#NL))
+        List.Select(0, TRUE)     
+    ; .
+    
+METHOD Update_current|_item(STR Path|_to_gal_file) :
+	CASE Last_sel < 0 ? ==> ;
+	List.Set_item(Last_sel, 0, Path.Extract_file_name #TAB Path)     
+    .
+    
+BOOL changing_sel|ection    
+
+OVERRIDE selection_change :
+	CASE changing_sel ? ==> ;
+	PUSH changing_sel = TRUE :
+    CASE sender_alias ?
+    ["LIST"]:
+        PUSH Main_.Satellite_param.Stamp_param.Executing = 1 :
+        PUSH Main_.Lock_invalidations = TRUE :
+        INT was_sat|ellite_current = Main_.Satellite_param.Satellite_num.Current
+        DEBUG: "was_sat=" was_sat#NL ;
+        CASE Auto_save.Checked && Last_sel >= 0 ? 
+        	 --------------------- 'auto_save'
+             STR fname|_to_load = List.Get_item(Last_sel, 0).After(#TAB)
+             CASE Create_bak.Checked ? 
+                  Delete_file(fname.Change_ext(".gal.bak"))
+                  Copy_file(fname, fname.Change_ext(".gal.bak")) 
+             ;
+        	 Main_.Satellite_param.Save_gal(fname, TRUE)
+        	 CASE Cache_images.Checked ? 
+        	      Cache_img[Last_sel] = Main_.All_images[0] 
+        	      Cache_stamps[Last_sel] = Main_.All_images[1] ;
+        	 -----------------------------
+        ;
+        Last_sel = List.Current
+        --------------------- 'to new gal model selected'
+        fname = List.Get_item(Last_sel, 0).After(#TAB)
+        Main_.Satellite_param.Preserve_scale_rot = Preserve_scale_rot.Checked
+        Main_.Satellite_param.Load_gal(fname, FALSE)
+        Main_.Satellite_param.Satellite_num.Select(was_sat)
+        INT was_img|_current = Main_.Current_image
+        //--------------------- 'provide enough cache items'
+        {Bitmap} dummy|_temp
+        //FOR ii IN [Cache_img[].Count TO Last_sel] : Cache_img[] << dummy ;
+        //FOR ii IN [Cache_stamps[].Count TO Last_sel] : Cache_stamps[] << dummy ;
+        	 --------------------------------------------- 'load images'
+             Main_.Clear_images
+	         STR img_file = fname.Extract_path 
+	         .. = _ Main_.Satellite_param.Last_img_name.Extract_file_name
+	         CASE ?
+	         [Cache_img[Last_sel].Width > 1
+	         && Cache_stamps[Last_sel].Width > 1] ?
+	         	  DEBUG: "get from cache !!!!!!!!!!!!!!!!!"#NL ;
+	              Main_.All_images[] << Cache_img[Last_sel]
+	              Main_.All_img_names[] << Main_.Satellite_param.Last_img_name
+	              Main_.All_scaled[] << dummy
+	              Main_.All_img_URLs[] << Main_.Satellite_param.URL_loaded
+                  //Main_.Image = Main_.All_images[0]
+                  //Main_.Scaled_image = NONE
+                  //Main_.Invalidate
+                  //Main_.Process
+             	  ---------------------- '+stamp'
+	              Main_.All_images[] << Cache_stamps[Last_sel]
+	              Main_.All_img_names[] << Main_.Satellite_param.Last_img_name
+	              Main_.All_scaled[] << dummy
+                  //Main_.Image = Main_.All_images[0]
+                  Main_.Scaled_image = NONE
+                  Main_.Image = Main_.All_images[was_img]
+                  //Main_.Invalidate
+                  //Main_.Process
+	         [img_file.Exists] ?
+	         	  DEBUG: "get from file (" img_file ")!!!!!!!!!!!!!!!!!!!!"#NL ;
+	              Main_.Satellite_param.Load_image(img_file, FALSE)
+	              CASE Cache_images.Checked ? 
+	                   Cache_img[Last_sel] = Main_.Image ;
+	              //Main_.Satellite_param.Go_to_another_image
+	              Main_.Satellite_param.Stamp_param.Executing = 1
+	              Main_.Invalidate
+	              Main_.Process
+	              ---------------------------------------------- 'stamp'
+	              STR stamp_file = img_file.Extract_path
+	              .. = _ "stamp" if(Main_.Satellite_param.Last_frame > 0, 
+	              	 "[" .Last_frame.S "]") "#" img_file.Extract_file_name 
+	              CASE !stamp_file.Exists ? 
+	                   stamp_file = _.Change_ext(".png") ;
+	              CASE ?
+	              [stamp_file.Exists] ?
+	              	   DEBUG: "stamp from file (" stamp_file ")"#NL ;
+	             	   PUSH Main_.Satellite_param.Last_img_name :     
+	             	        Main_.Satellite_param.Load_image(stamp_file, FALSE) ;
+	             	   {Bitmap} t|emp_stamp = Main_.Image
+	             	   Main_.Image = New_bitmap_24(t.Width, t.Height, 
+	             	   	Main_.Satellite_param.Stamp_parameters.Holder)
+	             	   	
+	             	   t.Draw(Main_.Image.Canvas, Pt(0,0))
+	             	   ---------------------- 'refresh view'
+	             	   Main_.All_images[1] = Main_.Image
+	             	   Main_.Scaled_image = NONE
+	             	   Main_.Satellite_param.Stamp_param.Executing = 1
+	             	   Main_.Invalidate
+	             	   Main_.Process
+	              [Main_.Satellite_param.Commands_s[].Count > 0] ?
+	                   Main_.Satellite_param.Do_commands_auto(FALSE)
+	                   {Png}.To_file(Main_.Image, stamp_file, 9)
+	              ;
+	              CASE Cache_images.Checked ? 
+	                   Cache_stamps[Last_sel] = Main_.Image ;
+	              //Main_.Satellite_param.Go_to_another_image
+	         ;
+	         Timer_fix.Set_active(TRUE)
+	         -------------------------- 'restore current position in images'
+	         Main_.Satellite_param.Satellite_num.Select(was_sat)
+	         Main_.Satellite_param.Stamp_param.Executing = 1
+	         Main_.Current_image = was_img.Min(1)
+	         Main_.All_img_names[0] = Main_.Satellite_param.Last_img_name
+	         Main_.Satellite_param.Go_to_another_image
+	         Main_.Satellite_param.Update_URL
+        ;
+        ;
+    ;
+    ; .
+    
+{Bitmap} Cache_img|_main[]
+{Bitmap} Cache_stamps[]
+    
+
+OVERRIDE menu_item :
+    CASE menu_alias ?
+    ["SAT_REPL"]:
+        CASE Last_sel < 0 ? 
+             message("There is no galaxy model selected.") ==> ;
+        STR rname|_to_replicate = Main_.Satellite_param.Edit_name.Text
+        CASE rname == "" ? 
+             message("Only named satellite can be replicated between "
+             "collected galaxy models.") ==> ;
+        CASE !ask("Replicate satellite [" rname "] to all other models?"
+        	 " (if such satellite already present there it will be replaced).") 
+        	 ? ==> ;
+        STR filename_in = List.Get_item(Last_sel, 0).After(#TAB)
+        {In_file_config} in_c|onfiguration_temp
+    	in_c = New_read_in_file_config(filename_in, "")
+    	INT in_last|_section_index = last_section(in_c)
+        FOR igal IN [0 TO List.Count-1] :
+        	CASE igal == Last_sel ? CONTINUE igal ;
+        	STR filename = List.Get_item(igal, 0).After(#TAB)
+	        {In_file_config} c|onfiguration_temp
+	    	c = New_write_in_file_config(filename, "")
+	    	INT last_c_sec|tion = last_section(c)
+	    	FOR isec IN [0 TO last_c_sec] :
+	    	    c.Section = (isec+1).S 
+	    	    CASE c.Bool("LAST") {
+	    	         last_c_sec = isec
+	    	         BREAK isec
+	    	    }
+	    	;
+	    	PUSH c.No_write = TRUE :
+	    		 //INT del_sec|tions_deleted_in_c = 0     
+	    	     INT del_index = last_c_sec+1 
+	        	 FOR isec IN [last_c_sec DOWNTO 0] :
+	        	     c.Section = (isec+1).S 
+	        	 	 CASE c.Str("Name")==rname ? 
+	        	 	      c.Delete_subkey(c.Section)
+	        	 	      //del_sec += 1
+	        	 	      del_index = isec ;
+	        	 ;
+	    	;
+	    	c.Update
+        	STR c_text|_as_is[].From_text_file(filename, 'UTF8')
+        	//INT ins_sec|tions_inserted_from_in_c = 0
+        	FOR isec IN [0 TO in_last] <---------------------------
+        		//DEBUG: BREAK isec ;
+        	    in_c.Section = (isec+1).S 
+        	    CASE in_c.Str("Name") != rname ? CONTINUE isec ;
+        	    //ins_sec += 1     
+        	 	STR val|ues_list[]
+        	 	in_c.List_values(val[])    
+        	 	----------------------- 'insert values of 1 section'
+        	 	INT n|umber_of_section = 0
+        	 	INT where_ins|ert = c_text[].Count
+        	 	FOR lines IN c_text[] :
+        	 	 	CASE lines.[0] != "[" ? CONTINUE lines ;
+        	 	 	n += 1
+        	 	 	CASE n <= del_index ? CONTINUE lines ;
+        	 	 	where_ins = lines.INDEX
+        	 	 	BREAK lines     
+        	 	;
+    	 	 	FOR v IN val[* DOWNTO 0] :
+    	 	 	    CASE v=="LAST" ? CONTINUE v ;
+                    //DEBUG: 
+                    //      CASE v=="Activity" ? 
+                    //           << "set for gal " igal " section " isec
+                    //           " Activity=" in_c.Str(v) #TAB ;
+                    //;
+    	 	 	    c_text[].Insert(where_ins, v "=" in_c.Str(v)) 
+    	 	 	;
+    	 	 	c_text[].Insert(where_ins, "[+]")
+        	----------------------------------------------------------->
+            CASE Create_bak.Checked ? 
+                 Delete_file(filename.Change_ext(".gal.bak"))
+                 Copy_file(filename, filename.Change_ext(".gal.bak")) 
+            ;
+            --------------------- 'renumber sections'
+            n = 0
+            FOR lines IN c_text[] :
+                //CASE lines.Starting("LAST=") ?
+                //     c_text[lines.INDEX] = "LAST"
+                //     "=" (n==last_c_sec-del_sec+ins_sec).S
+                //;
+                CASE lines.[0] != "[" ? CONTINUE lines ;
+                n += 1     
+                c_text[lines.INDEX] = "[" n.S "]"     
+            ;
+            FOR lines IN c_text[] :
+                CASE lines.[0]=="[" ? BREAK lines ;
+                CASE lines.Starting("Count_spirals=") { 
+                     c_text[lines.INDEX] = "Count_spirals=" n.S
+                     BREAK lines
+                }
+            ;
+            INT cur|rent_section = 0
+            FOR lines IN c_text[] :
+                CASE lines.[0] == "[" ?
+                     cur += 1 
+                     DEBUG: "" lines " --> cur=" cur #NL ;
+                     BOOL found_LAST|_in_last = FALSE
+                ;
+                CASE lines.Starting("LAST=") ? 
+                     DEBUG: "in gal " igal " found LAST: " lines 
+                     	", set to " (cur==n).S
+                     	" because cur=" cur " and n=" n #NL ;
+                     found_LAST = TRUE
+                     c_text[lines.INDEX] = "LAST=" (cur==n).S ;
+            ;
+            CASE !found_LAST ? c_text[] << "LAST=TRUE" ;
+        	c_text[].To_text_file(filename, 'UTF8')
+        ;
+    ["SAT_DEL"]:
+        CASE Last_sel < 0 ? 
+             message("There is no galaxy model selected.") ==> ;
+        STR dname|_to_delete = Main_.Satellite_param.Edit_name.Text
+        CASE dname == "" ? 
+             message("Only named satellite can be deleted in "
+             "collected galaxy models.") ==> ;
+        CASE !ask("Delete satellite [" dname "] in all models?") ? ==> ;
+		filename = List.Get_item(Last_sel, 0).After(#TAB)
+		Main_.Satellite_param.Save_gal(filename, TRUE)
+        //CASE !ask("Delete satellite [" dname "] in all models? Yes?") ? ==> ;
+        FOR igal IN [List.Count-1 DOWNTO 0] :
+        	filename = List.Get_item(igal, 0).After(#TAB)
+	    	c = New_write_in_file_config(filename, "")
+	    	last_c_sec = last_section(c)
+	    	FOR isec IN [0 TO last_c_sec] :
+	    	    c.Section = (isec+1).S 
+	    	    CASE c.Bool("LAST") {
+	    	         last_c_sec = isec
+	    	         BREAK isec
+	    	    }
+	    	;
+	    	PUSH c.No_write = TRUE :
+	    		 INT del_sec|tions_deleted_in_c = 0     
+	        	 FOR isec IN [last_c_sec DOWNTO 0] :
+	        	     c.Section = (isec+1).S 
+	        	     c.Set_b("LAST", FALSE)
+	        	 	 CASE c.Str("Name")==dname ? 
+	        	 	      c.Delete_subkey(c.Section)
+	        	 	      del_sec += 1
+	        	 	      last_c_sec -= 1 ;
+	        	 ;
+		    	 CASE del_sec == 0 ? CONTINUE igal ;
+		    	 --------------------- 'changes in common'     
+		    	 c.Section = ""
+		    	 c.Set_i("Count_spirals", last_c_sec+1)
+		    	 c.List_subkeys(val[])
+		    	 FOR i IN [0 TO val[].Count-1] : val[i] = (i+1).S ;
+		    	 c.Rename_subkeys(val[0 TO *])
+		    	 c.Section = val[last_c_sec]
+		    	 c.Set_b("LAST", TRUE)
+		    	 -------------------------- 'bak'
+	             CASE Create_bak.Checked ? 
+	                  Delete_file(filename.Change_ext(".gal.bak"))
+	                  Copy_file(filename, filename.Change_ext(".gal.bak")) 
+	             ;
+	    	;
+	    	c.Update
+        ;
+        ----------------- 'reload current gal'
+        filename_in = List.Get_item(Last_sel, 0).After(#TAB)
+        Main_.Satellite_param.Load_gal(filename_in, FALSE)
+        Main_.Invalidate
+    ["REGULAR_ACTIVITY"]:
+        STR aname|_to_interva_activity = Main_.Satellite_param.Edit_name.Text
+        CASE aname == "" ? 
+             message("Satellite should be named to change activity!") ==> ;
+        n = 0
+        REAL min_a|ctivity
+        REAL max_a|ctivity
+        FOR igal IN [0 TO List.Count-1] :
+        	filename = List.Get_item(igal, 0).After(#TAB)
+	    	c = New_read_in_file_config(filename, "")
+	    	last_c_sec = last_section(c)
+	    	FOR isec IN [0 TO last_c_sec] :
+	    	    c.Section = (isec+1).S
+	    	    CASE c.Str("Name") != aname ? CONTINUE isec ;
+	    	    n += 1
+	    	    REAL a|ctivity_value = c.Real("Activity")
+	    	    CASE n==1 || a < min_a ? min_a = a ;
+	    	    CASE n==1 || a > max_a ? max_a = a ;
+	    	    BREAK isec     
+	    	;
+    	;
+    	CASE n <= 1 || min_a.Near(max_a) ? 
+    	     message("Activity value should be different at least for "
+    	     "2 galaxy models!") ==> ;
+    	-------------------------------- 'save current gal model 1st'
+    	filename = List.Get_item(Last_sel, 0).After(#TAB)
+		Main_.Satellite_param.Save_gal(filename, TRUE)
+		-------------------------------- 'make activity regular between models'
+    	a = min_a
+    	REAL delta|_activity = (max_a - min_a) / n
+    	CASE !ask("Satellite [" aname "] was found in " n.S " models with "
+    		 " activity min value " min_a.S " and max value " max_a.S ", "
+    		 "so delta=" delta.S "; Continue making regular activity for "
+    		 "" aname "?") ? ==> ;
+        FOR igal IN [0 TO List.Count-1] :
+        	filename = List.Get_item(igal, 0).After(#TAB)
+	    	c = New_write_in_file_config(filename, "")
+	    	PUSH c.No_write = TRUE :
+		    	 last_c_sec = last_section(c)
+		    	 BOOL found_1|_satellite = FALSE
+		    	 FOR isec IN [0 TO last_c_sec] :
+		    	     c.Section = (isec+1).S
+		    	     CASE c.Str("Name") != aname ? CONTINUE isec ;
+		    	     DEBUG:
+		    	           << "for gal=" igal " sat sec=" isec " set A=" a #NL
+		    	     ;
+		    	     c.Set_s("Activity", a.S_float(1))
+		    	     CASE !found_1 ? a += delta ;
+		    	     found_1 = TRUE     
+		    	 ;
+	    	;
+	    	c.Update
+    	;
+    	Main_.Satellite_param.Load_gal(filename, FALSE)
+    	Main_.Invalidate
+    ; .
+    
+FUN last_section|_index({In_file_config} c|onfiguration) ==> INT :
+	STR subk|eys_list[]
+	c.List_subkeys(subk[])
+    FOR i IN [1 TO subk[].Count] :
+        CASE c.Bool("LAST") ? RESULT = i ==> ;
+    ;
+    RESULT = subk[].Count-1 .
+    
+
+OVERRIDE timer :
+    CASE sender_alias ?
+    ["TIMER_FIX"]:
+        Timer_fix.Set_active(FALSE)
+        CASE Main_.Satellite_param.Satellite_num.Current < 0 ? 
+        DEBUG: "Current sat=" Main_.Satellite_param.Satellite_num.Current 
+        #NL ;
+             Main_.Satellite_param.Satellite_num.Select(0) 
+        DEBUG: "new Current=" Main_.Satellite_param.Satellite_num.Current 
+        #NL ;
+        ;
+	ELSE BASE        
+    ; .
+END
+
+*/

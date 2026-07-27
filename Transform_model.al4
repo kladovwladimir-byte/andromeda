@@ -18,12 +18,13 @@ BASE CLASS: {Form_common} .
 {Label} Label_4 | _277633_726243
 {Label} Label_scale
 {Label} Label_rotate
+{Paint_turtle} Revert_last|_transform
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_ | form_, INIT, READ
 
-CONSTRUCT://1BA4697D Do not change manually (created by Form Designer)
+CONSTRUCT://32F4B8E9 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -32,6 +33,16 @@ PUSH in_construct = TRUE :
 	--------------------------- 'ACTIVE'
 	Active = New_checkbox(THIS, "ACTIVE", "Active")
 	...Set_checked(TRUE)
+	---------------------- 'REVERT_LAST'
+	Revert_last = New_paint_turtle_button(THIS,
+ "REVERT_LAST",
+ "20DLL15B15LL15B15BL"
+  "60RR60RR60")
+
+
+	...Set_width(40)
+
+	...Set_height(20)
 	--------------------- 'LABEL_ROTATE'
 	Label_rotate = {Label}(Form_=THIS, Alias="LABEL_ROTATE")
 
@@ -94,6 +105,8 @@ OVERRIDE closing ==> {Form}.{action} :
 
 OVERRIDE value_change :
     CASE sender_alias ?
+    ["ACTIVE"]: NONE
+    	DEBUG: "Xoff=" X_offset " Yoff=" Y_offset #NL ;
     ["SCALE_RELATIVE", "ROTATION", "SCALEING"]: Main_.PBox.Invalidate_all
     ; .
     
@@ -119,9 +132,26 @@ BOOL Applying
 
 OVERRIDE click :
     CASE sender_alias ?
+    ["REVERT_LAST"]:
+        STR p|arameters[].Split(Main_.Satellite_param.Last_transform, ";")
+        DEBUG: "p[]=" p[].Merge(";") #NL ;
+        FOR pp IN p[] :
+            STR key|_of_param = pp.[0 TO pp.Find("=")-1] 
+            STR val|ue_of_pp = pp.After("=")
+            CASE key ? 
+            ["Rot"]: Rotation.Set_text((-1 * val.Real).S) 
+            ["Scale"]: Scaleing.Set_text((10000 / val.Real).S)
+            ["OffX"]: X_offset = 1-val.Real
+            ["OffY"]: Y_offset = 1-val.Real ;
+            ;
     ["APPLY"]:
         CASE Applying ? ==> ;
         PUSH Applying = TRUE :
+        PUSH Main_.Lock_invalidations = TRUE :
+             Main_.Satellite_param.Last_transform = "Rot=" Rotation.Text 
+             	";Scale=" Scaleing.Text
+             	";OffX=" X_offset.S ";OffY=" Y_offset.S
+             	
 	         FOR sat IN Main_.Satellite_param.All_satellites[] :
 	             sat.Rotate = (((_ + Rotation.Text.Real) * 10).Int)/10.0
                  //sat.Center_gal.X += X_offset - 0.5
@@ -168,8 +198,9 @@ OVERRIDE click :
 	         X_offset = 0.5
 	         Y_offset = 0.5
 	         Bar.Invalidate_all
-	         Main_.PBox.Invalidate_all
         ;
+        ;
+        Main_.PBox.Invalidate_all
     ["RESET_OFFSETS"]: X_offset = 0.5
     				   Y_offset = 0.5
     				   Bar.Invalidate_all
@@ -209,7 +240,10 @@ BOOL R_down|_right_mouse_button
 	
 
 OVERRIDE mouse_move :
-	CASE !Active.Checked ? ==> ;
+	CASE !Active.Checked 
+	     || !Bounds.Contains(Mouse_cur)
+	     || !Global_key(L_BUTTON) 
+	     ? ==> ;
 	CASE ?
 	[change_rotate] ? 
 	    REAL new_v|alue = rotate_0 

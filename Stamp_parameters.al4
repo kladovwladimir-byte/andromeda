@@ -27,7 +27,6 @@ BASE CLASS: {Form_common} .
 {Paint_turtle} Inc_dec_shift
 {Combo} Convert_colors
 {Dialog_file} Dialog_file_save
-{Paintbox} P_Hints|_bottom
 {Label} LabelPostProcess
 {Combo} Post_processing_3
 {Paint_turtle} Run_post_process_3
@@ -52,14 +51,19 @@ BASE CLASS: {Form_common} .
 {Combo} Post_processing_2
 {Paint_turtle} Run_post_process_1
 {Dialog_file} Dialog_gal
+{Paintbox} P_Hints|_bottom
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://35D81256 Do not change manually (created by Form Designer)
+CONSTRUCT://2B25EE7F Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
-	new_column("", 'CENTER', {Form}.{sizes_col}(Label=160,Align_right=TRUE))
+	new_column("",
+ 'LEFT',
+ {Form}.{sizes_col}(Width=220,
+Label=160,
+Align_right=TRUE))
 
 	---------------------- 'DIALOG_FILE'
 	Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE")
@@ -187,6 +191,9 @@ PUSH in_construct = TRUE :
 	Paintbox_1 = New_paintbox(THIS, "PAINTBOX_1", "")
 
 	...Set_height(10)
+	------------------------------------------------------------- 'column COL_1'
+	new_column("COL_1", 'CENTER', {Form}.{sizes_col}(Label=70))
+
 	----------------- 'LABELPOSTPROCESS'
 	LabelPostProcess = {Label}(Form_=THIS, Alias="LABELPOSTPROCESS")
 
@@ -385,6 +392,8 @@ PUSH in_construct = TRUE :
 	after_CONSTRUCT
 ; .
 
+
+
 {Main_plasma_tides} Main_|form_, INIT, READ
 
 
@@ -414,6 +423,7 @@ BOOL Back_24|_bitmap_is[]
 
 
 OVERRIDE click :
+	PUSH Main_.Satellite_param.Lock_img_select = TRUE :
     CASE sender_alias ?
     ["SHIFT_COMMANDS"]:
         {Bitmap_direct} b|_temporary 
@@ -587,6 +597,7 @@ OVERRIDE click :
     ; 
     DEBUG: "Holder[]:" Holder.Count 
     	 " Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
+    ;
     .
     
 METHOD hint_from_commands :
@@ -742,16 +753,22 @@ BOOL create_new|_image)
     	
     //CASE stamp.Source == NONE ?      
          CASE stamp.Bitmaps_24 || Main_.Image.{Bitmap_24} != NONE ? 
+              DEBUG: "already {Bitmap_24}"#NL ;
 	          stamp.Source = New_bitmap_24(Main_.Image.Width, .Height, Holder) 
-	          CASE Main_.Image.{Bitmap_24} != NONE ? 
+	          CASE ?
+	          [Main_.Image.{Bitmap_direct}.Bpp < 24] ?     
+	               Main_.Image.{Bitmap_24}.Draw(stamp.Source.Canvas, Pt(0,0))
+	          [Main_.Image.{Bitmap_24} != NONE] ?
 	               Main_.Image.{Bitmap_24}.Copy_to(stamp.Source.Canvas)
 	          ELSE 
 	          		{Bitmap_direct} bd|irect_temp = Main_.Image.{Bitmap_direct}
-	          		CASE bd == NONE ? 
+	          		DEBUG: {Png}.To_file(bd, "bd" bd.Bpp.S ".png", 9) ;
+	          		CASE bd == NONE || bd.Bpp < 24 ? 
 	          		     bd = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
 	          		     Main_.Image.Draw(bd.Canvas, Pt(0, 0))
 	          		;
 	          		stamp.Source = grayscale(bd) 
+	          		DEBUG: {Png}.To_file(stamp.Source, "grayscaled_bd.png", 9) ;
 	          ;
          ELSE stamp.Source = New_bitmap_direct(Main_.Image.Width, .Height, 24)
 	    	  Main_.Image.Draw(stamp.Source.Canvas, Pt(0,0))
@@ -1092,6 +1109,7 @@ METHOD grayscale({Bitmap_direct} b|itmap_handling) ==> {Bitmap_direct}, NEW :
 	     RESULT = b ==> ;
 	DEBUG: "operation GRAYSCALE"#NL ;
 	CASE Main_.Satellite_param.Use_bitmaps_24 || b.{Bitmap_24} != NONE ? 
+	     DEBUG: " b is 24"#NL ;
 	     RESULT = New_bitmap_24(b.Width, b.Height, Holder)
 	ELSE RESULT = New_bitmap_direct(b.Width, .Height, 24) ;
 	BOOL is_24|_bitmap = RESULT.{Bitmap_24} != NONE
