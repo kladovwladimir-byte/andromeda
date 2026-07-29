@@ -220,14 +220,14 @@ METHOD Find_by_name(STR Name|_of_satellite) ==> STR :
 REAL ShiftX|_percents
 REAL ShiftY|_percents
 {Bitmap} Cache_image
-{Geometry}.{rect} Cache_im_d_o|_stored_while_cahcing_image
+{Geometry}.{rect} Cache_im_D_o|_stored_while_cahcing_image
 REAL Cache_sc|ale
 REAL Cache_ro|tate
 {Geometry}.{point} Cache_shift
 INT Cache_cur|rent_image
 STR Cache_name|_image
 
-{rect} d_o|verlay_dest
+{rect} D_o|verlay_dest
 {rect} dwo|_without_scale
 
 {Bitmap_direct} Scaled_prev|ious_image
@@ -412,22 +412,22 @@ METHOD Paint_to2(
 	CASE !Calculations_diff.Draw_additionally.Checked ? 
 	     draw_additionally = -1 ;
 	----------------------------------- 'underlying image'
-	CASE Image != NONE ? 
+	CASE Image.Width * .Height > 1 ? 
 	     REAL ow|idth_overlay = Image.Width.Pixels_to_points
 	     REAL oh|eight_overlay = Image.Height.Pixels_to_points
 	     REAL kw|idth_kompress = ow / ww1
 	     REAL kh|eight_kompress = oh / ww1
 	     CASE kh < kw ? kw = kh ;
-	     d_o = {rect}(W= ow/kw, H= oh/kw)
-	     d_o = _.Offset((ww - ow/kw)/2, (h - oh/kw)/2)
-	     dwo = d_o.CLONE
+	     D_o = {rect}(W= ow/kw, H= oh/kw)
+	     D_o = _.Offset((ww - ow/kw)/2, (h - oh/kw)/2)
+	     dwo = D_o.CLONE
 	     --------------------------------------------- 'rotate ?'
 	     CASE Satellite_param.Draw_background_image
 	          && (Scaled_image == NONE
 	          || (Scaled_image.Width 
-	          		- d_o.Width.Points_to_pixels).Abs
+	          		- D_o.Width.Points_to_pixels).Abs
 	          + ((Scaled_image.Height
-	          		- d_o.Height.Points_to_pixels).Abs)
+	          		- D_o.Height.Points_to_pixels).Abs)
 	          > 2
 	          || !Satellite_param.Scale_rotate_spirals 
 	          && (
@@ -451,28 +451,29 @@ METHOD Paint_to2(
 	               Rotation_image = Satellite_param.Rotate_image.Text.Real
 	          ;
 	          CASE !Scaling_image.Near(100) ? 
-	               d_o.Width *= Scaling_image / 100
-	               d_o.Height *= Scaling_image / 100 ;
+	               D_o.Width *= Scaling_image / 100
+	               D_o.Height *= Scaling_image / 100 ;
 	          CASE Satellite_param.Scale_up_shift ? 
 	               Scaling_image = Satellite_param.Scale_image.Text.Real
 	               Rotation_image = Satellite_param.Rotate_image.Text.Real
 	          ;
 	               
 	          -------------------- 'prepare scaled image'
-	          Scaled_image = New_bitmap(d_o.Width.Points_to_pixels,
-	          	d_o.Height.Points_to_pixels, 32)
+	          Scaled_image = New_bitmap(D_o.Width.Points_to_pixels,
+	          	D_o.Height.Points_to_pixels, 32)
 	          	
 	          CASE !Rotation_image.Near(0) && !Satellite_param.Scale_up_shift ? 
-	               Scaled_image.Canvas.Offset(d_o.W/2, d_o.H/2)
+	               Scaled_image.Canvas.Offset(D_o.W/2, D_o.H/2)
 	               Scaled_image.Canvas.Rotate(Rotation_image) 
-	               Scaled_image.Canvas.Offset(-d_o.W/2, -d_o.H/2)
+	               Scaled_image.Canvas.Offset(-D_o.W/2, -D_o.H/2)
 	          ;
 	               
 	          PUSH Scaled_image.Canvas.Quality :
 	               CASE (scaleup * 100).Int % 100 == 0 ? 
 	                    Scaled_image.Canvas.Quality = 'LOW' ;
-		           Image.Stretch_draw(Scaled_image.Canvas, 
-		          	 d_o.Offset_rect(-d_o.Left, -d_o.Top))
+	               CASE Image.Width * .Height > 1 ? 
+		           		Image.Stretch_draw(Scaled_image.Canvas, 
+		          	 		D_o.Offset_rect(-D_o.Left, -D_o.Top)) ;
 	          ;
 	          	
 	          Scaled_image.Canvas.Reset_transform
@@ -480,8 +481,8 @@ METHOD Paint_to2(
               //      #NL ;
 	     ;
 	     CASE !Scaling_image.Near(100) ? 
-	               d_o.Loc.X = _ - (d_o.Width / 2 - dwo.Width / 2)
-	               d_o.Loc.Y = _ - (d_o.Height / 2 - dwo.Height / 2)
+	               D_o.Loc.X = _ - (D_o.Width / 2 - dwo.Width / 2)
+	               D_o.Loc.Y = _ - (D_o.Height / 2 - dwo.Height / 2)
 	     ;
          //DEBUG: "scaled image drawn to: " d_o.Loc.S " w=" d_o.W " h=" .H #NL
          //   NONE= Scaled_image.Save("test-scaled.png")
@@ -496,10 +497,10 @@ METHOD Paint_to2(
 	            && Cache_shift.Y.Near(ShiftY)
 	            && Cache_cur==Current_image
 	            && Cache_name==All_img_names[Current_image]
-	            && Cache_im_d_o.Loc.X.Near(d_o.Loc.X)
-	            && Cache_im_d_o.Loc.Y.Near(d_o.Loc.Y)
-	            && Cache_im_d_o.W.Near(d_o.W)
-	            && Cache_im_d_o.H.Near(d_o.H)
+	            && Cache_im_D_o.Loc.X.Near(D_o.Loc.X)
+	            && Cache_im_D_o.Loc.Y.Near(D_o.Loc.Y)
+	            && Cache_im_D_o.W.Near(D_o.W)
+	            && Cache_im_D_o.H.Near(D_o.H)
 	            ? 
 	            //DEBUG: "." ;
 	            c.Copy_rect({rect}(W= ww.Points_to_pixels,
@@ -510,14 +511,14 @@ METHOD Paint_to2(
 	            //DEBUG: " ! " ;
 			     	  			       
 	          ELSE
-			      Scaled_image.Draw(c, d_o.Loc)
+			      Scaled_image.Draw(c, D_o.Loc)
 			      CASE !To_bitmap && (Satellite_param.Scale_up_shift
 			           || Calculations_diff.Visible)
 			           ?
 			           Brightness_min = NONE
 			           Brightness_max = NONE
 			           Cache_image = New_bitmap(ww.Points_to_pixels, 
-			          	 h_box.Points_to_pixels, 32)
+			          	 h_box.Points_to_pixels, 24)
 			          		  
 			     	   Cache_image.Canvas.Copy_rect({rect}(
 			     	   		 W= ww.Points_to_pixels,
@@ -525,7 +526,7 @@ METHOD Paint_to2(
 			     	  		 c, {rect}(W= ww.Points_to_pixels, 
 			     	  				   H= h_box.Points_to_pixels))  
 			     	   ----- 'store attributes of an image drawn scaled/rotated'
-			     	   Cache_im_d_o = d_o.CLONE
+			     	   Cache_im_D_o = D_o.CLONE
 			     	   Cache_sc = Satellite_param.Scale_image.Text.Real
 			     	   Cache_ro = Satellite_param.Rotate_image.Text.Real
 			     	   Cache_shift = Pt(ShiftX, ShiftY)
@@ -544,6 +545,53 @@ METHOD Paint_to2(
 	                    c.Reset_transform ;
 	               Scaled_prev.Draw(c, dwo.Loc)
 	          ;
+	          CASE Satellite_param.Collection_gal.Visible
+	               && Satellite_param.Collection_gal.Draw_over.Checked
+	               && Satellite_param.Collection_gal.Last_sel > 0
+	               ? 
+	               Satellite_param.Collection_gal.Prepare_overlay(
+	               	Current_image.Min(1))
+	               --------------- 'transform as parameters for gal[0] set'
+	               {point} sh|ifting_1 = Satellite_param.Collection_gal.Offset_1
+	               	.CLONE
+	               	
+                   //DEBUG: "trasformation overlay_1: " 
+                   //"" Satellite_param.Collection_gal.Scale_1 "%"
+                   //", rot=" Satellite_param.Collection_gal.Rotation_1
+                   //", x="sh.X ", y="sh.Y #NL ;
+	               c.Reset_transform
+	               c.Offset(View_size.X/2, .Y/2)
+                   //c.Scale(Satellite_param.Collection_gal.Scale_1/100,
+                   // .Scale_1/100)
+	               	
+	               c.Rotate(Satellite_param.Collection_gal.Rotation_1)
+	               c.Offset(-View_size.X/2, -.Y/2)
+	               	
+	               c.Offset(View_size.X * (sh.X-0.5) / 100, 
+	               			View_size.Y * (sh.Y-0.5) / 100)
+	               --------------- 'draw overlaying image from gal[0]'
+	               Satellite_param.Collection_gal.Overlays_1[Current_image.Min(1)]
+	               	.Draw(c, Satellite_param.Collection_gal.Scaled_img_1.Loc)
+	               --------------- 'draw the last spiral of the 1st gal'
+	               CASE Satellite_param.Collection_gal.Draw_spiral_1.Checked 
+	                    && Starts_dots_1[].Count > 2 { 
+	               		PUSH c.Foreground = WHITE :
+	               		PUSH c.Pen_width = 1 :
+	               		     CASE Satellite_param.Collection_gal
+	               		          .Overlay_inverted.Checked 
+	               		          ?  
+	               		          c.Foreground = BLACK ;
+                             //DEBUG: "want draw spirals 1 ["
+                             //   "" Starts_dots[].Merge("=") "]"#NL ;
+	               		     FOR r IN [0 TO Starts_dots_1[].Count-2] :
+	               		         CASE Starts_dots_1[r] < Starts_dots_1[r+1] ?
+	               		              c.Poly(All_dots_1[Starts_dots_1[
+	               		         		r] TO Starts_dots_1[r+1]-1], FALSE) ;
+	               		     ;
+	               		;
+	               		;
+	               }
+	          ;
          ;
          --------------------- 'need brightness table?'
          CASE Satellite_param.Calc_bright_diff 
@@ -553,6 +601,7 @@ METHOD Paint_to2(
               prepare_brightness_table //(ww, h_box)
          ;
 	;
+	c.Reset_transform
 	CASE rmb_down 
 	     && (!Satellite_param.Rmb_3D_fly || !change_tilt && !change_incl) 
 	     ? ==> ;
@@ -591,18 +640,8 @@ METHOD Paint_to2(
     CASE Satellite_param.Transform_model.Visible 
          && Satellite_param.Transform_model.Active.Checked
          ?
-         REAL add_offset_x = Satellite_param.Transform_model.X_offset - 0.5
-         REAL add_offset_y = Satellite_param.Transform_model.Y_offset - 0.5
-         //CASE Satellite_param.Transform_model.Scaleing.Text != "" ?
-         //     REAL m|ultiplyer = 1
-         //     CASE Satellite_param.Transform_model.Scale_relative.Checked ?
-         //          m = m
-         //          +m * Satellite_param.Transform_model.Scaleing.Text.Real / 100
-         //     ELSE m = m
-         //          * Satellite_param.Transform_model.Scaleing.Text.Real / 100 ;
-         //;
-         //add_offset_x = _ * m
-         //add_offset_y = _ * m
+         REAL adD_offset_x = Satellite_param.Transform_model.X_offset - 0.5
+         REAL adD_offset_y = Satellite_param.Transform_model.Y_offset - 0.5
     ;
 	
 	PUSH center_pt :
@@ -611,8 +650,8 @@ METHOD Paint_to2(
 	     	 REAL len_v|ector
 	     	 REAL b_size|_set
 			 -------------- 'center__may__be__local', REUSED     
-	         center_pt = Pt(ww/2 + ww1*(sat1.Center_gal.X - 0.5 + add_offset_x),
-	         	h/2 + h*(sat1.Center_gal.Y - 0.5 + add_offset_y))
+	         center_pt = Pt(ww/2 + ww1*(sat1.Center_gal.X - 0.5 + adD_offset_x),
+	         	h/2 + h*(sat1.Center_gal.Y - 0.5 + adD_offset_y))
 	         CASE sat1.INDEX == 0 
 	              || sat1.Name==Satellite_param.All_satellites[0].Name != "" 
 	              ?
@@ -719,6 +758,15 @@ METHOD Paint_to2(
 	    xx0 = center_pt.X
 	    yy0 = center_pt.Y
 	    -------------------
+	    CASE Satellite_param.Collection_gal.Visible 
+	         && Satellite_param.Collection_gal.Last_sel==0 
+	         ?
+	         Store_dots = TRUE 
+	         No_clear_dots = TRUE
+	    ;
+	    Starts_dots[].Clear
+        CASE All_dots[].Count > 1_000_000 ? All_dots[].Clear ;
+        All_dots_count = 0     
 	    FOR pass_A IN [1 TO 4] <-----------------------------------
 	    	CASE Satellite_param.Show_speed ? 
 	    	[0]: NONE
@@ -727,6 +775,15 @@ METHOD Paint_to2(
 	    	[2]:
 	    	    CASE pass_A <= 2 ? CONTINUE pass_A ;
 	    	;
+	    	---------------- 'start__dots', REUSED
+	    	CASE Store_dots && (Starts_dots[].Count==0 
+	    	     || Starts_dots[*] < All_dots_count) 
+	    	     ?
+	    	     Starts_dots[] << All_dots_count
+                 //DEBUG: "sat1=" sat1.INDEX "(" sat1.Name ")" 
+                 //       " add start dots: " Starts_dots[].Merge(",") #NL ;
+	    	;
+	    	---------------
 	    	INT pass|_spiral = pass_A
 	    	CASE pass > 2 && sat.FinalK <= 0 ? BREAK pass_A ;
 	    	INT arm_c|olor     
@@ -779,15 +836,20 @@ METHOD Paint_to2(
 	                  PUSH crossing = TRUE :
 	                  PUSH c.Pen_width :
 	                       c.Pen_width *= Satellite_param.Show_crossing
+	                       LIKE .......... 'start__dots'
 	                       draw_one_arm(orbit, pass_A, c= c) ;
 	                  ;
 	             ;
-	                  
 	        ;
 	    -------------------------------------------------------------->
 		//DEBUG: "satellite " sat.INDEX " last_pos=" sat.Last_i_pos #NL ;
+	    CASE Store_dots ? 
+	    	 LIKE ................. 'start__dots'
+	    ;
 	;
 	;
+	Store_dots = FALSE
+	No_clear_dots = FALSE
 	BOOL draw_mark|ers = Satellite_param.Grab_markers
 	BOOL draw_orb|its = Satellite_param.Draw_orbits > 0
 	CASE !To_bitmap ? 
@@ -923,7 +985,7 @@ METHOD Paint_to2(
 	 			    ----------------- 'distance from center in light years'
 	 			    REAL dist1|_points = ((xx - mp.X).qq + (yy - mp.Y).qq).Sqrt
 	 			    CASE Image != NONE ? 
-	 			         dist = dist1 / d_o.Width * box_size
+	 			         dist = dist1 / D_o.Width * box_size
 	 			    ELSE dist = dist1 / scale_size * box_size ;
 	 			    s = dist.Int.S " L.Y." 
 	 			    BOOL text_anyway|_show = TRUE
@@ -1000,7 +1062,7 @@ METHOD Make_scaled_prev :
     CASE Alpha_scaled_prev==0 || Index_scaled_prev<0 ? ==> ;
     Scaled_prev = New_bitmap_direct(Scaled_image.Width, .Height, 32)
    	All_images[Index_scaled_prev].Stretch_draw(Scaled_prev.Canvas, 
-	          	d_o.Offset_rect(-d_o.Left, -d_o.Top))
+	          	D_o.Offset_rect(-D_o.Left, -D_o.Top))
 	          	
    	FOR y IN [0 TO Scaled_prev.Height-1] :
    	    Scaled_prev.Lock_rows(y, 1, TRUE) 
@@ -1062,7 +1124,13 @@ INT round|s_counter
 INT transp_mask
 
 {point} All_dots[]
+{point} All_dots_1|_for_1st_gal_in_collection[]
+INT All_dots_count
+INT All_dots_1_count
+INT Starts_dots|_sequences[]
+INT Starts_dots_1|_sequences_for_1st_gal_in_collection[]
 BOOL Store_dots
+BOOL No_clear_dots
 BOOL crossing|_spiral_is_drawing_now
     	
 METHOD draw_one_arm(
@@ -1079,7 +1147,11 @@ INT pass|_arm_number,
     [2, 4]: arm_n = +1 ;
     round = 0
     BOOL polygons|_draw = Satellite_param.Draw_as == 2
-    All_dots[].Clear
+    CASE Store_dots && !No_clear_dots ? 
+         CASE All_dots[].Count > 1_000_000 ?
+              All_dots[].Clear ;
+         All_dots_count = 0 ;
+    INT dots_start|_position = All_dots_count     
     ------------------- 'loop'
     last_step_off = 0
     Last_pt_change = Pt(0, 0)
@@ -1176,6 +1248,12 @@ INT pass|_arm_number,
              dist = (v.[0].qq+v.[1].qq+v.[2].qq).Sqrt
              CASE 0 < max_dist < dist ? 
                   present_prev = FALSE
+                  -------------------------- 'finish__fragment', REUSED
+                  CASE All_dots_count-1 > dots_start ?
+	                   c.Poly(All_dots[dots_start TO All_dots_count-1], FALSE)
+	                   dots_start = All_dots_count 
+                  ;
+                  ---------------------------
                   LIKE ............... 'next__point'
                   LIKE .............. 'no__prev'
                   CONTINUE j ;
@@ -1199,6 +1277,7 @@ INT pass|_arm_number,
              yy = yy0 + (yy - yy0) * (tt - ds) / tt
              CASE ds > tt ?
                   present_prev = FALSE
+                  LIKE ............... 'finish__fragment'
                   LIKE ............... 'next__point'
                   LIKE .............. 'no__prev'
                   CONTINUE j ;
@@ -1215,6 +1294,7 @@ INT pass|_arm_number,
              || speed_i < min_speed
              ?
              present_prev = FALSE
+             LIKE ............... 'finish__fragment'
              LIKE ............... 'next__point'
              LIKE .............. 'no__prev'
              out_points += 1
@@ -1228,8 +1308,13 @@ INT pass|_arm_number,
         CASE do_calc ?
              calculations_one_point(Pt(xx, yy), Pt(xx0, yy0), c)
         ;
-        CASE Store_dots ? 
-             All_dots[] << Pt(xx, yy) ;
+        //CASE Store_dots ?
+             CASE All_dots[].Count <= All_dots_count ? 
+                  All_dots[].Allocate(All_dots_count 
+                  	+ (All_dots_count.Max(16_384)).Min(1000_000)) ;
+             All_dots[All_dots_count] = Pt(xx, yy).CLONE
+             All_dots_count += 1 
+        //;
         ------------------------- 'draw next or skip'
         PUSH xx :
         PUSH yy :
@@ -1368,7 +1453,8 @@ INT pass|_arm_number,
                       [(xx - prev.X).Abs < one_px > (yy - prev.Y).Abs] ? 
                       	   actual_draw = FALSE
                       ELSE actual_draw = TRUE 
-                           c.Line(Pt(xx, yy), prev) ;
+                           //-c.Line(Pt(xx, yy), prev) 
+                      ;
                       -------------------------------
                  ;
              [c.Pen_width>=5 && glove < 4] ?
@@ -1385,7 +1471,9 @@ INT pass|_arm_number,
                   LIKE ................. 'line__to__prev'
              ;
         [min_speed > 0] ? NONE
-        [!no_more_draw] ? c.Rect({rect}(Loc=Pt(xx-1,yy-1), W=2, H=2))
+        [!no_more_draw] ?
+            CASE xx > 0 < yy ? 
+                 c.Rect({rect}(Loc=Pt(xx-1,yy-1), W=2, H=2)) ;
         ;
         ;
         ;
@@ -1393,6 +1481,19 @@ INT pass|_arm_number,
         CASE actual_draw ? prev = Pt(xx, yy) ;
         LIKE ................... 'next__point'
     -------------------------------------------------------->
+    CASE dots_start < All_dots_count ?  
+         c.Poly(All_dots[dots_start TO All_dots_count-1], FALSE) ;
+    CASE Satellite_param.Collection_gal.Visible 
+         && Satellite_param.Collection_gal.Last_sel==0
+         ? 
+         All_dots_1[].Allocate(All_dots_count) 
+    	 All_dots_1_count = All_dots_count
+    	 FOR a IN [0 TO All_dots_1_count-1] :
+    	     All_dots_1[a] = All_dots[a].CLONE ;
+    	 Starts_dots_1[].Allocate(Starts_dots[].Count)
+    	 FOR a IN [0 TO Starts_dots[].Count-1] :
+    	     Starts_dots_1[a] = Starts_dots[a] ;
+    ;
     .
     
 {point} Last_pt_change|_brightness
@@ -1666,27 +1767,33 @@ METHOD pixel_under_mouse :
          //      {Bmp}.To_file(Cache_image, "Cache_image.bmp")
          //;
 		       
-		      Last_mouse_pt = _.Offset(-d_o.Left, -.Top)
-			  Last_pixel.Canvas.Copy_rect({rect}(W=Last_pixel.Width, H=.Height),
-				  Cache_image.Canvas,
-				  {rect}(W=Last_pixel.Width.Pixels_to_points, 
+		      Last_mouse_pt = _.Offset(-D_o.Left, -.Top)
+		      {rect} src|_rect = {rect}(W=Last_pixel.Width.Pixels_to_points, 
 				  		 H=Last_pixel.Height.Pixels_to_points, 
-				  		 Loc=Pt(pt.X, pt.Y)))
-				 						  
-              //DEBUG:
-              //      {Bmp}.To_file(Last_pixel, "Last_pixel.bmp") ;
-				 						  
-			  Last_pixel.Lock(TRUE)
-			  Last_RGB = Last_pixel.Pixels[2].Int 
-			 	 | Last_pixel.Pixels[1].Int.ShiftL(8) 
-			 	 | Last_pixel.Pixels[0].Int.ShiftL(16)
-			 	 
-			  Last_pixel.Unlock(FALSE)
+				  		 Loc=Pt(pt.X, pt.Y))
+		      CASE src.Loc.Y >= 0 <= .X && src.Loc.Y < Cache_image.Height
+		           && src.Loc.X < Cache_image.Width
+		           ? 
+				   Last_pixel.Canvas.Copy_rect({rect}(
+				   		W=Last_pixel.Width, H=.Height), Cache_image.Canvas,
+					    src)
+					 						   
+	               //DEBUG:
+	               //      {Bmp}.To_file(Last_pixel, "Last_pixel.bmp") ;
+					 						   
+				   Last_pixel.Lock(TRUE)
+				   Last_RGB = Last_pixel.Pixels[2].Int 
+				 	  | Last_pixel.Pixels[1].Int.ShiftL(8) 
+				 	  | Last_pixel.Pixels[0].Int.ShiftL(16)
+				 	  
+				   Last_pixel.Unlock(FALSE)
+		      ;
 		 ELSE Last_RGB = 0 ;
 		 CASE Calculations_diff.Visible ? 
 		      Calculations_diff.Pbox_info.Invalidate_all ;
     //DEBUG: "pixel_under_mouse " Last_mouse_pt " RGB=" Last_RGB.Hex(6) #NL ;
-	; .
+	; 
+	Last_pixel = NONE .
 	
 	     
 BOOL processing_mouse	
@@ -1694,7 +1801,7 @@ BOOL processing_mouse
 OVERRIDE mouse_move :
 CASE processing_mouse ? ==> ;
 PUSH processing_mouse = TRUE :
-	pixel_under_mouse
+     CASE Calculations_diff.Visible ? pixel_under_mouse ;
 	PBox.Invalidate_all 
 	CASE Key.Shift || .Alt ? 
 	     last_mouse_shift = mouse ;
@@ -1761,8 +1868,8 @@ PUSH processing_mouse = TRUE :
 		      ------------------------------------- 'new offset'     
 			  Offset_x = offset0.X + (cA * dX + sA * dY) / w1 * box_w / 100000
 			  Offset_y = offset0.Y + (-sA * dX + cA * dY) / w1 * box_w / 100000
-			  DEBUG: "dX=" dX " dY=" dY " w1=" w1 " Offset_x=" Offset_x
-			  		" Offset_y=" Offset_y " Offset0-" offset0.S #NL ;
+              //DEBUG: "dX=" dX " dY=" dY " w1=" w1 " Offset_x=" Offset_x
+              //      " Offset_y=" Offset_y " Offset0-" offset0.S #NL ;
 			  ------------------ 'check__range', REUSED
 			  CASE ?
 			  [Offset_x < -0.5] ? Offset_x = -0.5 
@@ -1785,8 +1892,8 @@ PUSH processing_mouse = TRUE :
 		 new_val = _.mod180
 		 CASE !Key.Shift ? new_val = _.Int ;
 		 Satellite_param.Rotate_proj.Set_text(new_val.S)
-		 DEBUG: "set new rot proj=" new_val 
-		 	" ==> " Satellite_param.Rotate_proj.Text #NL ;
+         //DEBUG: "set new rot proj=" new_val 
+         //   " ==> " Satellite_param.Rotate_proj.Text #NL ;
 		 --------------------------------------
 		 CASE Satellite_param.Rotate_together ?
 		      REAL diff|erence = new_val - old_val
@@ -2094,8 +2201,8 @@ METHOD calculations_one_point(
     {point} inn|er_point
     {point} out|er_point 
     REAL dist2|_to_move = (dist + Step_points*2) / dist
-    INT dx|_offset = d_o.Left.Int
-    INT dy|_offset = d_o.Top.Int
+    INT dx|_offset = D_o.Left.Int
+    INT dy|_offset = D_o.Top.Int
 	---------------------- 'out', REUSED
     out = Pt(c.X + (dest.X - c.X) * dist2,
     		 c.Y + (dest.Y - c.Y) * dist2)

@@ -105,7 +105,7 @@ METHOD before_CONSTRUCT: .
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://572AECF2 Do not change manually (created by Form Designer)
+CONSTRUCT://4D8E1E04 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -161,7 +161,7 @@ PUSH in_construct = TRUE :
 	---------------------- 'DIALOG_LOAD'
 	Dialog_load = New_dialog_open(THIS, "DIALOG_LOAD")
 
-	...Filter = "Galaxy settings (*.gal)|*.gal;*.gal2"
+	...Filter = "Galaxy models (*.gal) and collections (*.col)|*.gal;*.gal2;*.col"
 	...Default_ext = "gal"
 	----------------- 'DIALOG_FILE_SAVE'
 	Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE_SAVE")
@@ -245,10 +245,10 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", #LF
-"#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
+"#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -1142,6 +1142,7 @@ METHOD After_satellite ==> STR
         RESULT << "AFTER_" sat.Index.S ": " (sat.INDEX+1).S 
         	"" if(sat.Name != "", ": " sat.Name) #NL ; .
     
+STR old_line_w|idth = "1"
 
 OVERRIDE click :
     CASE sender_alias ?
@@ -1166,7 +1167,11 @@ OVERRIDE click :
         ---------------------------------
     ["SPEED_SWITCH_2"]:
     	LIKE .... 'speed__switch', BUT(Plasma==>Final_plasma)*?
-    ["LINE_WIDTH_1"]: Edit_line_w.Set_text("1")
+    ["LINE_WIDTH_1"]:
+        CASE Edit_line_w.Text != "1" ?
+             old_line_w = Edit_line_w.Text
+             Edit_line_w.Set_text("1")
+        ELSE Edit_line_w.Set_text(old_line_w) ; 
     ["BH_MASS_CHANGE"]:
         CASE ?
         [Mass_BH.Text==1_000_000.S] ? Mass_BH.Set_text(4_270_000.S)
@@ -1415,7 +1420,12 @@ OVERRIDE click :
                  CASE !ask("Image is protected. Remove protection and delete?"
                       ""._Remove_protection) ? ==> 
                  ;
-                 Main_.Protected_img = -1 ;     
+                 Main_.Protected_img = -1 ;
+            CASE Key.Shift
+                 && Main_.All_img_names[.Current_image].Extract_file_name
+                 .Starting("Stamp#")
+                 ? 
+                 Delete_file(Main_.All_img_names[.Current_image]) ;
             Delete_current_image 
             DEBUG: "Holder[]:" Stamp_parameters.Holder.Count
             	" Checksums: " Main_.Checksums_of_images[].Merge(",")
@@ -1576,6 +1586,10 @@ OVERRIDE click :
     	         message("Saved togeher with URL: " url) ;
         ["Load"]:
         	CASE !Dialog_load.Select_file ? ==> ;
+        	CASE Dialog_load.Filename.Ext LIKE ".col" ? 
+        	     Provide_collection_gal
+        	     Collection_gal.Load_collection(Dialog_load.Filename) ==>
+        	;
         	Load_gal(Dialog_load.Filename, TRUE)     
         	Auto_stamp
         	Update_URL
@@ -2306,7 +2320,9 @@ PUSH processing_mouse = TRUE :
 			 		"" Images_path.Trailing_slash 
 			 		"" Main_.All_img_names[.Current_image] #QU) ==> 
 	;
-	CASE sender_alias.Starting("LABEL_") ? 
+	CASE sender_alias.Starting("LABEL_") 
+	     && sender_.Bounds.Contains(mouse)
+	     ?
 	     dragging = sender 
 		 mouse_pos0 = mouse
 		 is_0_360 = FALSE
@@ -2718,6 +2734,12 @@ METHOD do_mirroring :
 	
 {Collection_gal} Collection_gal|axies
 
+METHOD Provide_collection_gal :
+    CASE Collection_gal == NONE ? 
+         Collection_gal = {Collection_gal}(Main_=Main_, Screen_=Screen_) ;
+    Collection_gal.Show .
+
+
 OVERRIDE menu_item :
     CASE menu_alias ?
     ["LIMIT_4"]: Limit_image_size = 4
@@ -2729,9 +2751,7 @@ OVERRIDE menu_item :
     ["LIMIT_10"]: .. = 10
     ["LIMIT_NO"]: .. = 0
     ["COLLECTION"]:
-        CASE Collection_gal == NONE ? 
-             Collection_gal = {Collection_gal}(Main_=Main_, Screen_=Screen_) ;
-    	Collection_gal.Show
+        Provide_collection_gal
     ["ALLOW_JPEG_THUMB"]: Allow_JPEG_thumb = !_
     ["MIRROR_IMG"]: Image_mirrored = !_
     	do_mirroring
@@ -2746,7 +2766,7 @@ OVERRIDE menu_item :
     		    Main_.All_img_URLs[] << "" ;
     		Main_.All_img_URLs[.Current_image] = url
     		Label_url.Set_text(url)
-    		DEBUG: "urls: " Main_.All_img_URLs[].Merge(#NL "~!!!~ ") #NL ;
+            //DEBUG: "urls: " Main_.All_img_URLs[].Merge(#NL "~!!!~ ") #NL ;
     ["SCREENSHOT_1024"]: Screenshot_scale = 1024
     ["SCREENSHOT_50"]: Screenshot_scale = 50
     ["SCREENSHOT_100"]: Screenshot_scale = 100
@@ -3132,6 +3152,13 @@ METHOD Go_to_next_image :
 METHOD Go_to_another_image :
 	-------------------------- 'go to another image'
 	Main_.Image = Main_.All_images[.Current_image]
+    //DEBUG: 
+    //      CASE Main_.Image.Width * .Height <= 1 ? 
+    //           << "assigned image with diemnsions " Main_.Image.Width
+    //           << " " Main_.Image.Height #NL
+    //           //>>  
+    //      ;
+    //;
 	Main_.Scaled_image = Main_.All_scaled[.Current_image]
     LIKE Go_to_prev_image ............ 'update__caption'
 	Main_.Invalidate
@@ -3550,15 +3577,15 @@ INT points|_wide, BOOL with_lines)
 	     	 ----------------- 'now draw rotated portions'
 	     	 rrot.Canvas.Reset_transform
 	     	 rrot.Draw(RESULT.Canvas, dest.Offset(-rrot.Width/2, -rrot.Height/2))
-	     	 DEBUG: 
-	     	 	CASE i <= 100 ? 
-	     	       << "dot " i " from " Main_.All_dots[].Count
-	     	 		" src=" src.Sp " vec=" vec.Sp " size=" size 
-	     	 		" a=" angle #NL
-	     	 	//{Png}.To_file(rect, "rect-src" (i*direction).S ".png", 100)
-	     	 	//{Png}.To_file(rrot, "rect-rot" (i*direction).S ".png", 100)
-	     	 	;
-	     	 ;
+             //DEBUG: 
+             //   CASE i <= 100 ? 
+             //      << "dot " i " from " Main_.All_dots[].Count
+             //       " src=" src.Sp " vec=" vec.Sp " size=" size 
+             //       " a=" angle #NL
+             //   //{Png}.To_file(rect, "rect-src" (i*direction).S ".png", 100)
+             //   //{Png}.To_file(rrot, "rect-rot" (i*direction).S ".png", 100)
+             //   ;
+             //;
 	     	 dest.X += direction * size
 	     	 CASE ?
 	     	 [direction > 0 && dest.X >= RESULT.Width - size] ?
@@ -3624,8 +3651,8 @@ STR Format|_actual) ==> {Bitmap}, NEW
     :
 	FOR n IN [0 TO 5] :
 	    REAL k|oeffitient = 1/(1/K + n)
-	    DEBUG: "Filename=" Filename #NL
-	     	   << "Format=" Format " k=" k #NL ;
+        //DEBUG: "Filename=" Filename #NL
+        //       << "Format=" Format " k=" k #NL ;
 	    CASE Filename != "" && Format==".jpg" && Allow_JPEG_thumb ? 
 	         CASE (k*2).Int ?
 	         [1, 2, 3, 4]: NONE
@@ -3643,7 +3670,7 @@ STR Format|_actual) ==> {Bitmap}, NEW
 	    	 	{rect}(Width=re.Width.Pixels_to_points,
 	    		Height=re.Height.Pixels_to_points))
 	    		
-	    	 DEBUG: "stretch(" re.Width "x" re.Height ")"#NL ;
+             //DEBUG: "stretch(" re.Width "x" re.Height ")"#NL ;
 	    ;
 	    RESULT = re
 	    CASE RESULT.Width > 1 ? ==> ;
@@ -3690,16 +3717,25 @@ METHOD Load_gal|axy(STR Filename, BOOL Can_ask|_question) :
 	    sec[i-1] = i.S ;
 	c.Rename_subkeys(sec[0 TO *])
 	----------------------- 'common:'
+	CASE !Key.Shift || Box_width.Text.Real <= 0 ?
+	     Box_width.Set_text(c.Real("Box_width").S) 
+         //DEBUG: "in box width: " c.Real("Box_width") 
+         //       ", Text-->" Box_width.Text #NL ;
+	     ;
+	CASE !Key.Shift || Mass_BH.Text.Real <= 0 ?
+	     Mass_BH.Set_text(c.Real("Mass_BH").S) 
+         //DEBUG: "in mass bh: " c.Real("Mass_BH") 
+         //       ", Text-->" Mass_BH.Text #NL ;
+	;
 	CASE !Key.Shift ? 
-	     Box_width.Set_text(c.Real("Box_width").S)
 	     Satellite_num.Clear
-    	 Main_.Offset_x = c.Real("Offset_x")
-    	 Main_.Offset_y = c.Real("Offset_y")    
+    	 Main_.ShiftX = c.Real("ShiftX")
+    	 Main_.ShiftY = c.Real("ShiftY")    
+         //DEBUG: "loaded Offset_x=" Main_.Offset_x 
+         //       " Offset_y=" Main_.Offset_y #NL ;
     	 Scale_rotate_spirals = c.Bool("Scale_rotate_spirals")
     	 Fill_scale_rotate
 	     All_satellites[].Clear 
-    	 CASE c.Present("Mass_BH") ? 
-    	      Mass_BH.Set_text(c.Real("Mass_BH").S) ;
     	 ----------------------- 'image rotate, scale'
     	 CASE !Preserve_scale_rot ? 
 	    	  Rotate_image.Set_text(c.Real("Image_rotate").S)
@@ -3813,10 +3849,11 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
 	    		  INT n|umber_frame = Select_gif_frame(
 	    	     	 THIS, temp_g.Count, Last_frame)
     		 ELSE n = Last_frame ;
-    		 FOR nn IN [0 TO n] :
-    		     temp_g.Set_frame(nn)
-    		     temp_b = temp_g.Bitmap
-    		     Last_frame = temp_g.Frame ;
+			 FOR nn IN [0 TO n] :
+			     temp_g.Set_frame(nn)
+			     temp_b = temp_g.Bitmap
+			     Last_frame = temp_g.Frame ;
+             //temp_g.Set_frame(n)
     	;
     	temp_b = temp_g.Bitmap     
     [".jpg", ".jpeg", ".jpe"]: .. = {Jpeg}.From_file(f, 'FULL')
@@ -3853,6 +3890,9 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     temp_b.Draw(Main_.Image.Canvas, Pt(0,0))
     temp_b = NONE
     ------------------- 'loaded image'
+    CASE Main_.All_images[].Count <= Main_.Current_image ? 
+         Main_.All_images[].Allocate(Main_.Current_image+1) ;
+    Main_.All_images[.Current_image] = Main_.Image
     Main_.Update_caption(f.Extract_file_name)
     Main_.Checksums_of_images[.Current_image] = ch
     Main_.Checksums2_of_images[.Current_image] = ch2
@@ -3891,8 +3931,10 @@ BOOL Preserve_stamp|_commands_OTHERWISE_ask)
 	     c.Set_r("Mass_BH", Mass_BH.Text.Real)
 	     ----------------------- '+image'
 	     c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
-	     c.Set_r("Offset_x", Main_.Offset_x)	
-	     c.Set_r("Offset_y", Main_.Offset_y)
+         //DEBUG: "saving Offset_x=" Main_.Offset_x " Offset_y=" Main_.Offset_y 
+         // #NL ;
+	     c.Set_r("ShiftX", Main_.ShiftX)	
+	     c.Set_r("ShiftY", Main_.ShiftY)
 	     c.Set_r("Image_rotate", Rotate_image.Text.Real)
 	     c.Set_r("Image_scale", Scale_image.Text.Real)
 	     c.Set_b("Mirrored", Image_mirrored)
@@ -3927,22 +3969,22 @@ BOOL Preserve_stamp|_commands_OTHERWISE_ask)
     	           ...Set_b("LAST", i == Satellite_num.Count-1)
 	         ;
 	     ;
-	     	  DEBUG: "storing with commands (" Commands_s[].Count 
-	     	  		 ")"#NL
-	     	  		 << "old commands: "#NL
-	     	  		 FOR i IN [0 TO 100] :
-	     	  		     STR old_cmd|_from_c = c.Str("Command" i.S) 
-	     	  		     << "[" i "]=" old_cmd #NL
-	     	  		     CASE old_cmd=="" ? BREAK i ;
-	     	  		 ;
-	     	  ;
+              //DEBUG: "storing with commands (" Commands_s[].Count 
+              //       ")"#NL
+              //       << "old commands: "#NL
+              //       FOR i IN [0 TO 100] :
+              //           STR old_cmd|_from_c = c.Str("Command" i.S) 
+              //           << "[" i "]=" old_cmd #NL
+              //           CASE old_cmd=="" ? BREAK i ;
+              //       ;
+              //;
 	     CASE Commands_s[].Count > 0 ?
 	          FOR i IN [0 TO Main_.All_images[].Count-1] :
 	              INT ch|ecksum = Main_.Checksums_of_images[i]
 	              INT ch2|ecksum = Main_.Checksums2_of_images[i]
 	              CASE ch != 0 || ch2 != 0 ? BREAK i ;
 	          ;
-	          DEBUG: "checksums=" ch "," ch2 #NL ;
+              //DEBUG: "checksums=" ch "," ch2 #NL ;
 	          FOR i IN [0 TO 1000] :
 	              STR old_c|ommands[] << c.Str("Command" i.S) 
 	          	  CASE old_c[*] != Commands_s[i] ? 
@@ -3993,7 +4035,7 @@ METHOD Update_URL|_label :
 	Label_url.Set_text(Main_.All_img_URLs[Main_.Current_image]) .
     
 METHOD URL_loaded ==> STR := url .
-	
+
 END
 
 */

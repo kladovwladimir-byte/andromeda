@@ -52,10 +52,12 @@ BASE CLASS: {Form_common} .
 {Paint_turtle} Run_post_process_1
 {Dialog_file} Dialog_gal
 {Paintbox} P_Hints|_bottom
+{Label} Label_2 | _454756_726243
+{Button} Button_cancel
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://2B25EE7F Do not change manually (created by Form Designer)
+CONSTRUCT://550E6601 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -191,6 +193,13 @@ Align_right=TRUE))
 	Paintbox_1 = New_paintbox(THIS, "PAINTBOX_1", "")
 
 	...Set_height(10)
+	-------------------------- 'LABEL_2'
+	Label_2  = {Label}(Form_=THIS, Alias="LABEL_2")
+
+	...Set_text("")
+	-------------------- 'BUTTON_CANCEL'
+	Button_cancel = New_button(THIS, "BUTTON_CANCEL", "Cancel"), >> grayable[]
+	...Make_cancel
 	------------------------------------------------------------- 'column COL_1'
 	new_column("COL_1", 'CENTER', {Form}.{sizes_col}(Label=70))
 
@@ -424,7 +433,10 @@ BOOL Back_24|_bitmap_is[]
 
 OVERRIDE click :
 	PUSH Main_.Satellite_param.Lock_img_select = TRUE :
+		 Any_change     
     CASE sender_alias ?
+    ["BUTTON_CANCEL"]: Cancelling = TRUE
+    	DEBUG: "CANCELLING!!!"#NL ;
     ["SHIFT_COMMANDS"]:
         {Bitmap_direct} b|_temporary 
 	         b = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
@@ -458,6 +470,7 @@ OVERRIDE click :
         ;
     ["BUTTON_STAMP", 
      "RUN_POST_PROCESS_3", "RUN_POST_PROCESS_1", "RUN_POST_PROCESS_2"]:
+        Cancelling = FALSE
         s_alias = sender_alias
         --------------------------------- 'prepare__to__stamp', REUSED
         CASE s_alias=="BUTTON_STAMP" ? 
@@ -649,7 +662,7 @@ INT edit_base|_value
 	
 
 OVERRIDE mouse_down :
-	CASE Progress_1.Bounds.Contains(mouse) ? Cancelling = TRUE ;
+	//CASE Progress_1.Bounds.Contains(mouse) ? Cancelling = TRUE ;
 	CASE sender_alias.Starting("LABEL_") ?
 	     CASE sender_alias ? 
 	     ["LABEL_X_OFFSET"]: editing = X_offset
@@ -713,6 +726,7 @@ OVERRIDE mouse_up :
 
 OVERRIDE disabled ==> BOOL :
     CASE sender_alias ? 
+    ["BUTTON_CANCEL"]: RESULT = !Main_.Satellite_param.Lock_img_select
     ["INC_DEC_SHIFT", "COPY_BITMAP"]: 
          RESULT = Main_.Satellite_param.Locked_images
     ["USE_FILE"]: RESULT = Stamp_type.Current >= 1
@@ -938,7 +952,6 @@ STR r_current|_operation_to_run_post_process
 
 METHOD Run_button(INT Operation) :
 	PUSH Main_.Satellite_param.Locked_images = TRUE :
-    PUSH Cancelling = FALSE :
     	 CASE ?
     	 [s_alias.Starting("RUN_POST_PROCESS")
     	  && r_current=="Processing"
@@ -1071,7 +1084,6 @@ METHOD Run_button(INT Operation) :
     	     Hint_set("")
     	     hint_from_commands
     	 ;
-    ;
     ;
     .
     
@@ -2093,8 +2105,14 @@ INT Executing|_commands_stored
 	
 METHOD Execute_commands|_stored_earlier(STR Commands_s|equence[]) :
 	PUSH Executing = 1 :
+		 Cancelling = FALSE     
 	     FOR i_c|ommand IN [0 TO Commands_s[].Count-1] :
-	     	 CASE Cancelling ? BREAK i_c ;
+	     	 CASE Cancelling ?
+	     	      DEBUG: "cancelling -- break (i_c==" i_c ")"#NL ;
+	     	      BREAK i_c 
+	     	 ELSE
+	     	 	  DEBUG: "not cancelling"#NL ;
+	     	 ;
 	     	 Executing = i_c+1
 	         STR instr|uctions[].Split(Commands_s[i_c], ";") 
 	         hint_from_commands
@@ -2170,7 +2188,9 @@ OVERRIDE menu_item :
     	{Bitmap} image_s|aving_TEMP = Main_.Image
         NONE = image_s.To_clipboard
     ["SAVE_TO_FILE"]: Save_to_file 
-    ["COMMAND_FROM_FILE"]: Commands_from_file
+    ["COMMAND_FROM_FILE"]:
+        PUSH Main_.Satellite_param.Lock_img_select = TRUE :
+             Commands_from_file ;
     ; .
     
 METHOD Save_to_file :

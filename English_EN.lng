@@ -1,4 +1,5 @@
 ﻿[{Main_plasma_tides}]
+Please_wait=PLEASE WAIT...
 PROJECTION_PLANE=PROJECTION PLANE
 TILT_ANGLE=TILT ANGLE
 INCLINATION=INCLINATION+OF GALAXY+PLANE
@@ -150,6 +151,7 @@ Calculate_brightness_diff=Calculate brightness difference
 Copy_to_table=Copy parameters to table
 Paste_params=Paste parameters
 Reset=Reset
+Image_detected_ask_create_stamp=The image loaded is single and it is the same as it was used to create the model loading. Create stamp now ?
 CAPTION=Satellite /galaxy parameters
 H=Hint: drag center of spiral to the galaxy center
 H1=Hint: drag over label above to change value
