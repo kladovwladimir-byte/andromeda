@@ -37,7 +37,7 @@ BASE CLASS: {Form_common} .
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://33785959 Do not change manually (created by Form Designer)
+CONSTRUCT://7FBD1D89 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -144,7 +144,7 @@ PUSH in_construct = TRUE :
 	------------------ 'DIALOG_OPEN_GAL'
 	Dialog_open_gal = New_dialog_open(THIS, "DIALOG_OPEN_GAL")
 
-	...Filter = "*.gal,&.gal2|*.gal;*.gal2"
+	...Filter = "*.gal|*.gal"
 	...Default_ext = ".gal"
 	------------------------------------------------------------- 'column COL_2'
 	new_column("COL_2", 'RIGHT', {Form}.{sizes_col}(Width=190,Label=60))
@@ -410,7 +410,7 @@ OVERRIDE selection_change :
 	                   Main_.ShiftX = (_ - Shift_1.X) / (Scale_1/100)
 	                   Main_.ShiftY = (_ - Shift_1.Y) / (Scale_1/100)
 	              ;
-	        	  Main_.Satellite_param.Save_gal(fname, TRUE, TRUE)
+	        	  Main_.Satellite_param.Save_gal(fname, TRUE)
 	        	  CASE Cache_images.Checked ? 
 	        	       Cache_img[Last_sel] = Main_.All_images[0] 
 	        	       Cache_stamps[Last_sel] = Main_.All_images[1] ;
@@ -429,7 +429,7 @@ OVERRIDE selection_change :
 	         --------------------- 'to new gal model selected'
 	         fname = List.Get_item(Last_sel, 0).After(#TAB)
 	         Main_.Satellite_param.Preserve_scale_rot = Preserve_scale_rot.Checked
-	         Main_.Satellite_param.Load_gal(fname, FALSE, TRUE)
+	         Main_.Satellite_param.Load_gal(fname, FALSE)
 	         ----------- 'gal loaded !!!!!!!!!!!!!!!!!!!!!!!!'
 	         CASE Last_sel > 0 ? 
 	              Main_.Satellite_param.Scale_image.Set_text(
@@ -664,7 +664,7 @@ OVERRIDE menu_item :
              "collected galaxy models.") ==> ;
         CASE !ask("Delete satellite [" dname "] in all models?") ? ==> ;
 		filename = List.Get_item(Last_sel, 0).After(#TAB)
-		Main_.Satellite_param.Save_gal(filename, TRUE, TRUE)
+		Main_.Satellite_param.Save_gal(filename, TRUE)
         //CASE !ask("Delete satellite [" dname "] in all models? Yes?") ? ==> ;
         FOR igal IN [List.Count-1 DOWNTO 0] :
         	filename = List.Get_item(igal, 0).After(#TAB)
@@ -706,7 +706,7 @@ OVERRIDE menu_item :
         ;
         ----------------- 'reload current gal'
         filename_in = List.Get_item(Last_sel, 0).After(#TAB)
-        Main_.Satellite_param.Load_gal(filename_in, FALSE, TRUE)
+        Main_.Satellite_param.Load_gal(filename_in, FALSE)
         Main_.Invalidate
     ["REGULAR_ACTIVITY"]:
         STR aname|_to_interva_activity = Main_.Satellite_param.Edit_name.Text
@@ -734,7 +734,7 @@ OVERRIDE menu_item :
     	     "2 galaxy models!") ==> ;
     	-------------------------------- 'save current gal model 1st'
     	filename = List.Get_item(Last_sel, 0).After(#TAB)
-		Main_.Satellite_param.Save_gal(filename, TRUE, TRUE)
+		Main_.Satellite_param.Save_gal(filename, TRUE)
 		-------------------------------- 'make activity regular between models'
     	a = min_a
     	REAL delta|_activity = (max_a - min_a) / n
@@ -761,7 +761,7 @@ OVERRIDE menu_item :
 	    	;
 	    	c.Update
     	;
-    	Main_.Satellite_param.Load_gal(filename, FALSE, TRUE)
+    	Main_.Satellite_param.Load_gal(filename, FALSE)
     	Main_.Invalidate
     ; .
     

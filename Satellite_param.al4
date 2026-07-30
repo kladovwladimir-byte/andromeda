@@ -1575,7 +1575,7 @@ OVERRIDE click :
                  	"them first or close Trasform model window.") ==> ;
     		----------------------- 'select'   
     	    CASE !Dialog_file_save.Select_file ? ==> ;
-    	    Save_gal(Dialog_file_save.Filename, FALSE)
+    	    Save_gal(Dialog_file_save.Filename, FALSE, FALSE)
     	    CASE Collection_gal != NONE ? 
     	         Collection_gal.Update_current(Dialog_file_save.Filename) ;
     	    ------------------ 'update__caption', REUSED
@@ -1590,7 +1590,7 @@ OVERRIDE click :
         	     Provide_collection_gal
         	     Collection_gal.Load_collection(Dialog_load.Filename) ==>
         	;
-        	Load_gal(Dialog_load.Filename, TRUE)     
+        	Load_gal(Dialog_load.Filename, TRUE, FALSE)     
         	Auto_stamp
         	Update_URL
         ["Additionally"]:
@@ -2232,8 +2232,7 @@ METHOD Auto_stamp :
 	     || Checksum_img_loaded==0 && 0!=Checksum2_img_loaded 
 	     == Main_.Checksums2_of_images[.Current_image])  
 	     ?
-	     PUSH Lock_img_select = TRUE :
-	          Do_commands_auto(TRUE) ;
+	     Do_commands_auto(TRUE)
 	; .
 	
 METHOD Do_commands_auto(BOOL Answer|_if_to_create_stamp) :
@@ -2259,7 +2258,7 @@ METHOD Do_commands_auto(BOOL Answer|_if_to_create_stamp) :
 INT Checksum_img_loaded	
 INT Checksum2_img_loaded	
 STR Commands_s|equence[]
-BOOL Lock_img_select
+//BOOL Lock_img_select
 
 METHOD caption_loc|alizable ==> STR :
 	= "Satellite /galaxy parameters"._CAPTION .
@@ -2286,7 +2285,7 @@ PUSH processing_mouse = TRUE :
 
 		==>
 		;
-		CASE Lock_img_select ? ==> ;
+		CASE Stamp_param.Visible && .Executing > 0 ? ==> ;
 		Main_.Save_current_image(FALSE)
 	    FOR i IN [1 TO Main_.All_images[].Count-1] :
 	        CASE mouse.Y - Thumbnails.Bounds.Top > Y_starting_thumb[i] ?
@@ -3698,7 +3697,9 @@ FUN q2|_square(REAL x|_to_square) ==> REAL := x * x .
 
 BOOL Preserve_scale_rot|ation
 
-METHOD Load_gal|axy(STR Filename, BOOL Can_ask|_question) :
+METHOD Load_gal|axy(
+STR Filename, BOOL Can_ask|_question, BOOL For_coll|ection)
+    :
 	//STR Filename = Dialog_load.Filename
 	INT was_cur|rent_spiral = Satellite_num.Current
 	{In_file_config} c|onfiguration_temp
@@ -3727,21 +3728,26 @@ METHOD Load_gal|axy(STR Filename, BOOL Can_ask|_question) :
          //DEBUG: "in mass bh: " c.Real("Mass_BH") 
          //       ", Text-->" Mass_BH.Text #NL ;
 	;
-	CASE !Key.Shift ? 
-	     Satellite_num.Clear
-    	 Main_.ShiftX = c.Real("ShiftX")
-    	 Main_.ShiftY = c.Real("ShiftY")    
-         //DEBUG: "loaded Offset_x=" Main_.Offset_x 
-         //       " Offset_y=" Main_.Offset_y #NL ;
-    	 Scale_rotate_spirals = c.Bool("Scale_rotate_spirals")
-    	 Fill_scale_rotate
-	     All_satellites[].Clear 
-    	 ----------------------- 'image rotate, scale'
-    	 CASE !Preserve_scale_rot ? 
-	    	  Rotate_image.Set_text(c.Real("Image_rotate").S)
-	    	  REAL i_sc|ale_image = c.Real("Image_scale")
-	    	  CASE !i_sc.Near(0) ? Scale_image.Set_text(i_sc.S) ;
-    	 ;
+	CASE !Key.Shift || For_coll ?
+	     Scale_rotate_spirals = c.Bool("Scale_rotate_spirals")
+		 CASE For_coll && c.Present("ShiftX_1") ?
+		      REAL i_sc|ale_image
+		      ----------------------------- 'shift__scale__rotate', REUSED
+		      Satellite_num.Clear
+	    	  Main_.ShiftX = c.Real("ShiftX_1")
+	    	  Main_.ShiftY = c.Real("ShiftY_1")    
+	          //DEBUG: "loaded Offset_x=" Main_.Offset_x 
+	          //       " Offset_y=" Main_.Offset_y #NL ;
+	    	  Fill_scale_rotate
+		      All_satellites[].Clear 
+	    	  CASE !Preserve_scale_rot ? 
+	    	       ----------------------- 'image rotate, scale'
+		    	   Rotate_image.Set_text(c.Real("Image_rotate_1").S)
+		    	   i_sc = c.Real("Image_scale_1")
+		    	   CASE !i_sc.Near(0) ? Scale_image.Set_text(i_sc.S) ;
+	    	  ;
+	    	  -----------------------------
+		 ELSE LIKE .............. 'shift__scale__rotate', BUT(_1==>)*4 ;
 	;
 	----------------------- 'load all spirals:'
 	FOR i IN [0 TO sec[].Count-1] :
@@ -3918,7 +3924,8 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     .
     
 METHOD Save_gal|axy(STR Filename|_to_save_to, 
-BOOL Preserve_stamp|_commands_OTHERWISE_ask) 
+BOOL Preserve_stamp|_commands_OTHERWISE_ask,
+BOOL For_coll|ection) 
     :
 	DEBUG: "saving gal -- " Filename #NL ;
     {In_file_config} c|onfiguration_temp
@@ -3931,13 +3938,18 @@ BOOL Preserve_stamp|_commands_OTHERWISE_ask)
 	     c.Set_r("Mass_BH", Mass_BH.Text.Real)
 	     ----------------------- '+image'
 	     c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
+	     c.Set_b("Mirrored", Image_mirrored)
          //DEBUG: "saving Offset_x=" Main_.Offset_x " Offset_y=" Main_.Offset_y 
          // #NL ;
-	     c.Set_r("ShiftX", Main_.ShiftX)	
-	     c.Set_r("ShiftY", Main_.ShiftY)
-	     c.Set_r("Image_rotate", Rotate_image.Text.Real)
-	     c.Set_r("Image_scale", Scale_image.Text.Real)
-	     c.Set_b("Mirrored", Image_mirrored)
+	     CASE For_coll ?
+	          -------------------------------- 'shift__rotate__scale', REUSED
+		      c.Set_r("ShiftX_1", Main_.ShiftX)	
+		      c.Set_r("ShiftY_1", Main_.ShiftY)
+		      c.Set_r("Image_rotate_1", Rotate_image.Text.Real)
+		      c.Set_r("Image_scale_1", Scale_image.Text.Real)
+		      -----------------------
+	     ;
+	     LIKE .......... 'shift__rotate__scale', BUT(_1==>)*4
 	     ----------------------- '+last transform'
 	     c.Set_s("Last_transform", Last_transform)
 	     c.Set_s("Last_img_name", Main_.All_img_names[0])

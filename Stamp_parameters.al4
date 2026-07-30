@@ -432,8 +432,6 @@ BOOL Back_24|_bitmap_is[]
 
 
 OVERRIDE click :
-	PUSH Main_.Satellite_param.Lock_img_select = TRUE :
-		 Any_change     
     CASE sender_alias ?
     ["BUTTON_CANCEL"]: Cancelling = TRUE
     	DEBUG: "CANCELLING!!!"#NL ;
@@ -608,9 +606,8 @@ OVERRIDE click :
 
         ;
     ; 
-    DEBUG: "Holder[]:" Holder.Count 
-    	 " Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
-    ;
+    //DEBUG: "Holder[]:" Holder.Count 
+    //     " Checksums: " Main_.Checksums_of_images[].Merge(",") #NL ;
     .
     
 METHOD hint_from_commands :
@@ -726,7 +723,7 @@ OVERRIDE mouse_up :
 
 OVERRIDE disabled ==> BOOL :
     CASE sender_alias ? 
-    ["BUTTON_CANCEL"]: RESULT = !Main_.Satellite_param.Lock_img_select
+    ["BUTTON_CANCEL"]: RESULT = Executing == 0
     ["INC_DEC_SHIFT", "COPY_BITMAP"]: 
          RESULT = Main_.Satellite_param.Locked_images
     ["USE_FILE"]: RESULT = Stamp_type.Current >= 1
@@ -2159,7 +2156,7 @@ METHOD Execute_commands|_stored_earlier(STR Commands_s|equence[]) :
 	    	 Main_.Satellite_param.Thumbnails.Invalidate_all
 	    	 Main_.Satellite_param.Process
 	    	 Main_.PBox.Invalidate_all
-	    	 Main_.Process
+	    	 //Main_.Process
 	     ;
     ; .
 
@@ -2188,9 +2185,7 @@ OVERRIDE menu_item :
     	{Bitmap} image_s|aving_TEMP = Main_.Image
         NONE = image_s.To_clipboard
     ["SAVE_TO_FILE"]: Save_to_file 
-    ["COMMAND_FROM_FILE"]:
-        PUSH Main_.Satellite_param.Lock_img_select = TRUE :
-             Commands_from_file ;
+    ["COMMAND_FROM_FILE"]: Commands_from_file
     ; .
     
 METHOD Save_to_file :

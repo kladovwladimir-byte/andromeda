@@ -552,7 +552,7 @@ METHOD Paint_to2(
 	               Satellite_param.Collection_gal.Prepare_overlay(
 	               	Current_image.Min(1))
 	               --------------- 'transform as parameters for gal[0] set'
-	               {point} sh|ifting_1 = Satellite_param.Collection_gal.Offset_1
+	               {point} sh|ifting_1 = Satellite_param.Collection_gal.Shift_1
 	               	.CLONE
 	               	
                    //DEBUG: "trasformation overlay_1: " 
@@ -581,8 +581,22 @@ METHOD Paint_to2(
 	               		          .Overlay_inverted.Checked 
 	               		          ?  
 	               		          c.Foreground = BLACK ;
-                             //DEBUG: "want draw spirals 1 ["
-                             //   "" Starts_dots[].Merge("=") "]"#NL ;
+                             //DEBUG: "want draw spirals 1 "
+                             //   " center=" Satellite_param
+                             //   .Collection_gal.Center_1.S
+                             //   " View_size=" View_size.S
+                             //   " View_size/2=" (View_size.X/2).S 
+                             //   " x " (View_size.Y/2).S #NL ;
+                             
+	               			 c.Reset_transform
+	               			 STR tv|alues_transforms[].Split(
+	               			 	Satellite_param.Collection_gal.Transform_1, ";")
+	               			 	 
+				             c.Offset(View_size.X/2, .Y/2)
+			                 c.Scale(tv[0].Real, tv[0].Real)
+			                 c.Rotate(tv[1].Real)
+				             c.Offset(-View_size.X/2, -.Y/2)
+				             c.Offset(tv[2].Real, tv[3].Real)
 	               		     FOR r IN [0 TO Starts_dots_1[].Count-2] :
 	               		         CASE Starts_dots_1[r] < Starts_dots_1[r+1] ?
 	               		              c.Poly(All_dots_1[Starts_dots_1[
@@ -591,6 +605,7 @@ METHOD Paint_to2(
 	               		;
 	               		;
 	               }
+	               c.Reset_transform
 	          ;
          ;
          --------------------- 'need brightness table?'
@@ -625,8 +640,12 @@ METHOD Paint_to2(
 	     c.Scale(scaleup, scaleup)
 	     c.Rotate(Satellite_param.Rotate_image.Text.Real)
 	     c.Offset(-View_size.X/2, -.Y/2)
-	     
 	     c.Offset(View_size.X * ShiftX / 100, .Y * ShiftY / 100)
+	     ----- 'store last spiral transform (for gal[0] to draw it over later)'
+	     Last_transform = "" scaleup.S ";" Satellite_param.Rotate_image.Text
+	     	";" (View_size.X * ShiftX / 100).S 
+	     	";" (View_size.Y * ShiftY / 100).S
+	ELSE Last_transform = ""
 	;
 	------------ 'color for secondary spiral'
 	STR d_c|olors[].Split(Satellite_param.Edit_line_w.Text, " ")
@@ -1499,6 +1518,8 @@ INT pass|_arm_number,
 {point} Last_pt_change|_brightness
 INT is_dark|_porion
 INT last_offset_p|oint_to_draw_zigzag
+STR Last_transform
+STR Last_transform_1
     
 	
 METHOD finish_round(
@@ -2002,7 +2023,7 @@ OVERRIDE key_down ==> {Form}.{action} :
 
 OVERRIDE mouse_wheel ==> BOOL :
 	CASE Key.Control ?
-		 CASE Satellite_param.Lock_img_select ? ==> ;
+		 CASE Satellite_param.Stamp_param.Visible && .Executing > 0 ? ==> ;
 		 Save_current_image(FALSE)     
 		 CASE vertical_wheel > 0 ?
 		      CASE Current_image > 0 ? 
