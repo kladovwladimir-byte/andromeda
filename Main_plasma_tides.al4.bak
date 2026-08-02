@@ -597,6 +597,9 @@ METHOD Paint_to2(
                          .Collection_gal.Prepare_overlay(Scaled_img_1, D_o_1) 
                          
 	               c.Reset_transform
+	               //ub.Draw(c, D_o_1.Loc)
+	               //ub.Draw(c, Pt(0,0))
+	               	//.Draw(c, Satellite_param.Collection_gal.Scaled_img_1.Loc)
 	               	
                    //DEBUG:
                    //      {Png}.To_file(ub,
@@ -759,6 +762,8 @@ METHOD Paint_to2(
 		[5]: c.Pen_width = 8
              ------------------- 'single sat (current only)', REUSED
 			 show_spiral = sat1.INDEX == Satellite_param.Satellite_num.Current
+             //CASE sat.INDEX <> Satellite_param.Satellite_num.Current ?
+             //     CONTINUE sat ;
              --------------------
 		[6]: c.Pen_width = 2
 			 LIKE .............. 'single sat (current only)'
@@ -1051,7 +1056,7 @@ METHOD Paint_to2(
 				  ------------------------- 'some lines here'
 				  arm_c = sat.ArmsColors * 2
 				  PUSH c.Foreground = WHITE.Mix(color_of_arm(arm_c)) :
-				 	   v = Vector_3(View_size.X, 0, 0) * M_transform
+				 	   v = Vector_3(View_size.X, 0, 0) * M_transform // M_rot_proj
 				 	   ---------------- 'large axis of the orbit', REUSED
 		 			   CASE !rotate_s.Near(0) || !rotate_p.Near(0) ? 
 			 			    v = v * mat_rotate_s * mat_rotate_p ;
@@ -1065,7 +1070,7 @@ METHOD Paint_to2(
 		 			   
 				 	   ---------------- 'small axis of the orbit'
 				 	   
-				 	   v = Vector_3(0, PBox.Height, 0) * M_transform
+				 	   v = Vector_3(0, PBox.Height, 0) * M_transform // M_rot_proj
 				 	   LIKE .......... 'large axis of the orbit'
 				 	   c.Dashed_line(5, 5, 
 				 	   	P1=Pt(xx - v.[0], yy + v.[1]), 
@@ -1228,6 +1233,7 @@ INT pass|_arm_number,
              ------------------------ 'next__point', REUSED
              i_point += 1
              CASE i_point >= orbit.Points[].Count ?
+                  //start_time += orbit.Points[*].T
                   start_time += orbit.Total_time
                   i_point -= orbit.Points[].Count
                   CASE polygons { 
@@ -1252,6 +1258,11 @@ INT pass|_arm_number,
              REAL speed_i|_point = sat.SpeedK
              CASE pass > 2 ? speed_i = sat.FinalK ;
              CASE speed_i <= 0 ? ==> ;
+        //[sat.FinalK > 0 && sat.Eccentricity > 0] ?
+        //     speed_i = (ep.R - orbit.Q_min) / (.Q_max - .Q_min)
+        //     CASE Satellite_param.Alter_plasma_speed ?
+        //          speed_i = sat.FinalK - _ * (.FinalK - .SpeedK)
+        //     ELSE speed_i = sat.SpeedK + _ * (.FinalK - .SpeedK) ;
              //DEBUG: "speed_k=" sat.SpeedK " final_k=" sat.FinalK 
              //       " e=" sat.Eccentricity
              //       " speed_" i_point "/" orbit.Points[].Count 
@@ -1355,11 +1366,13 @@ INT pass|_arm_number,
         CASE do_calc ?
              calculations_one_point(Pt(xx, yy), Pt(xx0, yy0), c)
         ;
+        //CASE Store_dots ?
              CASE All_dots[].Count <= All_dots_count ? 
                   All_dots[].Allocate(All_dots_count 
                   	+ (All_dots_count.Max(16_384)).Min(1000_000)) ;
              All_dots[All_dots_count] = Pt(xx, yy).CLONE
              All_dots_count += 1 
+        //;
         ------------------------- 'draw next or skip'
         PUSH xx :
         PUSH yy :
@@ -1498,6 +1511,7 @@ INT pass|_arm_number,
                       [(xx - prev.X).Abs < one_px > (yy - prev.Y).Abs] ? 
                       	   actual_draw = FALSE
                       ELSE actual_draw = TRUE 
+                           //-c.Line(Pt(xx, yy), prev) 
                       ;
                       -------------------------------
                  ;
@@ -1619,6 +1633,13 @@ METHOD provide_matrices(
          && Satellite_param.Transform_model.Active.Checked
          ?
          u -= Satellite_param.Transform_model.Rotation.Text.Real / 180 * PI
+         //CASE Satellite_param.Transform_model.Scaleing.Text != "" ? 
+         //     CASE Satellite_param.Transform_model.Scale_relative.Checked ? 
+         //          m = m
+         //          +m * Satellite_param.Transform_model.Scaleing.Text.Real / 100
+         //     ELSE m = m 
+         //          * Satellite_param.Transform_model.Scaleing.Text.Real / 100 ;
+         //;
     ;
     --------------------------------------------- 'calc__lines2'
     line_1 = Vector_3(Cos(u) * m, Sin(u) * m, 0)
@@ -1678,8 +1699,11 @@ REAL proj0|ection_rotation_start
 BOOL change_incl|ination
 REAL incl0|ination
 
+//BOOL change_start|ing_angle
 BOOL change_tilt|_angle
 REAL tilt_0|ing_angle
+//REAL start0|ing_angle
+//INT time_0|_offset
 
 REAL rotate_p0
 REAL rotate_s0
@@ -1729,6 +1753,8 @@ PUSH processing_mouse = TRUE : down_time = Now
 	------------------------------- 'prepare to undo later'
 	Stack_undo[] << Satellite_param.All_satellites[.Satellite_num.Current].CLONE
 	PBox.Invalidate_all 
+    //CASE rmb_down ?
+    //     Satellite_param.Show ;
 ;	.
 	
 OVERRIDE mouse_up :
@@ -1783,7 +1809,11 @@ METHOD pixel_under_mouse :
 	Last_mouse_pt = mouse.Offset(-PBox.Left, -PBox.Top)
 	CASE Last_pixel==NONE ? 
 	     Last_pixel = New_bitmap_direct(2, 2, 32) ;
-
+                       //c.Copy_rect({rect}(W= ww.Points_to_pixels,
+                       //       H= h_box.Points_to_pixels),
+                       //Cache_image.Canvas,
+                       //{rect}(W= ww.Points_to_pixels,
+                       //       H= h_box.Points_to_pixels))
 	CASE Cache_image != NONE ? 
 		 CASE 0 <= Last_mouse_pt.X < Cache_image.Width.Pixels_to_points 
 		      && 0 <= Last_mouse_pt.Y < Cache_image.Height.Pixels_to_points
@@ -2072,10 +2102,12 @@ METHOD Select_spiral_by_wheel(REAL Delta|_wheel) :
 	CASE Delta < 0 ? 
 	     CASE Satellite_param.Satellite_num.Current < .Count-1 ?
 	          INT to_s|atellite_index = Satellite_param.Satellite_num.Current+1
+	          //Satellite_param.Satellite_num.Select(.Current+1)
 	     ELSE ==>
 	     ;
 	ELSE 
 		 CASE Satellite_param.Satellite_num.Current > 0 ? 
+		      //Satellite_param.Satellite_num.Select(.Current-1)
 		      to_s = Satellite_param.Satellite_num.Current-1
 		 ELSE ==>
 		 ;
@@ -2099,7 +2131,7 @@ METHOD Save_current_image(BOOL Add_new|_image) :
 	          All_rotations[] << Satellite_param.Rotate_image.Text.Real
 	     ;
 	     All_images[Current_image] = Image
-	     All_scaled[Current_image] = NONE
+	     All_scaled[Current_image] = NONE // Scaled_image
 	     All_scales[Current_image] = Satellite_param.Scale_image.Text.Real
 	     All_rotations[Current_image] = Satellite_param.Rotate_image.Text.Real
 	;
@@ -2163,6 +2195,7 @@ METHOD prepare_brightness_table :
     ------------------------- 'prepare temp image with points as sizes'
     Scaled_image.Stretch_draw(temp_bmp.Canvas, {rect}(
     	W=wp.Pixels_to_points, H=hp.Pixels_to_points))
+    	//W=temp_bmp.Width.Pixels_to_points, H=temp_bmp.Height.Pixels_to_points))
 
     //DEBUG: 
     //      {Bmp}.To_file(Scaled_image, "Scaled_image.bmp") 

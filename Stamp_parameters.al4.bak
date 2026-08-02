@@ -795,6 +795,7 @@ BOOL create_new|_image)
     stamp.Value = Value.Text.Int
     stamp.Convert_dist = Convert_colors.Current
     stamp.Use_file = Use_file.Checked
+    //stamp.Iterations = Iterations_count.Text.Int
     ------------------------------ 'more parameters'
     stamp.Radial = Stamp_type.Current IN [1, 3]
     stamp.Experimental = Stamp_type.Current

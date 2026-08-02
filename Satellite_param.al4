@@ -105,7 +105,7 @@ METHOD before_CONSTRUCT: .
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://4D8E1E04 Do not change manually (created by Form Designer)
+CONSTRUCT://283DCD66 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -161,7 +161,11 @@ PUSH in_construct = TRUE :
 	---------------------- 'DIALOG_LOAD'
 	Dialog_load = New_dialog_open(THIS, "DIALOG_LOAD")
 
-	...Filter = "Galaxy models (*.gal) and collections (*.col)|*.gal;*.gal2;*.col"
+
+	...Filter = "Galaxy models (*.gal) and collections (*.col)|*.gal;*.gal2;*.col|"
+"Galaxy collections (*.col)|*.col|Galaxy main models (*.gal)|*.gal|Galaxy addit"
+"ional collections (*.gal2)|*.gal2"
+
 	...Default_ext = "gal"
 	----------------- 'DIALOG_FILE_SAVE'
 	Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE_SAVE")
@@ -245,10 +249,10 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
-"#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -3023,6 +3027,14 @@ OVERRIDE key_down ==> {Form}.{action} :
 		     CASE Collection_gal == NONE ?
              	Collection_gal = {Collection_gal}(Main_=Main_, Screen_=Screen_) ;
     		 Collection_gal.Show
+		 [PAGE_UP]:
+		     CASE Collection_gal.Visible ? 
+		          Collection_gal.Prev_line 
+		          RESULT = 'DECLINE' ;
+		 [PAGE_DOWN]:
+		     CASE Collection_gal.Visible ? 
+		          Collection_gal.Next_line 
+		          RESULT = 'DECLINE' ;
 		 ;
 	; .
 	     

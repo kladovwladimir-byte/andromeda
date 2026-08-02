@@ -4,7 +4,7 @@ CLASS {Transform_model|_form}, UNTESTED:
 
 IMPORT {Form_common} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
-IMPORT: {Main_plasma_tides}, {Satellite_param}.
+IMPORT: {Main_plasma_tides}, {Satellite_param}, {Collection_gal}.
 
 BASE CLASS: {Form_common} .
 
@@ -244,25 +244,26 @@ OVERRIDE mouse_move :
 	     || !Bounds.Contains(Mouse_cur)
 	     || !Global_key(L_BUTTON) 
 	     ? ==> ;
+	REAL m|iltiplyer = 1
+	CASE Key.Shift ? m = 0.1 ;
 	CASE ?
 	[change_rotate] ? 
 	    REAL new_v|alue = rotate_0 
-	    		+ (mouse.X - Down_pos.X) * 180 / Label_rotate.Width
+	    		+ (mouse.X - Down_pos.X) * m * 180 / Label_rotate.Width
 	    		
 	    new_v = ((_ * 10).Int / 10.0).mod180
 	    Rotation.Set_text(new_v.S)
 	[change_scale] ? 
-	    new_v = scale_0 + (mouse.X - Down_pos.X) * scale_0 /Label_scale.Width /2
+	    new_v = scale_0 + (mouse.X-Down_pos.X)* m *scale_0 /Label_scale.Width /2
 	    new_v = ((_ * 10).Int / 10.0)
-	DEBUG: "sc0=" scale_0 " mX=" mouse.X "dX=" Down_pos.X 
-		" Lw=" Label_scale.Width " new_v=" new_v #NL ;
+    //DEBUG: "sc0=" scale_0 " mX=" mouse.X "dX=" Down_pos.X 
+    //    " Lw=" Label_scale.Width " new_v=" new_v #NL ;
 	    Scaleing.Set_text(new_v.S)
 	[!Bar.Bounds.Contains(mouse)] ? ==>     	
 	[R_down] ?
 	     X_offset = (mouse.X - Bar.Bounds.Loc.X) * 1.0 / Bar.Width
 	     Y_offset = (mouse.Y - Bar.Bounds.Loc.Y) * 1.0 / Bar.Height
 	[L_down] ?
-		REAL m|iltiply = 0.1
 		REAL dX|_delta_X = mouse.X - Down_pos.X
 		REAL dY|_delta_Y = mouse.Y - Down_pos.Y
 		REAL rA|ngle_rotate = Main_.Satellite_param.Rotate_image.Text.Real
@@ -289,6 +290,17 @@ OVERRIDE mouse_up :
 OVERRIDE mouse_wheel ==> BOOL :
 	Main_.Select_spiral_by_wheel(vertical_wheel) .
 	
+
+OVERRIDE key_down ==> {Form}.{action} :
+	CASE Key.Special ? 
+	[PAGE_UP]: 
+	    CASE Main_.Satellite_param.Collection_gal.Visible ? 
+	         Main_.Satellite_param.Collection_gal.Prev_line ;
+	[PAGE_DOWN]:
+	    CASE Main_.Satellite_param.Collection_gal.Visible ? 
+	         Main_.Satellite_param.Collection_gal.Next_line ;
+	;
+	.
 END
 
 */
