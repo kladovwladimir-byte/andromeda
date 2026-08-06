@@ -37,7 +37,6 @@ BASE CLASS: {Form_common} .
 {Dialog_file} Dialog_image
 {Button} Load_under_image
 {Combo} Show_spirals
-{Paint_turtle} Save_load
 {Paint_turtle} Add_spiral|_button
 {Combo} List_lang|uages
 {Label} LabelXLang
@@ -99,13 +98,16 @@ BASE CLASS: {Form_common} .
 {Paint_turtle} Line_width_1
 {Memo} Label_url
 {Checkbox} Time_distortion
+{Paint_turtle} Save_load
+{Label} Label_1 | _773620_726243
+{Button} Copy_url
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://283DCD66 Do not change manually (created by Form Designer)
+CONSTRUCT://2CEA46A1 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -164,7 +166,7 @@ PUSH in_construct = TRUE :
 
 	...Filter = "Galaxy models (*.gal) and collections (*.col)|*.gal;*.gal2;*.col|"
 "Galaxy collections (*.col)|*.col|Galaxy main models (*.gal)|*.gal|Galaxy addit"
-"ional collections (*.gal2)|*.gal2"
+"ional collections (*.gal2)|*.gal2|Backup models|*.gal.bak;*gal.bk?"
 
 	...Default_ext = "gal"
 	----------------- 'DIALOG_FILE_SAVE'
@@ -249,10 +251,13 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
+"#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -400,7 +405,7 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Line width:")
 	---------------------- 'EDIT_LINE_W'
-	Edit_line_w = New_edit(THIS, "EDIT_LINE_W")
+	Edit_line_w = New_text_edit(THIS, "EDIT_LINE_W", "N")
 
 	...Set_text("1")
 	--------------------- 'LINE_WIDTH_1'
@@ -511,13 +516,18 @@ PUSH in_construct = TRUE :
  "LABEL_FILE",
  MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY)
 
-	...Set_height(50)
+	...Set_height(90)
 	------------------------ 'LABEL_URL'
 	Label_url = New_memo(THIS,
  "LABEL_URL",
  MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY)
+	...Set_anchor_bottom(TRUE)
+	-------------------------- 'LABEL_1'
+	Label_1 = {Label}(Form_=THIS, Alias="LABEL_1")
 
-	...Set_height(50)
+	...Set_text("")
+	------------------------- 'COPY_URL'
+	Copy_url = New_button(THIS, "COPY_URL", "Copy URL"), >> grayable[]
 	------------------------------------------------------------- 'column COL_3'
 	new_column("COL_3", 'BOTTOM', DEFAULT_SIZES)
 
@@ -555,8 +565,6 @@ PUSH in_construct = TRUE :
 "Single spiral, bolder"
 "None (hide all spirals)")
 	...Set_anchor_bottom(TRUE)
-
-	...Set_width(150)
 	---------------------- 'LABELTRANSP'
 	LabelTransp = {Label}(Form_=THIS, Alias="LABELTRANSP")
 
@@ -574,12 +582,16 @@ PUSH in_construct = TRUE :
 "15%"
 "10%")
 
-	...Set_width(50)
+	...Set_width(60)
 	------------------------ 'SAVE_LOAD'
 	Save_load = New_paint_turtle_button(THIS,
  "SAVE_LOAD",
- "5R25DL40LL40UR25RR40DBR"
-  "40RR40 UL40 (D50ULL17LL50B)3")
+ "20RD(60LL)4 LL15RR15LL3"
+
+  "0LL15 UB40RR12D (5RR)4 UBL48L10BL15DL15R20 R50B50 RR40RR50RR40R20L15RR50URR "
+"1"
+
+  "10RR10LL (D60URR25RR60B)3")
 
 
 	...Set_width(54)
@@ -1108,7 +1120,8 @@ OVERRIDE value_change :
     All_satellites[Satellite_num.Current] = s.CLONE
     ;
     CASE !renaming ? Copy_params_same_spiral ;
-    need_invalidate = TRUE .
+    need_invalidate = TRUE 
+    Save_options .
     
 METHOD auto_final_speed(
 {satellite_param} s|atellite_changing) ==> {satellite_param}
@@ -1150,6 +1163,8 @@ STR old_line_w|idth = "1"
 
 OVERRIDE click :
     CASE sender_alias ?
+    ["COPY_URL"]:
+        	Label_url.Text.Text_to_clipboard
     ["CHANGE_SCALE"]:
         INT old_sc|ale = Scale_image.Text.Int
         CASE Change_scale.Current ? 
@@ -1484,6 +1499,7 @@ OVERRIDE click :
         	;
 	        Main_.Rescale
 	        Main_.Invalidate
+	        Update_label_select_num
         ELSE 
         	------------------ 'menu spirals'
         	popup_menu(
@@ -1530,10 +1546,14 @@ OVERRIDE click :
 
 	""	Item(	"COPY_CENTER",
 				"Copy current satellite center"
+		).Hotkey(
+		"Control+Y, F3"
 		)
 
 	""	Item(	"PASTE_CENTER",
 				"Use copied center as the spiral center"
+		).Hotkey(
+		"Control+U, F4"
 		))
 
 
@@ -1589,8 +1609,13 @@ OVERRIDE click :
     	    CASE url_saved ? 
     	         message("Saved togeher with URL: " url) ;
         ["Load"]:
+            Load_Control_pressed = Key.Control
         	CASE !Dialog_load.Select_file ? ==> ;
         	CASE Dialog_load.Filename.Ext LIKE ".col" ? 
+        	     CASE Load_Control_pressed ? 
+        	          message("While loading .col file do not press Control "
+        	          "key, it is to download .gal files without changing "
+        	          "image / scaling / rotation etc.") ==> ;
         	     Provide_collection_gal
         	     Collection_gal.Load_collection(Dialog_load.Filename) ==>
         	;
@@ -2329,6 +2354,8 @@ PUSH processing_mouse = TRUE :
 	     dragging = sender 
 		 mouse_pos0 = mouse
 		 is_0_360 = FALSE
+		 DEBUG: "####### mouse down on " sender_alias #NL ;
+		 mouse_down_on = sender_alias
 		 CASE sender_alias ? 
 		 ["LABEL_LINE_W"]: editing = Edit_line_w
 		 	range_fr = 0.5
@@ -2393,9 +2420,14 @@ PUSH processing_mouse = TRUE :
 		 ["LABEL_LAST_ACTIVITY"]: editing = Last_activity
 		 	LIKE ............................. 'activity__cut'
 		 ["LABEL_ROTATEIMAGE"]:	editing = Rotate_image
-		 	LIKE ........................ '0__360'
+		 	//LIKE ........................ '0__360'
+		 	is_0_360 = TRUE
+		 	range_fr = (editing.Text.Real - 45)
+		 	range_to = (editing.Text.Real + 45)
 		 ["LABEL_SCALEIMAGE"]: editing = Scale_image
-		 	LIKE ........................... 'box__width'
+		 	//LIKE ........................... 'box__width'
+		 	range_fr = (editing.Text.Real * 0.8 - 10).Int.Max(0.1)
+		 	range_to = (editing.Text.Real * 1.2 + 10).Int 
 		 ["LABEL_SPEED_FILTER"]:
 		    CASE mouse_button == 'RMB' ? 
 		         Filtering_by_speed = !_
@@ -2410,6 +2442,9 @@ PUSH processing_mouse = TRUE :
 		 ELSE dragging = NONE ==> ;
 		 -------------------------------- 'save initial values'
 		 value_start = editing.Text.Real
+		 DEBUG: "editing starting(" sender_alias 
+		 	"): value_start=" value_start " mouse_pos0=" mouse_pos0.S
+		 	" fr=" range_fr " to=" range_to #NL ;
 		 start_value_period = Period_rot.Text.Real
 		 start_value_plasma_speed = Plasma_speed.Text.Real
 		 start_value_activity = Activity_time.Text.Real
@@ -2417,10 +2452,15 @@ PUSH processing_mouse = TRUE :
 		 Main_.Stack_undo[] << All_satellites[Satellite_num.Current].CLONE
 	; 
 	down_with_shift = Key.Shift
-	CASE Key.Shift ? 
-	     range_fr = editing.Text.Real - (.Real - _)/5 
-	     range_to = editing.Text.Real + (_ - .Real)/5
-	     ;
+	CASE range_fr > range_to ? 
+	     REAL temp1|_fr = range_fr
+	     REAL temp2|_to = range_to
+	     range_to = temp1
+	     range_fr = temp2 ;
+    //CASE Key.Shift ? 
+    //     range_fr = editing.Text.Real - (.Real - _)/5 
+    //     range_to = editing.Text.Real + (_ - .Real)/5
+    //     ;
 ;	.
 	
 BOOL Enable_filtering = TRUE
@@ -2441,48 +2481,45 @@ REAL start_value_box_width
 BOOL down_with_shift
 
 BOOL processing_mouse
+STR mouse_down_on
 
 
 OVERRIDE mouse_move :
+CASE !Bounds.Contains(Mouse_cur) ? 
+     dragging = NONE
+     editing = NONE ==> ;
 CASE processing_mouse ? ==> ;
 PUSH processing_mouse = TRUE :
-    CASE dragging==NONE || !Main_.Global_L_button ? ==> ;
-	BOOL neg|ative = value_start < 0 
-		 .. &&= Deviation_angle != editing != Inclination
-		 .. &&= Final_deviation != editing
+    CASE dragging==NONE || !Main_.Global_L_button 
+         || sender_alias != mouse_down_on 
+         ? ==> ;
+    //BOOL neg|ative = value_start < 0
+    //     .. &&= Deviation_angle != editing != Inclination
+    //     .. &&= Final_deviation != editing
+    REAL vs|tart_value = value_start
 	BOOL is_m180_180 = range_fr.Near(-180) && range_to.Near(180)
-	CASE neg && !is_m180_180 ?
+	CASE !is_m180_180 ?
 		 CASE mouse.X < mouse_pos0.X ? 
-			  REAL new_val|ue = value_start.Abs
-			  - (value_start.Abs - range_fr.Abs) * (mouse_pos0.X - mouse.X) 
+			  REAL new_val|ue = vs
+			  - (vs - range_fr) * (mouse_pos0.X - mouse.X) 
 			 							 / (mouse_pos0.X - dragging.Bounds.Left)
-		 ELSE new_val = value_start.Abs 
-			  + (range_to.Abs - value_start.Abs) * (mouse.X - mouse_pos0.X)
+		 ELSE new_val = vs 
+			  + (range_to - vs) * (mouse.X - mouse_pos0.X)
 			 							 / (dragging.Bounds.Right - mouse_pos0.X)
 		 ;
 		 CASE ?
-		 [new_val < range_fr.Abs] ? new_val = range_fr.Abs 
-		 [new_val > range_to.Abs] ? new_val = range_to.Abs ;
-		 new_val = -_
+		 [new_val < range_fr] ? new_val = range_fr 
+		 [new_val > range_to] ? new_val = range_to ;
+		 //new_val = -_
 	ELSE
-	     REAL vs|tart_value = value_start
-	     //BOOL is_0_360 = range_fr.Near(0) && range_to.Near(360)
 		       
 		 CASE mouse.X < mouse_pos0.X ? 
-		      CASE ?
-              //[is_0_360 && vs <= 0] ?
-              //    DEBUG: "correct vs: " vs " to " (vs+360) #NL ;
-              //    vs += 360
-		      [is_m180_180 && vs.Near(-180)] ? vs = 180 ;
+		      CASE is_m180_180 && vs.Near(-180) ? vs = 180 ;
 			  new_val = vs
 			  - (vs - range_fr) * (mouse_pos0.X - mouse.X) 
 			  					/ (mouse_pos0.X - dragging.Bounds.Left)
 		 ELSE 
-		      CASE ?
-              //[is_0_360 && vs >= 360] ?
-              //    DEBUG: "correct vs: " vs " to " (vs-360) #NL ;
-              //    vs -= 360
-		      [is_m180_180 && vs.Near(180)] ? vs = -180 ;
+		      CASE is_m180_180 && vs.Near(180) ? vs = -180 ;
 		 	  new_val = vs 
 			  + (range_to - vs) * (mouse.X - mouse_pos0.X)
 			  					/ (dragging.Bounds.Right - mouse_pos0.X)
@@ -2491,11 +2528,15 @@ PUSH processing_mouse = TRUE :
 		 [new_val < range_fr] ? new_val = range_fr 
 		 [new_val > range_to] ? new_val = range_to ;
 	;
+	DEBUG: "vs=" vs " dX=" (mouse.X - mouse_pos0.X) 
+	 	   " w=" (dragging.Bounds.Right - mouse_pos0.X) 
+	 	   "new=" new_val #NL ;
 	PUSH sender_ = editing :
 		 CASE ?
 		 [!down_with_shift] ?
 		      CASE ?
-		      [editing == Edit_line_w] ?
+		      [editing==Edit_line_w || editing==Rotate_image 
+		       || editing==Scale_image] ?
 		           new_val = (_ * 10).Int / 10.0
 		      [Final_plasma_speed == editing || editing == Plasma_speed] ?
 		           new_val = (_ * 1000).Int / 1000.0 
@@ -2616,7 +2657,7 @@ PUSH processing_mouse = TRUE :
 			 CASE is_0_360 ? 
 			      CASE new_val >= 180 ? new_val -= 360 ;
 			      CASE new_val < -180 ? new_val += 360 ;
-			      editing.Set_text(new_val.Int.S)
+			      editing.Set_text(new_val.S_float(1))
 			 ;
 	    ;
 	dragging = NONE 
@@ -2790,17 +2831,8 @@ OVERRIDE menu_item :
     ["SPEED_ONLY_SECOND"]:
         CASE Show_speed != 2 ? Show_speed=2 ELSE Show_speed=0 ;
     ["SAME_MAX_DIST"]: Same_max_dist = !_
-    ["COPY_CENTER"]:
-        Center_copied = All_satellites[Satellite_num.Current].Center_gal.CLONE
-    ["PASTE_CENTER"]:
-        CASE Center_copied.X.Near(0)&&Center_copied.Y.Near(0) ? NONE 
-        ELSE {satellite_param} sp|aram_current 
-             sp = All_satellites[Satellite_num.Current].CLONE
-             sp.Center_gal = Center_copied.CLONE
-             All_satellites[Satellite_num.Current] = sp.CLONE
-             Main_.Offset_x = sp.Center_gal.X
-             Main_.Offset_y = sp.Center_gal.Y
-        ;
+    ["COPY_CENTER"]: Copy_center
+    ["PASTE_CENTER"]: Use_center
     ["USE_24"]: Use_bitmaps_24 = !_
     ["ALL_CENTERS_HERE"]:
         FOR sat IN All_satellites[Satellite_num.Current+1 TO *] :
@@ -2845,6 +2877,7 @@ OVERRIDE menu_item :
         LIKE after_CONSTRUCT ............. 'initial__spiral'
         Set_caption(caption_loc)
         Main_.Rescale
+        Update_label_select_num
     ["EACH_10000_Y"]: Each_10000_years = 10000
     ["EACH_5000_Y"]:  Each_10000_years = 5000
     ["EACH_3000_Y"]:  Each_10000_years = 3000
@@ -2940,6 +2973,7 @@ OVERRIDE menu_item :
         Satellite_num.Set_array(nn[])
         Satellite_num.Select(dn.Min(Satellite_num.Count-1))
         -------------------------------
+        Update_label_select_num
     ["DEL_RIGHT"]:
         CASE !ask("Spirals from " Satellite_num.Text " yo the end will be deleted."
              " (total " (All_satellites[].Count - Satellite_num.Current).S
@@ -2949,6 +2983,7 @@ OVERRIDE menu_item :
             dn = di
             LIKE .................... 'delete__dn'
         ;
+        Update_label_select_num
     ["MOVE_UP"]:
         {satellite_param} msp|_to_move 
         .. = All_satellites[Satellite_num.Current].CLONE
@@ -2987,8 +3022,12 @@ OVERRIDE menu_item :
     ; 
     need_invalidate = TRUE
     Main_.Invalidate 
+    Save_options
+    .
+    
+METHOD Save_options :
     ------------------------- 'save options'
-    conf = New_write_config("Multi-spiral-model", 'USER', "")
+    {Config} conf|_temp = New_write_config("Multi-spiral-model", 'USER', "")
     conf.Set_i("SCREENSHOT_SCALE", Screenshot_scale)
     conf.Set_r("LINE_WIDTH", Edit_line_w.Text.Real)
     conf.Set_i("TRANSPARENCY", Transparency_sel.Current)
@@ -3009,6 +3048,18 @@ OVERRIDE timer :
     ELSE BASE ; .
     
     
+METHOD Copy_center :
+	Center_copied = All_satellites[Satellite_num.Current].Center_gal.CLONE .
+	
+METHOD Use_center :
+    CASE Center_copied.X.Near(0)&&Center_copied.Y.Near(0) ? NONE 
+    ELSE {satellite_param} sp|aram_current 
+         sp = All_satellites[Satellite_num.Current].CLONE
+         sp.Center_gal = Center_copied.CLONE
+         All_satellites[Satellite_num.Current] = sp.CLONE
+         Main_.Offset_x = sp.Center_gal.X
+         Main_.Offset_y = sp.Center_gal.Y
+    ; .
     
 
 OVERRIDE key_down ==> {Form}.{action} :
@@ -3018,6 +3069,8 @@ OVERRIDE key_down ==> {Form}.{action} :
 	         CASE Key.Shift ? Redo ELSE Undo ; 
 	     [LETTER_T]:
 	     	 CASE !Transform_model.Visible ? Show_transform_model ;
+	     [LETTER_Y]: Copy_center
+	     [LETTER_U]: Use_center
 	     ;
 	ELSE
 		 CASE Key.Special ? 
@@ -3035,6 +3088,16 @@ OVERRIDE key_down ==> {Form}.{action} :
 		     CASE Collection_gal.Visible ? 
 		          Collection_gal.Next_line 
 		          RESULT = 'DECLINE' ;
+		 [HOME]:
+		     CASE Collection_gal.Visible ? 
+		          Collection_gal.List.Select(0, TRUE) 
+		          RESULT = 'DECLINE';
+		 [END_KEY]:
+		     CASE Collection_gal.Visible ? 
+		          Collection_gal.List.Select(.Count-1, TRUE) 
+		          RESULT = 'DECLINE';
+		 [F_3]: Copy_center
+	     [F_4]: Use_center
 		 ;
 	; .
 	     
@@ -3104,6 +3167,7 @@ METHOD draw_to|_bitmap(
 
 OVERRIDE disabled ==> BOOL :
     CASE sender_alias ?
+    ["COPY_URL"]: RESULT = Label_url.Text.Trim==""
     ["MAKE_SCREENSHOT", "LOAD_UNDER_IMAGE"]: RESULT = Locked_images
     //["DEL_IMAGE"]: RESULT = Main_.All_images[].Count <= 1
     ["OP_IMAGE"]: 
@@ -3719,10 +3783,11 @@ STR Filename, BOOL Can_ask|_question, BOOL For_coll|ection)
 	Dialog_file_save.Filename = Filename
 	c.Section = ""
     Url_loaded = ""
-	----------------------- 'restore last transform'
-	Last_transform = c.Str("Last_transform")
-	Last_img_name = c.Str("Last_img_name")
-	Last_frame = c.Int("Last_frame")
+    CASE !Load_Control_pressed ? 
+		 ----------------------- 'restore last transform'
+		 Last_transform = c.Str("Last_transform")
+		 Last_img_name = c.Str("Last_img_name")
+		 Last_frame = c.Int("Last_frame") ;
 	----------------------- 'renumber satellites sections'
 	STR sec|tions_list[]
 	c.List_subkeys(sec[])
@@ -3730,36 +3795,40 @@ STR Filename, BOOL Can_ask|_question, BOOL For_coll|ection)
 	    sec[i-1] = i.S ;
 	c.Rename_subkeys(sec[0 TO *])
 	----------------------- 'common:'
-	CASE !Key.Shift || Box_width.Text.Real <= 0 ?
+	CASE !Load_Control_pressed && (!Key.Shift || Box_width.Text.Real <= 0) ?
 	     Box_width.Set_text(c.Real("Box_width").S) 
          //DEBUG: "in box width: " c.Real("Box_width") 
          //       ", Text-->" Box_width.Text #NL ;
 	     ;
-	CASE !Key.Shift || Mass_BH.Text.Real <= 0 ?
+	CASE !Load_Control_pressed && (!Key.Shift || Mass_BH.Text.Real <= 0) ?
 	     Mass_BH.Set_text(c.Real("Mass_BH").S) 
          //DEBUG: "in mass bh: " c.Real("Mass_BH") 
          //       ", Text-->" Mass_BH.Text #NL ;
 	;
-	CASE !Key.Shift || For_coll ?
+	CASE !Load_Control_pressed && (!Key.Shift || For_coll) ?
 	     Scale_rotate_spirals = c.Bool("Scale_rotate_spirals")
 		 CASE For_coll && c.Present("ShiftX_1") ?
 		      REAL i_sc|ale_image
 		      ----------------------------- 'shift__scale__rotate', REUSED
-		      Satellite_num.Clear
 	    	  Main_.ShiftX = c.Real("ShiftX_1")
 	    	  Main_.ShiftY = c.Real("ShiftY_1")    
 	          //DEBUG: "loaded Offset_x=" Main_.Offset_x 
 	          //       " Offset_y=" Main_.Offset_y #NL ;
 	    	  Fill_scale_rotate
-		      All_satellites[].Clear 
 	    	  CASE !Preserve_scale_rot ? 
 	    	       ----------------------- 'image rotate, scale'
-		    	   Rotate_image.Set_text(c.Real("Image_rotate_1").S)
+		    	   Rotate_image.Set_text(c.Real("Image_rotate_1").S_float(1))
 		    	   i_sc = c.Real("Image_scale_1")
-		    	   CASE !i_sc.Near(0) ? Scale_image.Set_text(i_sc.S) ;
+		    	   CASE !i_sc.Near(0) ? Scale_image.Set_text(i_sc.S_float(1)) ;
+		    	   DEBUG: "......... loaded Image_rotate_1:" Rotate_image.Text
+		    	   " Image_scale_1:" Scale_image.Text #NL ;
 	    	  ;
 	    	  -----------------------------
-		 ELSE LIKE .............. 'shift__scale__rotate', BUT(_1==>)*4 ;
+		 ELSE LIKE .............. 'shift__scale__rotate', BUT(_1==>)*? ;
+	;
+	CASE !Key.Shift || For_coll ?
+		      Satellite_num.Clear
+		      All_satellites[].Clear
 	;
 	----------------------- 'load all spirals:'
 	FOR i IN [0 TO sec[].Count-1] :
@@ -3802,43 +3871,60 @@ STR Filename, BOOL Can_ask|_question, BOOL For_coll|ection)
 	Main_.Invalidate     
 	Main_.Stack_undo[].Clear
 	Main_.Stack_redo[].Clear
-	------------------ 'load URL'
 	c.Section = ""
-	Image_mirrored = c.Bool("Mirrored")
-	url = c.Str("URL")
-	CASE url != "" ? 
-	     FOR u IN Main_.All_img_URLs[] :
-	         CASE u==url ? 
-	              //url = "" 
-	              BREAK u ;
-	     ;
-	     Main_.All_img_URLs[0] = url
+	------------------ 'load URL'
+	CASE !Load_Control_pressed ?
+		 Image_mirrored = c.Bool("Mirrored")
+		 url = c.Str("URL")
+		 CASE url != "" ? 
+		      FOR u IN Main_.All_img_URLs[] :
+		          CASE u==url ? 
+		               //url = "" 
+		               BREAK u ;
+		      ;
+		      Main_.All_img_URLs[0] = url
+		 ;
+		 CASE url != "" && Can_ask
+		      && ask("URL was found been stored with the model loaded. "
+			  " Copy it to the clipboard? "#NL url) 
+			  ? 
+	    	  Url_loaded = url
+	    	  Text_to_clipboard(url)
+		 ;
+		 --------------------------- 'load comands ?'
+		 Checksum_img_loaded = 0
+		 Checksum2_img_loaded = 0
+		 CASE c.Present("Checksum") ? 
+		      INT ch|ecksum = c.Str("Checksum").From_hex 
+		      Checksum_img_loaded = ch ;
+		 CASE c.Present("Checksum2") ? 
+		      INT ch2|ecksum2 = c.Str("Checksum2").From_hex 
+		      Checksum2_img_loaded = ch2 ;
+		 Provide_stamp_param
+		 Commands_s[].Clear
+		 FOR i IN [0 TO MAX_INT-1] :
+		 	 STR sc|ommand = c.Str("Command" i.S)
+		 	 CASE sc=="" ? BREAK i ;
+		     Commands_s[] << sc
+		 ;
 	;
-	CASE url != "" && Can_ask
-	     && ask("URL was found been stored with the model loaded. "
-		 " Copy it to the clipboard? "#NL url) 
-		 ? 
-    	 Url_loaded = url
-    	 Text_to_clipboard(url)
-	;
-	--------------------------- 'load comands ?'
-	Checksum_img_loaded = 0
-	Checksum2_img_loaded = 0
-	CASE c.Present("Checksum") ? 
-	     INT ch|ecksum = c.Str("Checksum").From_hex 
-	     Checksum_img_loaded = ch ;
-	CASE c.Present("Checksum2") ? 
-	     INT ch2|ecksum2 = c.Str("Checksum2").From_hex 
-	     Checksum2_img_loaded = ch2 ;
-	Provide_stamp_param
-	Commands_s[].Clear
-	FOR i IN [0 TO MAX_INT-1] :
-	 	STR sc|ommand = c.Str("Command" i.S)
-	 	CASE sc=="" ? BREAK i ;
-	    Commands_s[] << sc
-	;
+    //CASE Collection_gal.Visible ?
+    //     Collection_gal.Process ;
+	Load_Control_pressed = FALSE
+	Update_label_select_num
+	.
+	
+METHOD Update_label_select_num :
+	LabelSelectSpiral.Set_text(.Text.remove_paren.Replace(":", 
+		"(of " All_satellites[].Count.S "):"))
     .
     
+FUN remove_paren|thesis(STR s|_my_be_with_paranthesis) ==> STR :
+	INT op|en_position = s.Find("(") 
+    CASE op < 0 ? RESULT = s ==> ;
+    RESULT = s.[0 TO op-1] s.After(")") .
+    
+BOOL Load_Control_pressed
 INT Limit_image_size|_Megapixels = 10 
     
 METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
@@ -4002,6 +4088,7 @@ BOOL For_coll|ection)
               //           CASE old_cmd=="" ? BREAK i ;
               //       ;
               //;
+	     Commands_changed = FALSE
 	     CASE Commands_s[].Count > 0 ?
 	          FOR i IN [0 TO Main_.All_images[].Count-1] :
 	              INT ch|ecksum = Main_.Checksums_of_images[i]
@@ -4012,13 +4099,13 @@ BOOL For_coll|ection)
 	          FOR i IN [0 TO 1000] :
 	              STR old_c|ommands[] << c.Str("Command" i.S) 
 	          	  CASE old_c[*] != Commands_s[i] ? 
-	          	       BOOL commands_changed = TRUE ;
+	          	       Commands_changed = TRUE ;
 	          	  CASE old_c[*]=="" ? BREAK i ;
 	          ;
 	          CASE ? 
 	          [Preserve_stamp] ? 
 	               BOOL preserve|_previous_commands = old_c[].Count > 1
-	          [commands_changed && old_c[].Count > 1] ?
+	          [!For_coll && Commands_changed && old_c[].Count > 1] ?
 	               CASE ask("Another 3D-stamp commands are stored in "
 	               "the replacing .gal model. Preserve it?") 
 	               ?
@@ -4050,8 +4137,11 @@ BOOL For_coll|ection)
 	     ELSE c.Set_s("URL", "");
     ;
     c.Update
+    //CASE Collection_gal.Visible && .Last_sel == 0 ?
+    //     Main_.Dots_1[].Clear ;
     .
     
+BOOL Commands_changed|_detected_while_save
 BOOL url_saved  
 STR url|_last
 

@@ -1,0 +1,12 @@
+/*
+
+CLASS {Spiral_dots|_cache}, UNTESTED:
+
+IMPORT: {{Standard}}, {{Files}}, {{Visual}} .
+
+{point} Dots|_stored[]
+INT Starts|_of_dots_sequences[] 
+
+END
+
+*/
