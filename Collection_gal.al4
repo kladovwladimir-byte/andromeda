@@ -357,6 +357,8 @@ METHOD Load_collection(STR Coll|ection_file) :
     Cache_stamps[].Clear
     source_ = NONE
     ready_over[].Clear
+    -------------------- 'clear Main_'
+    Main_.Clear_images
     -------------------- 'load list from file selected'
     STR col|lection_text[].From_text_file(Coll, 'UTF8')
     {Bitmap} temp_bmp
@@ -379,8 +381,7 @@ METHOD Update_current|_item(STR Path|_to_gal_file) :
     
 BOOL Lock_select|_events
 BOOL changing_sel|ection    
-//{Bitmap} Images_1|st_layer[]
-//{Bitmap_direct} Overlays_1[]
+
 REAL Rotation_1
 REAL Scale_1|st_image_overlayed_defaulr_100
 {point} Shift_1|st_galaxy_in_collection

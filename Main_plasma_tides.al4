@@ -363,12 +363,16 @@ METHOD Paint_to2(
                    / Satellite_param.Transform_model.Scaleing.Text.Real * 100
          ;
     ;
+    ------------------------- 'do transformations'
+    REAL total_rotate = 0
     CASE Satellite_param.Scale_up_shift ?
          CASE Satellite_param.Collection_gal.Last_sel > 0
               ? 
               REAL scaleup|_value = Satellite_param.Collection_gal.Scale_1 / 100
 	          c.Offset(View_size.X/2, .Y/2)
 	          c.Scale(scaleup, scaleup)
+	          ------------------------- 'save rotation value'
+	          total_rotate = Satellite_param.Collection_gal.Rotation_1 
 	          c.Rotate(Satellite_param.Collection_gal.Rotation_1)
 	          c.Offset(-View_size.X/2, -.Y/2)
 	          {point} sh1|_shift_1 = Satellite_param.Collection_gal.Shift_1.CLONE
@@ -377,6 +381,8 @@ METHOD Paint_to2(
          scaleup = Satellite_param.Scale_image.Text.Real / 100
          c.Offset(View_size.X/2, .Y/2)
          c.Scale(scaleup, scaleup)
+         ------------------------------ 'save rotation to fix #TEXT:...'
+         total_rotate += Satellite_param.Rotate_image.Text.Real
          c.Rotate(Satellite_param.Rotate_image.Text.Real)
          c.Offset(-View_size.X/2, -.Y/2)
          c.Offset(View_size.X * ShiftX / 100, .Y * ShiftY / 100)
@@ -687,7 +693,27 @@ METHOD Paint_to2(
 	--------------------------------- 'find max plasma speed'
 	speed_max = 0
 	FOR sat1 IN Satellite_param.All_satellites[] :
-	    CASE filt[].Count > 0 && (sat1.INDEX+1).S !IN filt[] ? CONTINUE sat1 ;
+	    BOOL skip|_the_satellite = TRUE
+	    CASE ?
+	    [sat1.Name.[0]=="#"] ?     
+	    	 CASE !Satellite_param.Show_text ? CONTINUE sat1 ;
+             STR names|_depending_staellites_splitted[].Split(
+                   	   sat1.Name.After(":"), ",")
+             //DEBUG: "names[]: " names[].Merge(",") " filt[]=" filt[].Merge(",")
+             //       #NL ;
+             CASE names[].Count == 0 ? skip = FALSE ;
+             FOR f IN filt[] :
+                 CASE ?
+                 [!skip] ? BREAK f
+                 [f IN names[] ] ? skip = FALSE
+                 [Satellite_param.All_satellites[f.Int-1].Name IN names[]] ?
+                     skip = FALSE ;
+             ;
+	    [filt[].Count > 0 && (sat1.INDEX+1).S IN filt[]] ? skip = FALSE
+	    [filt[].Count==0] ? skip = FALSE ;
+        CASE ?
+        [skip] ? CONTINUE sat1
+        [(sat1.INDEX+1).S !IN filt[]] ? filt[] << (sat1.INDEX+1).S ;
 	    speed_max = _.Max(sat1.SpeedK).Max(sat1.FinalK)
 	    count_satellites_drawn += 1
 	;
@@ -769,10 +795,34 @@ METHOD Paint_to2(
 	         	  center_pt = center_pt0.Offset(v_move. X, .Y)
 	         ;
 		     --------------
-		sat_index = sat1.INDEX     
+		sat_index = sat1.INDEX   
 		CASE !Satellite_param.Same_max_dist ? max_dist = sat1.Max_dist ;   
 		sat = sat1.CLONE
 		CASE filt[].Count > 0 && (sat1.INDEX+1).S !IN filt[] ? CONTINUE sat1 ;
+		--------------------------- '#(filter)CMD:param'
+		CASE sat1.Name.[0]=="#" ? 
+		     STR cmd|_and_param[].Split(sat1.Name, ":")   
+			 INT arm_c|olor = sat.ArmsColors * 2 //+ pass - 1
+			 c.Foreground = color_of_arm(arm_c)
+			 CASE cmd[0].Lower ? 
+			 ["#text"]:
+			     PUSH c.Font.Size = 12 * Satellite_param.Scale_image.Text.Real 
+			     	  / 100
+			     	  :
+			     	  CASE cmd[0].Upper==cmd[0] && !total_rotate.Near(0) ?
+			     	       c.Offset(center_pt.X ,.Y)
+			     	       c.Rotate(-total_rotate)
+			     	       c.Offset(-center_pt.X ,-.Y)
+			     	  ;
+			     FOR line IN sat1.Text[] :
+			         c.Text(center_pt, line)
+			         center_pt.Y += c.Font.Size
+			     ;
+			     ;
+			 ;
+			 CONTINUE sat1
+		;
+		---------------------------  'orbit' 
 		STR e_s|trings[].Split(Satellite_param.Eccentricity.Text, " ")     
 		CASE sat1.INDEX != Satellite_param.Satellite_num.Current ? e_s[].Clear ;
 		{Elliptic_orbit} orbit|_of_satellite 
@@ -884,7 +934,6 @@ METHOD Paint_to2(
 	    	;
 	    	---------------
 	    	CASE pass > 2 && sat.FinalK <= 0 ? BREAK pass_A ;
-	    	INT arm_c|olor     
 	        LOCAL :
 	        	CASE pass > 2 ? pass -= 2 ;
 	        	arm_c = sat.ArmsColors * 2 + pass - 1
@@ -1009,6 +1058,8 @@ METHOD Paint_to2(
 	     FOR sat1 IN Satellite_param.All_satellites[] :
 	     	 INT scurrent = sat1.INDEX + 1
 	     	 CASE Skip_all_sat ? CONTINUE sat1 ;
+	     	 	CASE sat1.Name.[0]=="#" ? CONTINUE sat1 ; 
+
 	     	 sat = sat1.CLONE
              CASE filt[].Count > 0 && scurrent.S !IN filt[] ? 
                   CONTINUE sat1 ;

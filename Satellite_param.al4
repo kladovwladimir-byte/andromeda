@@ -101,13 +101,14 @@ BASE CLASS: {Form_common} .
 {Paint_turtle} Save_load
 {Label} Label_1 | _773620_726243
 {Button} Copy_url
+{Memo} Memo_param|eters_text
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://2CEA46A1 Do not change manually (created by Form Designer)
+CONSTRUCT://7FC2B38C Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -251,13 +252,13 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
-"#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -516,18 +517,26 @@ PUSH in_construct = TRUE :
  "LABEL_FILE",
  MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY)
 
-	...Set_height(90)
+	...Set_height(40)
 	------------------------ 'LABEL_URL'
 	Label_url = New_memo(THIS,
  "LABEL_URL",
- MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY)
+ MEMO_NO_HSCROLL+MEMO_NO_VSCROLL+MEMO_READ_ONLY),
+ >> can_hide[]
 	...Set_anchor_bottom(TRUE)
+
+	...Set_height(80)
 	-------------------------- 'LABEL_1'
 	Label_1 = {Label}(Form_=THIS, Alias="LABEL_1")
 
 	...Set_text("")
 	------------------------- 'COPY_URL'
 	Copy_url = New_button(THIS, "COPY_URL", "Copy URL"), >> grayable[]
+
+	can_hide[] << Copy_url
+	----------------------- 'MEMO_PARAM'
+	Memo_param = New_memo(THIS, "MEMO_PARAM", 0), >> can_hide[]
+	...Set_anchor_bottom(TRUE)
 	------------------------------------------------------------- 'column COL_3'
 	new_column("COL_3", 'BOTTOM', DEFAULT_SIZES)
 
@@ -913,6 +922,7 @@ STRUCTURE {satellite_param|eters} :
     REAL Last_act|ivity 
     REAL Max_dist|ance
     {point} Center_gal|axy
+    STR Text|_to_draw[]
     ------------------------ 'position on orbit'
     INT Last_i_pos
     .
@@ -988,6 +998,8 @@ METHOD selected_satellite :
               //       ;
 	     ---------------------------------- 'name'
 		 Edit_name.Set_text(s.Name)
+		 CASE s.Name.[0]=="#" ? 
+		      Memo_param.Set_text(s.Text[0 TO *].Merge(#NL)) ;
 		 ---------------------------------- 'galaxy parameters'  
 	     Period_rot.Set_text(s.Period.S) 
 	     Eccentricity.Set_text(s.Eccentricity.S)
@@ -1054,6 +1066,7 @@ OVERRIDE value_change :
 	s = All_satellites[Satellite_num.Current].CLONE
 	PUSH setting_spiral = TRUE :
     CASE sender_alias ?
+    ["MEMO_PARAM"]: s.Text[].Split(Memo_param.Text, #NL)
     ["EDIT_LINE_W", "LABEL_FILE"]: NONE
     ["DRAW_BACKGROUND"]: Draw_background_image = Draw_background.Checked
     ["FILTER_SAT"]: NONE
@@ -1597,7 +1610,7 @@ OVERRIDE click :
                     //    " Y=" Transform_model.Y_offset ;
                  	message("Transformations did not applied. Either apply "
                  	"them first or close Trasform model window.") ==> ;
-    		----------------------- 'select'   
+    		----------------------- 'select & SAVE'   
     	    CASE !Dialog_file_save.Select_file ? ==> ;
     	    Save_gal(Dialog_file_save.Filename, FALSE, FALSE)
     	    CASE Collection_gal != NONE ? 
@@ -1619,6 +1632,7 @@ OVERRIDE click :
         	     Provide_collection_gal
         	     Collection_gal.Load_collection(Dialog_load.Filename) ==>
         	;
+        	-------------- 'LOAD'
         	Load_gal(Dialog_load.Filename, TRUE, FALSE)     
         	Auto_stamp
         	Update_URL
@@ -1842,6 +1856,12 @@ OVERRIDE click :
 		)
 
 	""	End
+
+	""	Item(	"SHOW_TEXT",
+				"Show text markers"
+		).Checked(
+		Show_text
+		)
 
 	""	Separator
 
@@ -2766,6 +2786,7 @@ METHOD Show_transform_model :
 
 BOOL Allow_JPEG_thumb = FALSE
 BOOL Image_mirrored
+BOOL Show_text = TRUE
 
 METHOD do_mirroring :
 	Main_.Image = _.Rotate_flip(0, TRUE, FALSE)
@@ -2786,6 +2807,7 @@ METHOD Provide_collection_gal :
 
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["SHOW_TEXT"]: Show_text = !_
     ["LIMIT_4"]: Limit_image_size = 4
     ["LIMIT_5"]: .. = 5
     ["LIMIT_6"]: .. = 6
@@ -3089,11 +3111,13 @@ OVERRIDE key_down ==> {Form}.{action} :
 		          Collection_gal.Next_line 
 		          RESULT = 'DECLINE' ;
 		 [HOME]:
-		     CASE Collection_gal.Visible ? 
+		     CASE sender.{Memo}==NONE==sender.{Edit} 
+		          && Collection_gal.Visible ?
 		          Collection_gal.List.Select(0, TRUE) 
 		          RESULT = 'DECLINE';
 		 [END_KEY]:
-		     CASE Collection_gal.Visible ? 
+		     CASE sender.{Memo}==NONE==sender.{Edit} 
+		          && Collection_gal.Visible ? 
 		          Collection_gal.List.Select(.Count-1, TRUE) 
 		          RESULT = 'DECLINE';
 		 [F_3]: Copy_center
@@ -3185,6 +3209,8 @@ BOOL last_hidden_cone
 
 OVERRIDE hidden ==> BOOL :
     CASE sender_alias ?
+    ["MEMO_PARAM"]: RESULT = !Edit_name.Text.Starting("#")
+    ["LABEL_URL", "COPY_URL"]: RESULT = Edit_name.Text.Starting("#")
     ["LABEL_FINAL_K", "FINAL_PLASMA_SPEED"]:
     	RESULT = !Show_deviations && Final_plasma_speed.Text.Real.Near(0)
     ["LABEL_DEVIATION_ANGLE", "DEVIATION_ANGLE", 
@@ -3861,6 +3887,12 @@ STR Filename, BOOL Can_ask|_question, BOOL For_coll|ection)
 	         ? 
 	         All_satellites[*].Center_gal = Pt(Main_.Offset_x, .Offset_y)
 	    ;
+	    CASE All_satellites[*].Name.[0]=="#" ?
+	         STR lines|_of_text[].Allocate(c.Int("Text_count_lines"))
+	         FOR s IN lines[] :
+	             lines[s.INDEX] = c.Str("Text" s.INDEX.S) ;
+	         All_satellites[*].Text[].Split(lines[0 TO *].Merge(#NL), #NL)
+	    ;
 	    CASE c.Bool("LAST") ? BREAK i ;
 	;
 	CASE was_cur >= Satellite_num.Count ? //|| Satellite_num.Current < 0 ? 
@@ -4077,6 +4109,11 @@ BOOL For_coll|ection)
     	           ...Set_r("CenterX", s.Center_gal.X)
     	           ...Set_r("CenterY", s.Center_gal.Y)
     	           ...Set_b("LAST", i == Satellite_num.Count-1)
+    	           CASE s.Name.[0]=="#" ? 
+	    	           ...Set_i("Text_count_lines", s.Text[].Count)
+	    	           FOR line IN s.Text[0 TO *] :
+	    	               ...Set_s("Text" line.INDEX.S, line) ;
+    	           ;
 	         ;
 	     ;
               //DEBUG: "storing with commands (" Commands_s[].Count 
@@ -4137,8 +4174,6 @@ BOOL For_coll|ection)
 	     ELSE c.Set_s("URL", "");
     ;
     c.Update
-    //CASE Collection_gal.Visible && .Last_sel == 0 ?
-    //     Main_.Dots_1[].Clear ;
     .
     
 BOOL Commands_changed|_detected_while_save
