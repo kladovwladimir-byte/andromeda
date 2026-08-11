@@ -762,29 +762,28 @@ BOOL create_new|_image)
     	Stamp_parameters_= THIS,
     	Bitmaps_24 = Main_.Satellite_param.Use_bitmaps_24)
     	
-    //CASE stamp.Source == NONE ?      
-         CASE stamp.Bitmaps_24 || Main_.Image.{Bitmap_24} != NONE ? 
-              DEBUG: "already {Bitmap_24}"#NL ;
-	          stamp.Source = New_bitmap_24(Main_.Image.Width, .Height, Holder) 
-	          CASE ?
-	          [Main_.Image.{Bitmap_direct}.Bpp < 24] ?     
-	               Main_.Image.{Bitmap_24}.Draw(stamp.Source.Canvas, Pt(0,0))
-	          [Main_.Image.{Bitmap_24} != NONE] ?
-	               Main_.Image.{Bitmap_24}.Copy_to(stamp.Source.Canvas)
-	          ELSE 
-	          		{Bitmap_direct} bd|irect_temp = Main_.Image.{Bitmap_direct}
-	          		DEBUG: {Png}.To_file(bd, "bd" bd.Bpp.S ".png", 9) ;
-	          		CASE bd == NONE || bd.Bpp < 24 ? 
-	          		     bd = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
-	          		     Main_.Image.Draw(bd.Canvas, Pt(0, 0))
-	          		;
-	          		stamp.Source = grayscale(bd) 
-	          		DEBUG: {Png}.To_file(stamp.Source, "grayscaled_bd.png", 9) ;
-	          ;
-         ELSE stamp.Source = New_bitmap_direct(Main_.Image.Width, .Height, 24)
-	    	  Main_.Image.Draw(stamp.Source.Canvas, Pt(0,0))
+    -------------------- 'prepare__source'     
+    CASE stamp.Bitmaps_24 || Main_.Image.{Bitmap_24} != NONE ? 
+         DEBUG: "already {Bitmap_24}"#NL ;
+         stamp.Source = New_bitmap_24(Main_.Image.Width, .Height, Holder) 
+         CASE ?
+         [Main_.Image.{Bitmap_direct}.Bpp < 24] ?     
+              Main_.Image.Draw(stamp.Source.Canvas, Pt(0,0))
+         [Main_.Image.{Bitmap_24} != NONE] ?
+              Main_.Image.{Bitmap_24}.Copy_to(stamp.Source.Canvas)
+         ELSE 
+          	   {Bitmap_direct} bd|irect_temp = Main_.Image.{Bitmap_direct}
+          	   DEBUG: {Png}.To_file(bd, "bd" bd.Bpp.S ".png", 9) ;
+          	   CASE bd == NONE || bd.Bpp < 24 ? 
+          		    bd = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
+          		    Main_.Image.Draw(bd.Canvas, Pt(0, 0))
+          	   ;
+          	   stamp.Source = grayscale(bd) 
+          	   DEBUG: {Png}.To_file(stamp.Source, "grayscaled_bd.png", 9) ;
          ;
-    //;
+    ELSE stamp.Source = New_bitmap_direct(Main_.Image.Width, .Height, 24)
+    	 Main_.Image.Draw(stamp.Source.Canvas, Pt(0,0))
+    ;
     ------------------------------ 'parameters apply'
     stamp.Offset_X = x_off
     stamp.Offset_Y = y_off

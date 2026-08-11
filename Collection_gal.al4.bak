@@ -3,7 +3,7 @@
 CLASS {Collection_gal|axies}, UNTESTED:
 
 IMPORT: {Main_plasma_tides}, {Satellite_param}, {Form_common}, 
-	 	{Png}, {Bitmap_24}, {Bitmap_direct} .
+	 	{Png}, {Bitmap_24}, {Bitmap_direct}, {Matrix} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
 
 
@@ -34,10 +34,18 @@ BASE CLASS: {Form_common} .
 {Checkbox} Cache_images
 {Checkbox} Preserve_scale_rot|ation
 {Paintbox} Paintbox_4
+{Checkbox} Only_overlay|ed_image
+{Memo} Memo_1|_hints
+{Checkbox} Double_pen_1|st_gal
+{Checkbox} Protected|_satellites
+{Paintbox} Paintbox_5
+{Button} Make_current
+{Label} Label_3 | _644111_726243
+{Combo} Transparency|_level
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://7FBD1D89 Do not change manually (created by Form Designer)
+CONSTRUCT://3D5A5809 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -55,8 +63,8 @@ PUSH in_construct = TRUE :
 	------------------------- 'OPEN_COL'
 	Open_col = New_paint_turtle_button(THIS,
  "OPEN_COL",
- "10D40LL40BL55R40BL55B55BL"
-  "40R55B85LL80LL30")
+ "15DL15R20 R50B50 RR40RR50"
+  "RR40R20L15RR50")
 
 
 	...Set_width(18)
@@ -135,6 +143,12 @@ PUSH in_construct = TRUE :
 	...Set_width(18)
 
 	...Set_height(18)
+	----------------------- 'PAINTBOX_5'
+	Paintbox_5 = New_paintbox(THIS, "PAINTBOX_5", "")
+
+	...Set_width(10)
+	------------------------ 'PROTECTED'
+	Protected = New_checkbox(THIS, "PROTECTED", "Satellites protected")
 	------------------------------------------------------------- 'column COL_1'
 	new_column("COL_1", 'CENTER', DEFAULT_SIZES)
 
@@ -144,14 +158,13 @@ PUSH in_construct = TRUE :
 	------------------ 'DIALOG_OPEN_GAL'
 	Dialog_open_gal = New_dialog_open(THIS, "DIALOG_OPEN_GAL")
 
-	...Filter = "*.gal|*.gal"
+	...Filter = "*.gal,&.gal2|*.gal;*.gal2"
 	...Default_ext = ".gal"
 	------------------------------------------------------------- 'column COL_2'
-	new_column("COL_2", 'RIGHT', {Form}.{sizes_col}(Width=190,Label=60))
+	new_column("COL_2", 'RIGHT', {Form}.{sizes_col}(Width=210,Label=60))
 
 	------------------------ 'AUTO_SAVE'
 	Auto_save = New_checkbox(THIS, "AUTO_SAVE", "Auto-save galaxy on selection")
-	...Set_checked(TRUE)
 	----------------------- 'CREATE_BAK'
 	Create_bak = New_checkbox(THIS, "CREATE_BAK", "Create bak-files on auto-save")
 	...Set_checked(TRUE)
@@ -159,16 +172,36 @@ PUSH in_construct = TRUE :
 	Save_stamps = New_checkbox(THIS, "SAVE_STAMPS", "Save stamp files created")
 	...Set_checked(TRUE)
 	--------------------- 'CACHE_IMAGES'
-	Cache_images = New_checkbox(THIS, "CACHE_IMAGES", "Cache images im memory")
+	Cache_images = New_checkbox(THIS, "CACHE_IMAGES", "Cache images in memory")
 	...Set_checked(TRUE)
 	--------------- 'PRESERVE_SCALE_ROT'
 	Preserve_scale_rot = New_checkbox(THIS,
  "PRESERVE_SCALE_ROT",
- "Preserve scale&rotation")
+ "Preserve scale && rotation")
+	--------------------- 'DOUBLE_PEN_1'
+	Double_pen_1 = New_checkbox(THIS,
+ "DOUBLE_PEN_1",
+ "Double pen on 1st galactic model")
+	...Set_checked(TRUE)
 	----------------------- 'PAINTBOX_4'
 	Paintbox_4 = New_paintbox(THIS, "PAINTBOX_4", "")
 
 	...Set_height(10)
+	--------------------- 'MAKE_CURRENT'
+	Make_current = New_button(THIS,
+ "MAKE_CURRENT",
+ "Make over from current galaxy")
+	-------------------------- 'LABEL_3'
+	Label_3  = {Label}(Form_=THIS, Alias="LABEL_3")
+
+	...Set_text("Transparency of over image:")
+	--------------------- 'TRANSPARENCY'
+	Transparency = New_combo(THIS, "TRANSPARENCY", @
+"30"
+"40"
+"50"
+"60"
+"70")
 	------------------------ 'DRAW_OVER'
 	Draw_over = New_checkbox(THIS, "DRAW_OVER", "Draw over images of 1st gal")
 	-------------------------- 'LABEL_1'
@@ -184,6 +217,11 @@ PUSH in_construct = TRUE :
 	...Set_text("")
 	-------------------- 'DRAW_SPIRAL_1'
 	Draw_spiral_1 = New_checkbox(THIS, "DRAW_SPIRAL_1", "With last spiral")
+	--------------------- 'ONLY_OVERLAY'
+	Only_overlay = New_checkbox(THIS, "ONLY_OVERLAY", "Only overlay")
+	--------------------------- 'MEMO_1'
+	Memo_1 = New_memo(THIS, "MEMO_1", MEMO_NO_HSCROLL+MEMO_READ_ONLY)
+	...Set_anchor_bottom(TRUE)
 	----------------------------------------'form size / position'
 	Set_size(370, 0, 'FIT_TO_DISPLAY')
 	-------------------------- 'TITLE of Form'
@@ -200,6 +238,12 @@ METHOD after_CONSTRUCT:
 	------------------------ 'bounds', REUSED
 	Restore_bounds(Main_.App_name, "Collection_param", "whlt") 
 	------------------------------- 
+	Memo_1.Set_text("Use Page Up/Page Down in any window to move between items "
+	"in a collection."#NL
+	"Select the first gal and spiral to store its image and spirals which "
+	"willbe drawn over other gal-models transparently.")
+	
+	Transparency.Select(2) //50%
 	.
 
 OVERRIDE moved :
@@ -211,18 +255,22 @@ OVERRIDE resize :
 
 
 OVERRIDE closing ==> {Form}.{action} :
+	RESULT = 'DECLINE'
     CASE list_changed ? 
          CASE !ask("List was changed. Continue without saving it?") ? ==> ;
     ;
-	RESULT = 'DECLINE'
 	Hide
 	.
 	
 INT Last_sel|ected_item = -1
+INT Over_from = 0
 	
 
 OVERRIDE click :
     CASE sender_alias ?
+    ["MAKE_CURRENT"]: Over_from = Last_sel
+    	Reset_overlay
+    	Main_.PBox.Invalidate_all
     ["UP_DOWN"]:
         PUSH Lock_select = TRUE :
         CASE Up_down.Current ? 
@@ -273,11 +321,16 @@ OVERRIDE click :
 
 	""	Item(	"REGULAR_ACTIVITY",
 				"Activity in regular intervals"
+		)
+
+	""	Item(	"SAME_CENTER",
+				"Use same center point"
 		))
 
 
 
     ["ADD_GAL"]:
+    	------------- 'add existing gal file'
         CASE !Dialog_open_gal.Select_file ? ==> ;
         INT ii|tem_inserted = List.Insert_item(
         	Last_sel+1, Dialog_open_gal.Filename.Extract_file_name
@@ -330,10 +383,16 @@ OVERRIDE click :
 METHOD Load_collection(STR Coll|ection_file) :
 	LIKE click .................. 'check__changed'
     List.Clear
-    -------------------- 'load list from file selected'
-    STR col|lection_text[].From_text_file(Coll, 'UTF8')
+    Main_.Dots_1[].Clear
+    -------------------- 'clear cached images'
     Cache_img[].Clear
     Cache_stamps[].Clear
+    source_ = NONE
+    ready_over[].Clear
+    -------------------- 'clear Main_'
+    Main_.Clear_images
+    -------------------- 'load list from file selected'
+    STR col|lection_text[].From_text_file(Coll, 'UTF8')
     {Bitmap} temp_bmp
     FOR s IN col[] :
         col[s.INDEX] = _ #TAB Coll.Extract_path _
@@ -354,105 +413,120 @@ METHOD Update_current|_item(STR Path|_to_gal_file) :
     
 BOOL Lock_select|_events
 BOOL changing_sel|ection    
-{Bitmap} Images_1|st_layer[]
-{Bitmap_direct} Overlays_1[]
+
 REAL Rotation_1
-REAL Scale_1|st_image_overlayed
+REAL Scale_1|st_image_overlayed_defaulr_100
 {point} Shift_1|st_galaxy_in_collection
 {rect} Scaled_img_1|_size
 STR Transform_1|_before_draw_spiral_over
+
+--------------------------- 'SELECTION CHANGE'
 
 OVERRIDE selection_change :
 	CASE changing_sel || Lock_select ? ==> ;
 	PUSH changing_sel = TRUE :
     CASE sender_alias ?
     ["LIST"]:
+    	DEBUG: "************* selection change, oldsel=" Last_sel 
+    			" List.Current=" List.Current #NL ;
         PUSH Main_.Satellite_param.Stamp_param.Executing = 1 :
         PUSH Main_.Lock_invalidations = TRUE :
-             CASE Last_sel==0 && Main_.Image.Width * .Height > 1 ?
-                  Images_1[].Allocate(Main_.All_images[].Count.Min(2))
-                  Overlays_1[].Clear
-                  Overlays_1[].Allocate(2)
-                  ------------------------------ 'store images to draw over'
-             	  FOR ii IN [0 TO Images_1[].Count-1] :
-             	      Images_1[ii] = Main_.All_images[ii] 
-             	  ;
-             	  --------------------- 'store its offsets, scale, rotation'
-             	  Scale_1 = Main_.Satellite_param.Scale_image.Text.Real
-             	  Rotation_1 = Main_.Satellite_param.Rotate_image.Text.Real
+             CASE Over_from==Last_sel && Main_.Image.Width * .Height > 1 ? 
              	  Scaled_img_1 = Main_.D_o.CLONE
              	  .. = _.Offset(-_.W*(Scale_1 - 100)/100/2, 
              	  				-_.H*(Scale_1 - 100)/100/2)
-
+             ;
+             CASE Last_sel==0 && Main_.Image.Width * .Height > 1 ?
+             	  --------------------- 'store offsets, scale, rotation'
+             	  Scale_1 = Main_.Satellite_param.Scale_image.Text.Real
+             	  Rotation_1 = Main_.Satellite_param.Rotate_image.Text.Real
              	  Shift_1 = Pt(Main_.ShiftX, .ShiftY)
              	  Transform_1 = Main_.Last_transform
-                  //Shift_1 = Pt(Main_.ShiftX * (Scale_1 - 100)/100,
-                  //             Main_.ShiftY * (Scale_1 - 100)/100)
              ;
 	         INT was_sat|_current = Main_.Satellite_param.Satellite_num.Current
 	         DEBUG: "was_sat=" was_sat#NL ;
 	         CASE Auto_save.Checked && Last_sel >= 0 ? 
+		                    DEBUG: Console_color('CYAN')
+		                    	<< "xxx <<<<<<<<<<< store sel=" Last_sel
+		                    	" Scale_1=" Scale_1 " Shift_1=" Shift_1.S
+		                    	" Rot=" Main_.Satellite_param.Rotate_image.Text
+		                    	" Scale=" Main_.Satellite_param.Scale_image.Text
+		                    	" --> Shift: " Main_.ShiftX "," .ShiftY #NL
+		                    	"----------------------------" #NL 
+		                    	Console_color('SILVER')
+		                    	;
 	        	  --------------------- 'auto_save'
 	              STR fname|_to_load = List.Get_item(Last_sel, 0).After(#TAB)
-	              CASE Create_bak.Checked ? 
-	                   Delete_file(fname.Change_ext(".gal.bak"))
-	                   Copy_file(fname, fname.Change_ext(".gal.bak")) 
+	              CASE fname != "" ? 
+		               CASE Create_bak.Checked ? 
+		                    STR back|up_file = Make_back_file(fname) ;
+		        	   Main_.Satellite_param.Save_gal(fname, FALSE, TRUE,
+		        	   		Save_sat= !Protected.Checked,
+		        	   		Save_common= TRUE)
+		        	   		
+		        	   Check_backup(back)
+		        	   CASE Cache_images.Checked ? 
+		        	        Cache_img[Last_sel] = Main_.All_images[0] 
+		        	        Cache_stamps[Last_sel] = Main_.All_images[1] ;
+		        	   ----------------------------- 'save stamp file'
+		        	   CASE Main_.All_images[].Count >= 2 ? 
+		        	        STR img_file = Main_.All_img_names[0]
+		        	        ..=Main_.Satellite_param.Images_path.Trailing_slash _
+		        	        DEBUG: "??? save stamp " img_file " ("
+		        	        " " if(img_file.Exists, "EXISTS") ")"  #NL ;
+		        	        CASE !img_file.Exists 
+		        	             || Main_.Satellite_param.Commands_changed 
+		        	             ?
+			        	         STR stamp_file = img_file.Extract_path
+				                 .. = _ "stamp" 
+				                 "" if(Main_.Satellite_param.Last_frame > 0, 
+				              	    "[" .Last_frame.S "]") 
+				              	    "#" img_file.Extract_file_name 
+				              	    
+			        	         {Png}.To_file(
+			        	         	Main_.All_images[1], stamp_file, 9) 
+		        	        ;
+		        	   ;
 	              ;
-	              CASE Last_sel > 0 ?
-	                   Main_.Satellite_param.Scale_image.Set_text(
-	                  	 (Main_.Satellite_param.Scale_image
-	                  	 .Text.Real/Scale_1*100).S)
-	                  	 
-	                   Main_.Satellite_param.Rotate_image.Set_text(
-	                   	 (Main_.Satellite_param.Rotate_image
-	                   	 .Text.Real - Rotation_1).S)
-	                   	 
-	                   Main_.ShiftX = (_ - Shift_1.X) / (Scale_1/100)
-	                   Main_.ShiftY = (_ - Shift_1.Y) / (Scale_1/100)
-	              ;
-	        	  Main_.Satellite_param.Save_gal(fname, TRUE)
-	        	  CASE Cache_images.Checked ? 
-	        	       Cache_img[Last_sel] = Main_.All_images[0] 
-	        	       Cache_stamps[Last_sel] = Main_.All_images[1] ;
-	        	  ----------------------------- 'save stamp file'
-	        	  CASE Main_.All_images[].Count >= 2 ? 
-	        	       STR img_file = Main_.All_img_names[0]
-	        	       CASE img_file.Exists ? 
-		        	        STR stamp_file = img_file.Extract_path
-			                .. = _ "stamp" if(Main_.Satellite_param.Last_frame > 0, 
-			              	   "[" .Last_frame.S "]") "#" img_file.Extract_file_name 
-			              	   
-		        	        {Png}.To_file(Main_.All_images[1], stamp_file, 9) ;
-	        	       ;
 	         ;
 	         Last_sel = List.Current
 	         --------------------- 'to new gal model selected'
 	         fname = List.Get_item(Last_sel, 0).After(#TAB)
 	         Main_.Satellite_param.Preserve_scale_rot = Preserve_scale_rot.Checked
-	         Main_.Satellite_param.Load_gal(fname, FALSE)
-	         ----------- 'gal loaded !!!!!!!!!!!!!!!!!!!!!!!!'
-	         CASE Last_sel > 0 ? 
-	              Main_.Satellite_param.Scale_image.Set_text(
-	              	((.Text.Real*Scale_1/10).Int/10.0).S) 
-	         	  
-	              Main_.Satellite_param.Rotate_image.Set_text(
-	              	(.Text.Real + Rotation_1).S)
-	              	
-	              Main_.ShiftX = _ * (Scale_1/100) + Shift_1.X
-	              Main_.ShiftY = _ * (Scale_1/100) + Shift_1.Y
+	         PUSH loading = TRUE :
+	              Main_.Satellite_param.Load_gal(fname, FALSE, TRUE,
+		         	Load_sat= TRUE,
+		         	Load_common = TRUE) 
+		         	
+	              Protected.Set_checked(Main_.Satellite_param.Protected)
 	         ;
+	         ----------- 'gal loaded !!!!!!!!!!!!!!!!!!!!!!!!'
+                  DEBUG: Console_color('LIME')
+                  	  << "xxx >>>>>>>>>>>>>>>>>>> load sel=" Last_sel
+                      " Scale_1=" Scale_1 
+                      " Shift_1=" Shift_1.S
+                	  " Rot=" Main_.Satellite_param.Rotate_image.Text
+                	  " Scale=" Main_.Satellite_param.Scale_image.Text
+                   	  " --> " Main_.ShiftX "," .ShiftY #NL
+                   	  "=========================================="#NL 
+                   	  Console_color('SILVER')
+                   	  ;
 	         Main_.Satellite_param.Satellite_num.Select(was_sat)
 	         INT was_img|_current = Main_.Current_image
 	         //--------------------- 'provide enough cache items'
 	         {Bitmap} dummy|_temp
-	         //FOR ii IN [Cache_img[].Count TO Last_sel] : Cache_img[] << dummy ;
-	         //FOR ii IN [Cache_stamps[].Count TO Last_sel] : Cache_stamps[] << dummy ;
         	 --------------------------------------------- 'load images'
              Main_.Clear_images
 	         img_file = fname.Extract_path 
-	         CASE Main_.Satellite_param.Last_img_name != "" ? 
+	         CASE ?
+	         [Main_.Satellite_param.Last_img_name != ""] ?
 	              .. = _ Main_.Satellite_param.Last_img_name.Extract_file_name
+	         [Main_.Satellite_param.Url_loaded != ""] ?
+	              STR ul|loaded = _ Main_.Satellite_param.Url_loaded
+	         	  INT last_slash = ul.Find_last("/")
+				  img_file = _ ul.[last_slash+1 TO *]	              
 	         ELSE .. = _ fname.Extract_file_name ;
+	         DEBUG: "image will be loaded: " img_file #NL ;
 	         CASE ?
 	         [Cache_images.Checked 
 	         && Cache_img[Last_sel].Width > 1
@@ -480,6 +554,10 @@ OVERRIDE selection_change :
                   //DEBUG: "get from file (" img_file ")!!!!!!!!!!!!!!!!!!!!"
                   //" url_load=" u #NL ;
 	              Main_.Satellite_param.Load_image(img_file, FALSE)
+	              CASE Main_.Satellite_param.Image_mirrored ? 
+	                   Main_.Image = _.Rotate_flip(0, TRUE, FALSE) ;
+	              Main_.All_images[].Allocate(1)
+	              Main_.All_images[0] = Main_.Image
 	              CASE u != "" ? 
 	                   Main_.All_img_URLs[].Allocate(2)
 	                   Main_.All_img_URLs[0] = u 
@@ -491,7 +569,7 @@ OVERRIDE selection_change :
 	              //Main_.Satellite_param.Go_to_another_image
 	              Main_.Satellite_param.Stamp_param.Executing = 1
 	              Main_.Invalidate
-	              Main_.Process
+	              //Main_.Process
 	              ---------------------------------------------- 'stamp'
 	              stamp_file = img_file.Extract_path
 	              .. = _ "stamp" if(Main_.Satellite_param.Last_frame > 0, 
@@ -513,7 +591,6 @@ OVERRIDE selection_change :
 	             	   Main_.Scaled_image = NONE
 	             	   Main_.Satellite_param.Stamp_param.Executing = 1
 	             	   Main_.Invalidate
-	             	   Main_.Process
 	              [Main_.Satellite_param.Commands_s[].Count > 0] ?
 	                   Main_.Satellite_param.Do_commands_auto(FALSE)
 	                   {Png}.To_file(Main_.Image, stamp_file, 9)
@@ -523,6 +600,7 @@ OVERRIDE selection_change :
 	              //Main_.Satellite_param.Go_to_another_image
 	         ;
 	         Timer_fix.Set_active(TRUE)
+	         Main_.Satellite_param.Thumbnails.Invalidate_all
 	         -------------------------- 'restore current position in images'
 	         Main_.Satellite_param.Satellite_num.Select(was_sat)
 	         Main_.Satellite_param.Stamp_param.Executing = 1
@@ -585,6 +663,9 @@ OVERRIDE menu_item :
 	        	 	      del_index = isec ;
 	        	 ;
 	    	;
+            CASE Create_bak.Checked ? 
+                 NONE = Make_back_file(filename) 
+            ;
 	    	c.Update
         	STR c_text|_as_is[].From_text_file(filename, 'UTF8')
         	//INT ins_sec|tions_inserted_from_in_c = 0
@@ -616,10 +697,6 @@ OVERRIDE menu_item :
     	 	 	;
     	 	 	c_text[].Insert(where_ins, "[+]")
         	----------------------------------------------------------->
-            CASE Create_bak.Checked ? 
-                 Delete_file(filename.Change_ext(".gal.bak"))
-                 Copy_file(filename, filename.Change_ext(".gal.bak")) 
-            ;
             --------------------- 'renumber sections'
             n = 0
             FOR lines IN c_text[] :
@@ -664,8 +741,9 @@ OVERRIDE menu_item :
              "collected galaxy models.") ==> ;
         CASE !ask("Delete satellite [" dname "] in all models?") ? ==> ;
 		filename = List.Get_item(Last_sel, 0).After(#TAB)
-		Main_.Satellite_param.Save_gal(filename, TRUE)
-        //CASE !ask("Delete satellite [" dname "] in all models? Yes?") ? ==> ;
+		Main_.Satellite_param.Save_gal(filename, TRUE, TRUE,
+			Save_sat= !Protected.Checked,
+			Save_common= FALSE)
         FOR igal IN [List.Count-1 DOWNTO 0] :
         	filename = List.Get_item(igal, 0).After(#TAB)
 	    	c = New_write_in_file_config(filename, "")
@@ -698,15 +776,16 @@ OVERRIDE menu_item :
 		    	 c.Set_b("LAST", TRUE)
 		    	 -------------------------- 'bak'
 	             CASE Create_bak.Checked ? 
-	                  Delete_file(filename.Change_ext(".gal.bak"))
-	                  Copy_file(filename, filename.Change_ext(".gal.bak")) 
+                      NONE = Make_back_file(filename)
 	             ;
 	    	;
 	    	c.Update
         ;
-        ----------------- 'reload current gal'
+        ----------------- 'reload__current__gal', REUSED
         filename_in = List.Get_item(Last_sel, 0).After(#TAB)
-        Main_.Satellite_param.Load_gal(filename_in, FALSE)
+        Main_.Satellite_param.Load_gal(filename_in, FALSE, TRUE,
+        	Load_sat= TRUE, Load_common= FALSE)
+        -----------------
         Main_.Invalidate
     ["REGULAR_ACTIVITY"]:
         STR aname|_to_interva_activity = Main_.Satellite_param.Edit_name.Text
@@ -728,18 +807,26 @@ OVERRIDE menu_item :
 	    	    CASE n==1 || a > max_a ? max_a = a ;
 	    	    BREAK isec     
 	    	;
+	    	NEXT igal += List.Count-1
     	;
-    	CASE n <= 1 || min_a.Near(max_a) ? 
-    	     message("Activity value should be different at least for "
-    	     "2 galaxy models!") ==> ;
+        //CASE n <= 1 || min_a.Near(max_a) ? 
+        //     message("Activity value should be different at least for "
+        //     "2 galaxy models!") ==> ;
     	-------------------------------- 'save current gal model 1st'
     	filename = List.Get_item(Last_sel, 0).After(#TAB)
-		Main_.Satellite_param.Save_gal(filename, TRUE)
+    	CASE Create_bak.Checked ? 
+             STR back|ip_file = Make_back_file(filename)
+        ;
+		Main_.Satellite_param.Save_gal(filename, TRUE, TRUE,
+			Save_sat= !Protected.Checked,
+			Save_common= FALSE)
+			
+		Check_backup(back)
 		-------------------------------- 'make activity regular between models'
     	a = min_a
-    	REAL delta|_activity = (max_a - min_a) / n
-    	CASE !ask("Satellite [" aname "] was found in " n.S " models with "
-    		 " activity min value " min_a.S " and max value " max_a.S ", "
+    	REAL delta|_activity = (max_a - min_a) / (List.Count-2)
+    	CASE !ask("Satellite [" aname "] activity min value " min_a.S 
+    	     " and max value " max_a.S ", "
     		 "so delta=" delta.S "; Continue making regular activity for "
     		 "" aname "?") ? ==> ;
         FOR igal IN [0 TO List.Count-1] :
@@ -761,8 +848,31 @@ OVERRIDE menu_item :
 	    	;
 	    	c.Update
     	;
-    	Main_.Satellite_param.Load_gal(filename, FALSE)
+    	LIKE ................. 'reload__current__gal'
     	Main_.Invalidate
+    ["SAME_CENTER"]:
+        aname = Main_.Satellite_param.Edit_name.Text
+        CASE aname == "" ? 
+             message("Satellite should be named to change center point!") ==> ;
+        {point} center|_point_to_use = Pt(Main_.Offset_x, .Offset_y)
+        FOR igal IN [0 TO List.Count-1] :
+            CASE igal==Last_sel ? CONTINUE igal ;
+        	filename = List.Get_item(igal, 0).After(#TAB)
+	    	c = New_write_in_file_config(filename, "")
+	    	PUSH c.No_write = TRUE :
+		    	 last_c_sec = last_section(c)
+		    	 FOR isec IN [0 TO last_c_sec] :
+		    	     c.Section = (isec+1).S
+		    	     CASE c.Str("Name") != aname ? CONTINUE isec ;
+		    	     DEBUG:
+		    	           << "for gal=" igal " sat sec=" isec #NL
+		    	     ;
+		    	     c.Set_s("CenterX", center.X.S)
+		    	     c.Set_s("CenterY", center.Y.S)
+		    	 ;
+	    	;
+	    	c.Update
+    	;
     ; .
     
 FUN last_section|_index({In_file_config} c|onfiguration) ==> INT :
@@ -788,61 +898,159 @@ OVERRIDE timer :
 	ELSE BASE        
     ; .
     
-METHOD Prepare_overlay(INT N|umber_0_or_1) :
-	REAL mul|tiplyer = Scale_1/100
-	CASE Overlays_1[N] != NONE
-	     && Overlays_1[N].Width==(mul*Scaled_img_1.Width).Points_to_pixels
-	     && Overlays_1[N].Height==(mul*Scaled_img_1.Height).Points_to_pixels
-	     ? ==> ;
-	INT alpha|_tran = 128         
-	BOOL inverted = Overlay_inverted.Checked
-	DEBUG: "prepare overlay[" N "], invert=" inverted.S #NL
-		"oW=" Overlays_1[N].Width 
-		" sw=" (mul*Scaled_img_1.Width).Points_to_pixels #NL
-	    "oH=" Overlays_1[N].Height 
-	    " sH=" (mul*Scaled_img_1.Height).Points_to_pixels #NL ; 
-    {Bitmap_direct} temp|_bitmap = New_bitmap_direct(
-    	(mul*Scaled_img_1.Width).Points_to_pixels, 
-    	(mul*Scaled_img_1.Height).Points_to_pixels, 32)
+{Bitmap} source_|overlay_
+INT w_source|_width
+INT h_source|_height
+INT last_transparency
+{Bitmap_direct} ready_over|lays[]
     
-   	Images_1[N].Stretch_draw(temp.Canvas, 
-   		{rect}(W=temp.Width.Pixels_to_points, H=temp.Height.Pixels_to_points))
-   		
-   	FOR y IN [0 TO temp.Height-1] :
-   	    temp.Lock_rows(y, 1, TRUE) 
-   	    INT xb|yte_position_in_pixels_row = 0
-   	    FOR x IN [0 TO temp.Width - 1] :
-   	    	CASE inverted ? 
-   	    	     temp.Pixels[xb] = (255 - _.Int).Byte 
-   	    	     temp.Pixels[xb+1] = (255 - _.Int).Byte 
-   	    	     temp.Pixels[xb+2] = (255 - _.Int).Byte 
-   	    	;
-   	        temp.Pixels[xb+3] = alpha.Byte
-   	        xb += 4
-   	    ;
-   		temp.Unlock(TRUE)    
-   	; 
-   	Overlays_1[N] = temp .
+METHOD Prepare_overlay(
+{Bitmap} Source|_scaled_bitmap) ==> {Bitmap}
+    :
+	CASE !Overlay_inverted.Checked ? INT ind|ex_in_ready = 0 ELSE ind = 1 ;
+	ready_over[].Allocate(2)
+	CASE source_ != Source
+		 || last_transparency != Transparency.Text.Int     
+	     || w_source != Source.Width || h_source != Source.Height
+	     || ready_over[ind].Width != Main_.PBox.Width.Points_to_pixels
+	     || ready_over[ind].Width != Main_.PBox.Width.Points_to_pixels
+	     ?
+	     ready_over[0] = NONE 
+	     ready_over[1] = NONE 
+	     last_transparency = Transparency.Text.Int
+	;
+	CASE ready_over[ind] == NONE ? 
+		 DEBUG: "Prepare overlay " Source.Width " x " .Height #NL ;
+		 source_ = Source
+		 w_source = Source.Width
+		 h_source = Source.Height
+		 CASE ready_over[ind] != NONE ? RESULT = ready_over[ind] ==> ;
+		 ----------------------------- 'make ready_over[ind]'
+		 BYTE alpha|_tran = (255 * Transparency.Text.Int / 100).Byte         
+		 BOOL inverted = ind > 0
+	     DEBUG: "__________prepare overlay invert=" inverted.S #NL ; 
+	     {Bitmap_direct} temp|_bitmap = New_bitmap_direct(
+	    	 Main_.PBox.Width.Points_to_pixels,
+	    	 Main_.PBox.Height.Points_to_pixels, 32)
+	     
+	   	 Source.Draw(temp.Canvas, Pt(0, 0))
+	   		 
+	   	 FOR y IN [0 TO temp.Height-1] :
+	   	     temp.Lock_rows(y, 1, TRUE) 
+	   	     INT xb|yte_position_in_pixels_row = 0
+	   	     FOR x IN [0 TO temp.Width - 1] :
+	   	    	 CASE ind>0 ? 
+	   	    	      temp.Pixels[xb] = (255 - _.Int).Byte 
+	   	    	      temp.Pixels[xb+1] = (255 - _.Int).Byte 
+	   	    	      temp.Pixels[xb+2] = (255 - _.Int).Byte 
+	   	    	 ;
+	   	         temp.Pixels[xb+3] = alpha
+	   	         xb += 4
+	   	     ;
+	   		 temp.Unlock(TRUE)    
+	   	 ;
+	   	 ready_over[ind] = temp
+	;
+   	RESULT = ready_over[ind] .
+   	
+METHOD Reset_overlay|_images_caches :
+    source_ = NONE
+    ready_over[0] = NONE
+    ready_over[1] = NONE .
 	
     
 
 OVERRIDE value_change :
     CASE sender_alias ?
-    ["DRAW_SPIRAL_1", "DRAW_OVER"]: Main_.PBox.Invalidate_all 
+    ["PROTECTED"]:
+        CASE loading ? ==> ;
+        CASE Protected.Checked != Main_.Satellite_param.Protected ? 
+             STR filename = List.Get_item(Last_sel, 0).After(#TAB)
+	    	 CASE Create_bak.Checked ? 
+	              STR back|ip_file = Make_back_file(filename)
+	         ;
+	         Main_.Satellite_param.Protected = Protected.Checked
+			 Main_.Satellite_param.Save_gal(filename, TRUE, TRUE,
+				 Save_sat= !Protected.Checked,
+				 Save_common= FALSE)
+				 
+			 Check_backup(back) 
+        ;
+    ["ONLY_OVERLAY", "DRAW_SPIRAL_1", "DRAW_OVER"]: Main_.PBox.Invalidate_all 
     ["OVERLAY_INVERTED"]: Main_.PBox.Invalidate_all
-    	{Bitmap_direct} temp|_none
-	    Overlays_1[0] = temp
-	    Overlays_1[1] = temp
 	    Main_.PBox.Invalidate_all
     ; .
     
+BOOL loading|_gal_model
 BOOL list_changed
+
+METHOD Was_changed ==> BOOL := list_changed .
     
 METHOD Changed_list :
     list_changed = TRUE 
     Save_col.Set_ink(RED)
     .
     
+METHOD Next_line :
+    CASE Last_sel < List.Count-1 ? 
+         List.Select(Last_sel+1, TRUE) ; .
+         
+METHOD Prev_line :
+    CASE Last_sel > 0 ? 
+         List.Select(Last_sel-1, TRUE) ; .
+    
+
+OVERRIDE key_down ==> {Form}.{action} :
+	CASE Key.Control ? 
+	     CASE Key.Special ? 
+	     [LETTER_Y]: Main_.Satellite_param.Copy_center 
+	     [LETTER_U]: Main_.Satellite_param.Use_center ;
+	ELSE
+		 CASE Key.Special ? 
+		 [PAGE_UP]: Prev_line 
+			 RESULT = 'DECLINE'
+		 [PAGE_DOWN]: Next_line 
+			 RESULT = 'DECLINE'
+		 [F_3]: Main_.Satellite_param.Copy_center
+	     [F_4]: Main_.Satellite_param.Use_center
+		 ELSE NONE ;
+	; .
+	
+METHOD Make_back_file(STR Filename) ==> STR :
+    FOR i IN [0 TO 9] :
+        STR back|_filename = Filename ".bak"
+        CASE i > 0 ? back = Filename ".bk" S0(i, 1) ;
+        CASE back.Exists ? INT next_i|ndex = (i+1)%10 ;
+    ;
+    back = Filename ".bak"
+    CASE next_i > 0 ? back = Filename ".bk" next_i.S0(1) ;
+    CASE back.Exists ? Delete_file(back) ;
+    Copy_file(Filename, back) 
+    RESULT = back .
+    
+METHOD Check_backup(STR Filename|_of_back_file) :
+	STR lines_b|ackup[].From_text_file(Filename, 'UTF8')
+	STR lines_new[].From_text_file(Filename.Change_ext(".gal"), 'UTF8')
+	CASE lines_b[].Count != lines_new[].Count ? ==> ;
+	FOR s IN lines_new[] :
+		CASE s.Starting("Protected=") ? CONTINUE s ;
+	    CASE s != lines_b[s.INDEX] ? ==> ;
+	;
+	Delete_file(Filename) .
+	
+
+OVERRIDE mouse_wheel ==> BOOL :
+	Select_gal(vertical_wheel) .
+	
+METHOD Select_gal|_by_mouse_wheel(REAL value|_wheel) :
+	CASE ?
+	[Main_.Satellite_param.Stamp_param.Executing > 0] ? NONE     
+	[value < 0 && Last_sel < List.Count-1] ?
+	     List.Select(Last_sel+1, TRUE) 
+	[value > 0 && Last_sel > 0] ?
+	     List.Select(Last_sel-1, TRUE) ; .
+	     
+
 END
 
 */

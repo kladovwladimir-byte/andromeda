@@ -230,7 +230,7 @@ STR Cache_name|_image
 {rect} D_o|verlay_dest
 {rect} dwo|_without_scale
 
-{rect} D_o_1|_position_to_output_1st_underlaying_image
+//{rect} D_o_1|_position_to_output_1st_underlaying_image
 {Bitmap} Scaled_img_1
 
 {Bitmap_direct} Scaled_prev|ious_image
@@ -339,6 +339,7 @@ BOOL No_lines|_while_paint
 BOOL Only_cur|rent_line
 INT count_satellites_drawn
 INT Last_satellites_drawn
+REAL total_scaleup
 	
 METHOD Paint_to2(
 {Canvas} C|anvas_to || c, BOOL To_bitmap), OPERATORS({Matrix})
@@ -355,22 +356,16 @@ METHOD Paint_to2(
 	scale_size = ww1
 	max_dist = Satellite_param.Max_dist.Text.Real
 	box_size = Satellite_param.Box_width.Text.Real
-	CASE Satellite_param.Transform_model.Visible 
-	     && Satellite_param.Transform_model.Active.Checked
-	     ?
-         CASE Satellite_param.Transform_model.Scaleing.Text != "" ? 
-              box_size = _ 
-                   / Satellite_param.Transform_model.Scaleing.Text.Real * 100
-         ;
-    ;
     ------------------------- 'do transformations'
     REAL total_rotate = 0
+    REAL total_scale = 1
     CASE Satellite_param.Scale_up_shift ?
          CASE Satellite_param.Collection_gal.Last_sel > 0
               ? 
               REAL scaleup|_value = Satellite_param.Collection_gal.Scale_1 / 100
 	          c.Offset(View_size.X/2, .Y/2)
 	          c.Scale(scaleup, scaleup)
+	          total_scale = scaleup
 	          ------------------------- 'save rotation value'
 	          total_rotate = Satellite_param.Collection_gal.Rotation_1 
 	          c.Rotate(Satellite_param.Collection_gal.Rotation_1)
@@ -381,6 +376,7 @@ METHOD Paint_to2(
          scaleup = Satellite_param.Scale_image.Text.Real / 100
          c.Offset(View_size.X/2, .Y/2)
          c.Scale(scaleup, scaleup)
+         total_scale *= scaleup
          ------------------------------ 'save rotation to fix #TEXT:...'
          total_rotate += Satellite_param.Rotate_image.Text.Real
          c.Rotate(Satellite_param.Rotate_image.Text.Real)
@@ -392,7 +388,7 @@ METHOD Paint_to2(
 	CASE Satellite_param.Enable_filtering ? 
 	     STR filt|ers_all[]
 	     Get_filters(filt[], Satellite_param.Filter_sat.Text)
-	     //DEBUG: "filters: " filt[].Merge(", ")#NL ;
+         //DEBUG: "filters: " filt[].Merge(", ")#NL ;
 	;
 	CASE No_lines ? 
 	     filt[].Clear 
@@ -404,8 +400,6 @@ METHOD Paint_to2(
 	     filt[].Clear
 	     filt[] << "#" ;
  	-------------------- 'center__point__init', REUSED
-    //center_pt = Pt(ww/2 + ww1*(Offset_x - 0.5),
-    //               h/2 + h*(Offset_y - 0.5))
 	center_pt = Pt(ww/2, h/2)
 	-------------------- 'draw options'
 	bright_by_k = Satellite_param.Bright_by_plasma_speed
@@ -510,19 +504,20 @@ METHOD Paint_to2(
          //   //NONE= Scaled_image.Save("test-scaled.png")
          //;
          CASE Satellite_param.Draw_background_image ? 
-	          CASE !To_bitmap && (Satellite_param.Scale_up_shift 
-	               || Calculations_diff.Visible)
-	            && Cache_image != NONE
-	            && Cache_sc.Near(Satellite_param.Scale_image.Text.Real)
-	            && Cache_ro.Near(Satellite_param.Rotate_image.Text.Real)
-	            && Cache_shift.X.Near(ShiftX)
-	            && Cache_shift.Y.Near(ShiftY)
-	            && Cache_cur==Current_image
-	            && Cache_name==All_img_names[Current_image]
-	            && Cache_im_D_o.Loc.X.Near(D_o.Loc.X)
-	            && Cache_im_D_o.Loc.Y.Near(D_o.Loc.Y)
-	            && Cache_im_D_o.W.Near(D_o.W)
-	            && Cache_im_D_o.H.Near(D_o.H)
+	          CASE  !Satellite_param.Collection_gal.Visible
+	               && !To_bitmap && (Satellite_param.Scale_up_shift
+	               		|| Calculations_diff.Visible)	
+		            && Cache_image != NONE
+		            && Cache_sc.Near(Satellite_param.Scale_image.Text.Real)
+		            && Cache_ro.Near(Satellite_param.Rotate_image.Text.Real)
+		            && Cache_shift.X.Near(ShiftX)
+		            && Cache_shift.Y.Near(ShiftY)
+		            && Cache_cur==Current_image
+		            && Cache_name==All_img_names[Current_image]
+		            && Cache_im_D_o.Loc.X.Near(D_o.Loc.X)
+		            && Cache_im_D_o.Loc.Y.Near(D_o.Loc.Y)
+		            && Cache_im_D_o.W.Near(D_o.W)
+		            && Cache_im_D_o.H.Near(D_o.H)
 	            ? 
 	            //DEBUG: "." ;
 	            CASE Satellite_param.Collection_gal.Visible
@@ -555,16 +550,42 @@ METHOD Paint_to2(
                        //Satellite_param.Collection_gal.Last_sel.S "_" D_o.Loc.X.S
                        // "_" D_o.Loc.Y.S "[" Scaled_image.Width.S
                        // "x" Scaled_image.Height.S "]" ".png", 9) ;
-                        
-			           CASE Satellite_param.Collection_gal.Last_sel == 0 ?
-			                Scaled_img_1 = Scaled_image
-			           		D_o_1 = D_o.CLONE
-			           		
-                            //DEBUG: ".............drawn Scaled_image (" 
-                            //  "" Scaled_image.Width "x" Scaled_image.Height 
-                            //  ") to " D_o_1.S #NL ;
-			           		
+                       
+			           CASE Satellite_param.Collection_gal.Last_sel==.Over_from ?
+                            //Scaled_img_1 = Scaled_image
+                            //D_o_1 = D_o.CLONE
+                            CASE Scaled_img_1.Width!=PBox.Width.Points_to_pixels
+                            || Scaled_img_1.Height!=PBox.Height.Points_to_pixels     
+                                 ?  
+	                             Scaled_img_1 = New_bitmap(
+	                             	 PBox.Width.Points_to_pixels,
+	                            	 PBox.Height.Points_to_pixels, 32) 
+	                        
+                            ;
+                            Scaled_img_1.Canvas.Copy_rect({rect}(
+                            	W= Scaled_img_1.Width.Pixels_to_points,
+                            	H= Scaled_img_1.Height.Pixels_to_points),
+                            	c,
+                            	{rect}(
+                            	W= Scaled_img_1.Width.Pixels_to_points,
+                            	H= Scaled_img_1.Height.Pixels_to_points)
+                            	)
+                            	
+                            Satellite_param.Collection_gal.Reset_overlay
+                            	
+                                 //DEBUG: "<-------------------get overlay image from "
+                                 //"" Satellite_param.Collection_gal.Last_sel #NL ;
+                                 //DEBUG: //Delete_file("Scaled_img_1.png")
+                                 //      {Png}.To_file(Scaled_img_1,
+                                 //   "Scaled_img_1.png", 9) ;
 			           ;
+                       //CASE Satellite_param.Collection_gal.Last_sel == 0 ?
+                       //     
+                       //     //DEBUG: ".............stored Scaled_image (" 
+                       //     //  "" Scaled_image.Width "x" Scaled_image.Height 
+                       //     //  ") to draw later at " D_o_1.S #NL ;
+                       //     
+                       //;
 			      }
 			      CASE !To_bitmap && (Satellite_param.Scale_up_shift
 			           || Calculations_diff.Visible)
@@ -602,75 +623,54 @@ METHOD Paint_to2(
 	          CASE Satellite_param.Collection_gal.Visible
 	               && (Satellite_param.Collection_gal.Draw_over.Checked
 	               	|| Satellite_param.Collection_gal.Only_overlay.Checked)
-	               && Satellite_param.Collection_gal.Last_sel > 0
+	               && Satellite_param.Collection_gal.Last_sel != .Over_from
 	               && Scaled_img_1 != NONE
 	               ? 
 	               --------------- 'draw overlaying image from gal[0]'
-                   //DEBUG: "trasformation overlay_1: " 
-                   //"" Satellite_param.Collection_gal.Scale_1 "%"
-                   //", rot=" Satellite_param.Collection_gal.Rotation_1
-                   //", x="sh.X ", y="sh.Y #NL ;
                    CASE !Satellite_param.Collection_gal.Only_overlay.Checked ?
-                        {point} ub_dest|ination = Pt(0,0)
 	                    {Bitmap} ub|itmap_underlined_output = Satellite_param
-	                          .Collection_gal.Prepare_overlay(Scaled_img_1, 
-	                          D_o_1)
-                   ELSE ub = Scaled_img_1
-                   		ub_dest = D_o_1.Loc.CLONE ;
+	                          .Collection_gal.Prepare_overlay(Scaled_img_1)
+                   ELSE ub = Scaled_img_1 ;
                          
 	               c.Reset_transform
-	               //ub.Draw(c, D_o_1.Loc)
-	               //ub.Draw(c, Pt(0,0))
-	               	//.Draw(c, Satellite_param.Collection_gal.Scaled_img_1.Loc)
-	               	
-                   //DEBUG:
-                   //      {Png}.To_file(ub,
-                   // Satellite_param.Collection_gal.Last_sel.S 
-                   // "[u]_" D_o_1.Loc.X.S "_" D_o_1.Loc.Y.S
-                   // "[" ub.Width.S "x" ub.Height.S "]" ".png", 9) ;
-	               --------------- 'draw the last spiral of the 1st gal'
+	               --------------- 'draw gal overlayed'
+	               ub.Draw(c, Pt(0, 0))
                    INT cur|rent_satellite 
                    .. = Satellite_param.Satellite_num.Current 
-	               CASE Satellite_param.Collection_gal.Last_sel > 0 { 
-	                    //&& Starts_dots_1[].Count > 2 { 
+		           CASE Satellite_param.Collection_gal.Draw_spiral_1.Checked { 
 	               		PUSH c.Foreground = WHITE :
 	               		PUSH c.Pen_width = 1 :
 	               		     CASE Satellite_param.Collection_gal
 	               		          .Overlay_inverted.Checked 
 	               		          ?  
 	               		          c.Foreground = BLACK ;
-                             //DEBUG: "want draw spirals 1 "
-                             //   " Transform1=" 
-                             //   "" Satellite_param.Collection_gal.Transform_1 
-                             //   #NL ;
                              
 	               			 c.Reset_transform
-	               			 STR tv|alues_transforms[].Split(
+                             
+	               			 STR tv|alues_transforms[]
+	               			 ---------------- 'use__Transform_1' 
+	               			 tv[].Split(
 	               			 	Satellite_param.Collection_gal.Transform_1, ";")
-	               			 	 
-				             c.Offset(View_size.X/2, .Y/2)
-			                 c.Scale(tv[0].Real, tv[0].Real)
-			                 c.Rotate(tv[1].Real)
-				             c.Offset(-View_size.X/2, -.Y/2)
-				             c.Offset(tv[2].Real, tv[3].Real)
-				             ub.Draw(c, ub_dest)
-				             CASE Satellite_param.Collection_gal
-				                  .Draw_spiral_1.Checked 
-				                  ? 
-                                  //DEBUG: "want draw stored spirals cur=" cur 
-                                  //  "starts[]: " Dots_1[cur].Starts[].Count
-                                  //  "Dots[]:" Dots_1[cur].Dots[].Count
-                                  //  "" #NL ;
-                                  CASE Dots_1[cur].Starts[].Count > 1 ?
-				                  FOR r IN [0 TO Dots_1[cur].Starts[].Count-2] :
-				                      CASE Dots_1[cur].Starts[r] < .Starts[r+1]?
-				                           c.Poly(
-				                           	Dots_1[cur].Dots[.Starts[
-				                           	r] TO .Starts[r+1]-1], FALSE)
-				                      ;
-				                  ;
-				                  ;
-				             ;
+	               			 CASE tv[].Count >= 4 ? 
+					              c.Offset(View_size.X/2, .Y/2)
+				                  c.Scale(tv[0].Real, tv[0].Real)
+				                  c.Rotate(tv[1].Real)
+					              c.Offset(-View_size.X/2, -.Y/2)
+					              c.Offset(tv[2].Real, tv[3].Real) ;
+			                 -------- 'draw the last spiral of the 1st gal'
+                             //DEBUG: "want draw stored spirals cur=" cur 
+                             //  "starts[]: " Dots_1[cur].Starts[].Count
+                             //  "Dots[]:" Dots_1[cur].Dots[].Count
+                             //  "" #NL ;
+                             CASE Dots_1[cur].Starts[].Count > 1 ?
+			                 FOR r IN [0 TO Dots_1[cur].Starts[].Count-2] :
+			                     CASE Dots_1[cur].Starts[r] < .Starts[r+1]?
+			                          c.Poly(
+			                             Dots_1[cur].Dots[.Starts[
+			                             r] TO .Starts[r+1]-1], FALSE)
+			                     ;
+			                 ;
+			                 ;
 	               		;
 	               		;
 	               }
@@ -682,7 +682,7 @@ METHOD Paint_to2(
               && Calculations_diff.Visible
               && Calculations_diff.Do_calculations.Checked
               ?
-              prepare_brightness_table //(ww, h_box)
+              prepare_brightness_table
          ;
 	;
 	c.Reset_transform
@@ -697,8 +697,10 @@ METHOD Paint_to2(
 	    CASE ?
 	    [sat1.Name.[0]=="#"] ?     
 	    	 CASE !Satellite_param.Show_text ? CONTINUE sat1 ;
-             STR names|_depending_staellites_splitted[].Split(
-                   	   sat1.Name.After(":"), ",")
+             STR names|_depending_satellites_splitted[].Split(
+                   	   sat1.Name, ":")
+             
+             names[].Split(names[1], ",")
              //DEBUG: "names[]: " names[].Merge(",") " filt[]=" filt[].Merge(",")
              //       #NL ;
              CASE names[].Count == 0 ? skip = FALSE ;
@@ -709,11 +711,17 @@ METHOD Paint_to2(
                  [Satellite_param.All_satellites[f.Int-1].Name IN names[]] ?
                      skip = FALSE ;
              ;
+             CASE !skip && (sat1.INDEX+1).S !IN filt[] ? 
+                  filt[] << (sat1.INDEX+1).S ;
 	    [filt[].Count > 0 && (sat1.INDEX+1).S IN filt[]] ? skip = FALSE
-	    [filt[].Count==0] ? skip = FALSE ;
+	    [filt[].Count==0 || .Count==1 && filt[0].Trim==""] ? skip = FALSE ;
         CASE ?
-        [skip] ? CONTINUE sat1
-        [(sat1.INDEX+1).S !IN filt[]] ? filt[] << (sat1.INDEX+1).S ;
+        [skip] ?
+            //DEBUG: "skipping " (sat1.INDEX+1) "(" sat.Name 
+            //"), filt[]=" filt[].Merge(";") #NL ;
+            CONTINUE sat1
+        //[(sat1.INDEX+1).S !IN filt[]] ? filt[] << (sat1.INDEX+1).S 
+        ;
 	    speed_max = _.Max(sat1.SpeedK).Max(sat1.FinalK)
 	    count_satellites_drawn += 1
 	;
@@ -722,30 +730,42 @@ METHOD Paint_to2(
 		View_size.X * mouse_down_rmb.X, View_size.Y * mouse_down_rmb.Y)
 		
 	scale_ly_per_pt = box_size / ww
+	Last_transform = ""
 	CASE Satellite_param.Scale_up_shift ?
 		 c.Reset_transform     
+		 total_scaleup = 1
 		 CASE Satellite_param.Collection_gal.Last_sel > 0
 		      ? 
 		      scaleup = Satellite_param.Collection_gal.Scale_1 / 100
-	          c.Offset(View_size.X/2, .Y/2)
-	          c.Scale(scaleup, scaleup)
-	          c.Rotate(Satellite_param.Collection_gal.Rotation_1)
-	          c.Offset(-View_size.X/2, -.Y/2)
+	          total_scaleup = scaleup
+	          c...Offset(View_size.X/2, .Y/2)
+	           ...Scale(scaleup, scaleup)
+	           ...Rotate(Satellite_param.Collection_gal.Rotation_1)
+	           ...Offset(-View_size.X/2, -.Y/2)
 	          sh1 = Satellite_param.Collection_gal.Shift_1.CLONE
 	          c.Offset(View_size.X * sh1.X / 100, View_size.Y * sh1.Y / 100)
+              //DEBUG: "scale:" scaleup 
+              //  " rotate:" Satellite_param.Collection_gal.Rotation_1 
+              //  " shift:" sh1.S #NL ;
 		 ;
-	     scaleup = Satellite_param.Scale_image.Text.Real / 100
-	     c.Offset(View_size.X/2, .Y/2)
-	     c.Scale(scaleup, scaleup)
-	     c.Rotate(Satellite_param.Rotate_image.Text.Real)
-	     c.Offset(-View_size.X/2, -.Y/2)
-	     c.Offset(View_size.X * ShiftX / 100, .Y * ShiftY / 100)
-	     //c.Offset(View_size.X * ShiftX / 100, .X * ShiftY / 100)
+		 -------- 'current gal transformations'
+		      scaleup = Satellite_param.Scale_image.Text.Real / 100
+		      total_scaleup *= scaleup
+		      c.Offset(View_size.X/2, .Y/2)
+		      c.Scale(scaleup, scaleup)
+		      c.Rotate(Satellite_param.Rotate_image.Text.Real)
+		      c.Offset(-View_size.X/2, -.Y/2)
+		      c.Offset(View_size.X * ShiftX / 100, .Y * ShiftY / 100)
+              //DEBUG: "" Satellite_param.Collection_gal.Last_sel "scale:" scaleup 
+              //  " rotate:" Satellite_param.Rotate_image.Text
+              //  " shift:" ShiftX " " ShiftY #NL ;
 	     ----- 'store last spiral transform (for gal[0] to draw it over later)'
-	     Last_transform = "" scaleup.S ";" Satellite_param.Rotate_image.Text
-	     	";" (View_size.X * ShiftX / 100).S 
-	     	";" (View_size.Y * ShiftY / 100).S
-	ELSE Last_transform = ""
+		      Last_transform = "" scaleup.S ";" Satellite_param.Rotate_image.Text
+		     	 ";" (View_size.X * ShiftX / 100).S 
+		     	 ";" (View_size.Y * ShiftY / 100).S 
+		     	 ";" box_size.S
+	     	
+         //DEBUG: "Last_transform=" Last_transform #NL ;
 	;
 	------------ 'color for secondary spiral'
 	STR d_c|olors[].Split(Satellite_param.Edit_line_w.Text, " ")
@@ -768,6 +788,7 @@ METHOD Paint_to2(
 	     	 REAL a|ngle_rotation_radians
 	     	 REAL len_v|ector
 	     	 REAL b_size|_set
+	     	 REAL mul|tiplier_dist
 			 -------------- 'center__may__be__local', REUSED     
 	         center_pt = Pt(ww/2 + ww1*(sat1.Center_gal.X - 0.5 + adD_offset_x),
 	         	h/2 + h*(sat1.Center_gal.Y - 0.5 + adD_offset_y))
@@ -784,42 +805,111 @@ METHOD Paint_to2(
 	         	  
 	         	  CASE Satellite_param.Transform_model.Visible 
 	         	       && Satellite_param.Transform_model.Active.Checked
-	         	       && Satellite_param.Transform_model.Rotation.Text != "" 
+	         	       //&& Satellite_param.Transform_model.Rotation.Text != "" 
 	         	       ?
 	         	  	   a = Satellite_param.Transform_model.Rotation.Text.Real
 	         	  	   a = -_ / 180 * PI
-	         	  	   v_move = Pt(Cos(a)*_.X + Sin(a)*_.Y,
-	         	  	   		  	  -Sin(a)*_.X + Cos(a)*_.Y)
+	         	  	   mul = 1
+	         	  	   CASE "" != Satellite_param.Transform_model.Scaleing.Text ? 
+	         	  	        mul = Satellite_param.Transform_model
+	         	  	        	.Scaleing.Text.Real / 100 ;
+	         	  	   v_move = Pt(Cos(a)*_.X*mul + Sin(a)*_.Y*mul,
+	         	  	   		  	  -Sin(a)*_.X*mul + Cos(a)*_.Y*mul)
 	         	  ;
 	         	  	  	 
 	         	  center_pt = center_pt0.Offset(v_move. X, .Y)
+	         	  
+	         	  
 	         ;
 		     --------------
 		sat_index = sat1.INDEX   
 		CASE !Satellite_param.Same_max_dist ? max_dist = sat1.Max_dist ;   
 		sat = sat1.CLONE
-		CASE filt[].Count > 0 && (sat1.INDEX+1).S !IN filt[] ? CONTINUE sat1 ;
+		CASE filt[].Count > 0 && (sat1.INDEX+1).S !IN filt[] ?
+             //DEBUG: "SKIPPING " (sat1.INDEX+1) "(" sat.Name ") "
+             //   "filt[]=" filt[].Merge(",") #NL ;
+		     CONTINUE sat1 ;
 		--------------------------- '#(filter)CMD:param'
 		CASE sat1.Name.[0]=="#" ? 
 		     STR cmd|_and_param[].Split(sat1.Name, ":")   
 			 INT arm_c|olor = sat.ArmsColors * 2 //+ pass - 1
 			 c.Foreground = color_of_arm(arm_c)
-			 CASE cmd[0].Lower ? 
-			 ["#text"]:
-			     PUSH c.Font.Size = 12 * Satellite_param.Scale_image.Text.Real 
-			     	  / 100
-			     	  :
-			     	  CASE cmd[0].Upper==cmd[0] && !total_rotate.Near(0) ?
-			     	       c.Offset(center_pt.X ,.Y)
-			     	       c.Rotate(-total_rotate)
-			     	       c.Offset(-center_pt.X ,-.Y)
-			     	  ;
-			     FOR line IN sat1.Text[] :
-			         c.Text(center_pt, line)
-			         center_pt.Y += c.Font.Size
-			     ;
-			     ;
+			 BOOL un_rotated = FALSE
+	     	 CASE ?
+	     	 [cmd[0].Upper==cmd[0] && !total_rotate.Near(0)] ?
+	     	      c.Offset(center_pt.X ,.Y)
+	     	      c.Rotate(-total_rotate)
+	     	      c.Offset(-center_pt.X ,-.Y)
+	     	      un_rotated = TRUE
+                  //DEBUG: "un-rotated by " total_rotate #NL ;
+	     	 ;
+		     PUSH c.Font.Size = 12 / total_scale * PBox.Width / 1000 :
+		          {point} sp|oint_start = center_pt.CLONE
+			  	  {point} min_p|oint = sp.CLONE
+			  	  {point} max_p|oint = min_p.CLONE
+				  CASE cmd[0].Lower ? 
+				  ["#text"]:
+				  	  -------------------------------- '#text', REUSED
+				      FOR line IN sat1.Text[] :
+				          c.Text(sp, line)
+				          min_p = Pt(_.X, _.Y.Min(sp.Y))
+				          sp.Y += c.Font.Size
+				          max_p = Pt(_.X.Max(sp.X + c.Measure(line).W), 
+				          			 _.Y.Max(sp.Y))
+				      ;
+				      --------------------------------
+				  ["#arrow"]:
+				  	  CASE cmd[].Count >= 4 ? REAL a_w|idth_arrow = cmd[3].Real
+				  	  ELSE a_w = 1 ;
+				  	  CASE cmd[].Count >= 3 ? REAL a_l|ength_arrow = cmd[2].Real
+				  	  ELSE a_l = 20 ;
+				  	  a_w /= total_scale
+				  	  a_l /= total_scale
+                    DEBUG: "a_w=" a_w " a_l="a_l " total_scale=" total_scale 
+                        " total_rotate=" total_rotate #NL ;
+                      min_p = Pt(_.X, _.Y - a_w)
+                      min_p = Pt(_.X, _.Y + a_w)
+                      -------------------- 'rotate arrow ?'
+                      CASE cmd[4] != "" ? 
+                           REAL rot_a|rrow = -cmd[4].Real / 180 * PI ;
+                      co = Cos(rot_a)
+                      si = Sin(rot_a)
+				      {point} arr|ow_pts[] << sp.CLONE 
+				      ..[] << offset_r(sp, a_w*4, -a_w*2)
+				      ..[] << offset_r(sp, a_w*4, -a_w/2)
+				      ..[] << offset_r(sp, a_l, -a_w/2)
+				      ..[] << offset_r(sp, a_l, a_w/2)
+				      ..[] << offset_r(sp, a_w*4, a_w/2)
+				      ..[] << offset_r(sp, a_w*4, a_w*2)
+				      PUSH c.Background = c.Foreground :
+				           c.Poly(arr[0 TO *], TRUE) ;
+				      sp = offset_r(sp, a_l+a_w+c.Font.Size/2, 
+				      			-c.Font.Size/2)
+				      			
+				      LIKE ................................. '#text'
+				  ["#circle"]:
+				      REAL radius|_of_circle = cmd[2].Real
+				      CASE radius <= 0 ?  radius = 20 ;
+				      radius = _ * PBox.Width / 3000 / total_scale
+				      PUSH c.Brush = 'CLEAR_BRUSH' :
+				           c.Ellipse({rect}(Loc=Pt(sp.X-radius, .Y-radius),
+				           	W=radius*2, H=radius*2)) ;
+				      min_p = Pt(sp.X-radius-2, .Y-radius-2)
+				      max_p = Pt(sp.X+radius+2, .Y+radius+2)
+				      sp = _.Offset(radius+c.Font.Size, -c.Font.Size/2)
+				      LIKE ................................. '#text'
+				  ;
 			 ;
+			 CASE Satellite_param.Satellite_num.Current==sat1.INDEX ? 
+			      PUSH c.Brush = 'CLEAR_BRUSH' :
+			           c.Rect({rect}(Loc=min_p.CLONE, W=max_p.X-min_p.X,
+			           		H=max_p.Y-min_p.Y)) ;
+			 ;
+	     	 CASE un_rotated ?
+	     	      c.Offset(center_pt.X ,.Y)
+	     	      c.Rotate(total_rotate)
+	     	      c.Offset(-center_pt.X ,-.Y)
+	     	 ;
 			 CONTINUE sat1
 		;
 		---------------------------  'orbit' 
@@ -858,12 +948,18 @@ METHOD Paint_to2(
 			 BOOL hide_all_spirals = TRUE
 		;
 		CASE Satellite_param.Collection_gal.Visible
-			 && .Last_sel == 0     
 		     && .Double_pen_1.Checked
 		     ? 
-		     c.Pen_width = _ * 2 ;
+		     CASE Satellite_param.Collection_gal.Last_sel == 0 ? 
+		          c.Pen_width = _ * 2 ;
+             //DEBUG: "PEN_W=" c.Pen_width " total_scaleup=" total_scaleup #NL ;
+		;
 		CASE Satellite_param.Edit_line_w.Text.Real > 0 ? 
 		     c.Pen_width *= Satellite_param.Edit_line_w.Text.Real ;
+		//CASE total_scaleup > 1 ? 
+        //DEBUG: "Pen_width " c.Pen_width " total_scaleup=" total_scaleup
+        //        " --> " (c.Pen_width / total_scaleup) #NL ;
+		     c.Pen_width = _ / total_scaleup //;
 		CASE !show_spiral 
 		     && (Satellite_param.Draw_orbits == 0 || .Draw_orbits==1
 		     	&& sat1.INDEX != Satellite_param.Satellite_num.Current)
@@ -888,8 +984,6 @@ METHOD Paint_to2(
 		     glove = 0 ;
 			
 		CASE bright_by_k ? c.Pen_width *= 2 ;
-		CASE Satellite_param.Scale_up_shift ? 
-		     c.Pen_width = _ / Scaling_image * 100 ;
 		     
 	    from_year = sat.Last_act
 	    skip_years = sat.First_ac
@@ -900,7 +994,7 @@ METHOD Paint_to2(
 	    REAL m_M|ass_multiplyer = Satellite_param.Mass_BH.Text.Real 
 	         .. = _ * Sun_mass / Mass_BH0
 	    REAL m_a|_coords_multiplyer = (m_T.qq * m_M).Power(1.0/3)
-	    //DEBUG: "per_scale=" per_scale #NL ;
+        //DEBUG: "per_scale=" per_scale #NL ;
 	    
 	    ------------------- 'center point'
 	    xx0 = center_pt.X
@@ -974,7 +1068,23 @@ METHOD Paint_to2(
 	                  fore2 = _.Mix_percents(BLACK, 70) ;
 	        }
 	        	      
-	        -----------------
+            //CASE Satellite_param.Collection_gal.Visible
+            //     && .Last_sel > 0 
+            //     && .Always_base_gal.Checked
+            //     ? 
+            //     c.Reset_transform
+            //     LIKE ............ 'use__Transform_1'
+            //        REAL scale_2|nd = Satellite_param.Scale_image.Text.Real 
+            //        .. /= 100
+            //          c.Offset(View_size.X/2, .Y/2)
+            //          c.Scale(scale_2, scale_2)
+            //          c.Offset(-View_size.X/2, -.Y/2)
+            //     box_size = tv[4].Real 
+            //     ;
+    		------------------------------------ 'select transformation matrix'
+            use_M_transform = M_transform
+            //DEBUG: "use_M_transform:"#NL use_M_transform.Str #NL ;
+	        ----------------- 'draw arms'
 	        PUSH each_10_000 :
 	             CASE Satellite_param.Draw_as >= 3 ? 
 	                  each_10_000 = 0 ;
@@ -989,10 +1099,11 @@ METHOD Paint_to2(
 	             ;
 	        ;
 	    -------------------------------------------------------------->
-		//DEBUG: "satellite " sat.INDEX " last_pos=" sat.Last_i_pos #NL ;
+        //DEBUG: "satellite " sat_index " last_pos=" sat.Last_i_pos 
+        //      " Store_dots=" Store_dots.S #NL ;
 	    CASE Store_dots ? 
 	    	 pass= -1     
-	    	 LIKE ................. 'start__dots'//, BUT(passA==>pass!!!A)
+	    	 LIKE ................. 'start__dots'
 	    	 cur = Satellite_param.Satellite_num.Current
 		     CASE Satellite_param.Collection_gal.Visible 
 		          && Satellite_param.Collection_gal.Last_sel==0
@@ -1007,7 +1118,7 @@ METHOD Paint_to2(
 		          FOR aa IN [0 TO Starts_dots[].Count-1] :
 		              Dots_1[cur].Starts[aa] = Starts_dots[aa] ;
 		          
-                  //DEBUG: "store dots of satellite " cur 
+                  //DEBUG: "^^^^^^^ store dots of satellite " cur 
                   //"(" Dots_1[cur].Starts[].Count " starts, "
                   //"dots[]:" Dots_1[cur].Dots[].Count ")"#NL ;
 		     ;
@@ -1269,6 +1380,7 @@ REAL z_mul|tiplier
 REAL scale_ly_per_pt
 
 REAL box_size
+//REAL box_size_1
 REAL scale_size
 REAL max_dist
 
@@ -1299,13 +1411,24 @@ BOOL No_clear_dots
 BOOL crossing|_spiral_is_drawing_now
 
 {Spiral_dots} Dots_1|_cache[]
+{Matrix} use_M_transform
+
+------------------------ 'DRAW ONE ARM'
     	
 METHOD draw_one_arm(
 {Elliptic_orbit} orbit|_of_satellite,
 INT pass|_arm_number,
 {Canvas} c|anvas_destination), OPERATORS({Matrix})
     :
+	REAL scale_by_box_size = box_size
+    //CASE Satellite_param.Collection_gal.Last_sel > 0
+    //     && .Always_base_gal.Checked
+    //     ? 
+    //     scale_by_box_size = box_size_1 ;
+    
+    //DEBUG: "draw arm, pass=" pass " box_size=" scale_by_box_size #NL ;
     BOOL present_prev|ious = FALSE
+    ------------------------------------ 'some inits'
     REAL start_time = 0
     INT i_point|_index = 0
     REAL abs_per_scale = per_scale.Abs
@@ -1326,6 +1449,10 @@ INT pass|_arm_number,
 	REAL one_px|_minimum_draw_line = 1
 	BOOL actual_draw|n_line
 	INT out_points = 0
+    //DEBUG: "pass=" pass ", arm_n=" arm_n 
+    //    ", speed_K=" sat.SpeedK ", speed_F=" sat.FinalK
+    //    ", xy_mul=" xy_mul ", z_mul=" z_mul 
+    //    ", use_M_transform=" use_M_transform.Str #NL ;
     FOR j IN [0 TO end_year.Int] <------------------------
         {e_point} ep|oint_ellipse = orbit.Points[i_point].CLONE
         REAL dT|ime_passed = end_year - (ep.T + start_time) * abs_per_scale
@@ -1367,11 +1494,6 @@ INT pass|_arm_number,
              REAL speed_i|_point = sat.SpeedK
              CASE pass > 2 ? speed_i = sat.FinalK ;
              CASE speed_i <= 0 ? ==> ;
-        //[sat.FinalK > 0 && sat.Eccentricity > 0] ?
-        //     speed_i = (ep.R - orbit.Q_min) / (.Q_max - .Q_min)
-        //     CASE Satellite_param.Alter_plasma_speed ?
-        //          speed_i = sat.FinalK - _ * (.FinalK - .SpeedK)
-        //     ELSE speed_i = sat.SpeedK + _ * (.FinalK - .SpeedK) ;
              //DEBUG: "speed_k=" sat.SpeedK " final_k=" sat.FinalK 
              //       " e=" sat.Eccentricity
              //       " speed_" i_point "/" orbit.Points[].Count 
@@ -1407,7 +1529,7 @@ INT pass|_arm_number,
         zz = arm_n * (ep.Dir.X.qq + ep.Dir.Y.qq).Sqrt * dT * speed_i
         .. *= z_mul
         ------------------------- 'apply rotations'
-        v = Vector_3(xx, yy, zz) * M_transform
+        v = Vector_3(xx, yy, zz) * use_M_transform
         xx = +v.[0]
         yy = -v.[1]
         ------------------------- 'time distortion'
@@ -1433,8 +1555,8 @@ INT pass|_arm_number,
         ------------------------- 'final point coords'
         REAL xx_light_y = xx
         REAL yy_light_y = yy
-        xx = _ / box_size * scale_size + center_pt.X 
-        yy = _ / box_size * scale_size + center_pt.Y
+        xx = _ / scale_by_box_size * scale_size + center_pt.X 
+        yy = _ / scale_by_box_size * scale_size + center_pt.Y
         --------------------- 'correct for retrospective from Sun in MW'
         CASE Satellite_param.Retrospective {
              REAL dist_sun || ds = Distance(sun, Pt(xx,yy)) * scale_ly_per_pt
@@ -1694,6 +1816,8 @@ REAL rotate_s|couring
 {Matrix} M_tilt|ing
 {Matrix} M_start|_rotation
 {Matrix} M_transform|ations
+//{Matrix} Last_M_transform
+//{Matrix} M_transform_1
 
 METHOD provide_matrices(
 	{satellite_param} sat|ellite),
@@ -1728,14 +1852,14 @@ METHOD provide_matrices(
     CASE Satellite_param.Transform_model.Visible 
          && Satellite_param.Transform_model.Active.Checked
          ?
-         u -= Satellite_param.Transform_model.Rotation.Text.Real / 180 * PI
-         //CASE Satellite_param.Transform_model.Scaleing.Text != "" ? 
-         //     CASE Satellite_param.Transform_model.Scale_relative.Checked ? 
-         //          m = m
-         //          +m * Satellite_param.Transform_model.Scaleing.Text.Real / 100
-         //     ELSE m = m 
-         //          * Satellite_param.Transform_model.Scaleing.Text.Real / 100 ;
-         //;
+         CASE Satellite_param.Transform_model.Rotation.Text != "" ? 
+              u -= Satellite_param.Transform_model.Rotation.Text.Real / 180 * PI
+         ;
+         CASE "100" != Satellite_param.Transform_model.Scaleing.Text != "" ? 
+              //DEBUG: "m= " m ;
+              m = m * Satellite_param.Transform_model.Scaleing.Text.Real / 100
+              //DEBUG: " --> " m #NL ;
+         ;
     ;
     --------------------------------------------- 'calc__lines2'
     line_1 = Vector_3(Cos(u) * m, Sin(u) * m, 0)
@@ -1760,7 +1884,9 @@ METHOD provide_matrices(
          M_transform = M_tilt * M_start * M_incl * M_rot_proj 
          				*mat_rotate_s*mat_rotate_p
     ELSE M_transform = M_tilt * M_start * M_incl * M_rot_proj
-    ; .
+    ;
+    //Last_M_transform = M_transform.Clone
+    .
     
 {Matrix} mat_rotate_s
 {Matrix} mat_rotate_p
@@ -1815,7 +1941,7 @@ PUSH processing_mouse = TRUE : down_time = Now
     rotate_p0 = rotate_p
     rotate_s0 = rotate_s
 	mouse_down0 = mouse
-	DEBUG: "down0=" mouse_down0.S #NL ;
+    //DEBUG: "down0=" mouse_down0.S #NL ;
 	drag_center = !rmb_down
 	CASE drag_center ?
 	     {rect} r_centr|al_square = PBox.Bounds.Inflate(-PBox.Width/3, -.Height/3)
@@ -1980,7 +2106,7 @@ PUSH processing_mouse = TRUE :
 	[drag_center] ?
 		 CASE ?
 		 [Satellite_param.Scale_up_shift && !Key.Control] ?
-		 	DEBUG: "move: " mouse.S " (down=" mouse_down0.S  ")"#NL ;
+            //DEBUG: "move: " mouse.S " (down=" mouse_down0.S  ")"#NL ;
 		 	  REAL rA|ngle_rotate
 		 	  REAL cA|ngle_correction 
 		 	  REAL sA|ngle_correction 
@@ -2535,6 +2661,15 @@ OVERRIDE closing ==> {Form}.{action} :
 	     CASE !ask("Collection was changed. Continue closing?") ? 
 	          RESULT = 'DECLINE' ;
 	; .
+	
+REAL co|sinus_rot_a	
+REAL si|nus_rot_a
+
+METHOD offset_r|otated({point} b|ase_point, REAL v_X|_offset, REAL v_Y|_offset) 
+==> {point}
+    :
+     RESULT = Pt(b.X + co * v_X + si * v_Y,
+     			 b.Y - si * v_X + co * v_Y) .
 	
 END
 

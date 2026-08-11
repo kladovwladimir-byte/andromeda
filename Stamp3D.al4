@@ -47,18 +47,23 @@ METHOD Create|_3Dstamp ==> {Bitmap_direct}, NEW :
 		 CASE Bitmaps_24 ? 
 		      {Bitmap_direct} src|_temp = New_bitmap_24(Source.Width, .Height, 
 		     	 Stamp_parameters_.Holder)
-		      CASE Source.{Bitmap_24} != NONE ? 
-		           Source.{Bitmap_24}.Copy_to(src.Canvas) 
-		      ELSE Source.Draw(src.Canvas, Pt(0, 0)) 
+		      CASE r.{Bitmap_24} != NONE ? 
+		           r.{Bitmap_24}.Copy_to(src.Canvas) 
+		           DEBUG: "CCCCCCCCCCCCCCCCCCCopy as {Bitmap_24} "
+		           		"" r.Width " x " .Height #NL ;
+		      ELSE r.Draw(src.Canvas, Pt(0, 0)) 
+		           DEBUG: "DDDDDDDDDDDDDDDDDDDraw r:" r.Width 
+		           		" x " .Height  #NL ;
 		      ;
-		 ELSE src= New_bitmap_direct(Source.Width, .Height, 24)
-		      Source.Draw(src.Canvas, Pt(0, 0))
+		 ELSE src= New_bitmap_direct(r.Width, .Height, 24)
+		      r.Draw(src.Canvas, Pt(0, 0))
 		 ;
 	     	 
 	;
     DEBUG: 
           {Png}.To_file(r, "bmp-before.png", 100)
           {Png}.To_file(src, "src-before.png", 100)
+          {Png}.To_file(Source, "Source-before.png", 100)
     ;
 	CASE ?
 	[Use_file && !Radial && Experimental < 4] ?
