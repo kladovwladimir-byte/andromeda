@@ -1469,7 +1469,7 @@ OVERRIDE click :
                       .Lower.Starting("stamp#")
                       ?
 	                  STR fdel|ete_file= Main_.All_img_names[.Current_image] 
-	                  ..= Images_path.Trailing_slash _
+	                  ..= Images_path _
 	                  DEBUG: "DELETING " fdel #NL ;
 	                  Delete_file(fdel) ;
                  CASE Collection_gal.Visible ? 

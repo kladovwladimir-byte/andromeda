@@ -5,7 +5,7 @@ CLASS {Main_plasma_tides}, UNTESTED, BITWISE .
 IMPORT {Form_common}, {Satellite_param}, {Elliptic_orbit}, {Localize_str} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}}, {HSV}, {Collection_gal} .
 IMPORT: {Vector}, {Matrix}, {Calculations_diff}, {Bitmap_direct}, {Spiral_dots}.
-IMPORT: {Transform_model} .
+IMPORT: {Transform_model}, {Cache_small} .
 IMPORT, DEBUG: {Bmp}, {Png} .
 
 BASE CLASS: {Form_common} .
@@ -784,44 +784,44 @@ METHOD Paint_to2(
     ;
 	
 	PUSH center_pt :
-	     	 {point} v_move|vector_from_center_pt0_to_center_pt_of_current_sat
-	     	 REAL a|ngle_rotation_radians
-	     	 REAL len_v|ector
-	     	 REAL b_size|_set
-	     	 REAL mul|tiplier_dist
-			 -------------- 'center__may__be__local', REUSED     
-	         center_pt = Pt(ww/2 + ww1*(sat1.Center_gal.X - 0.5 + adD_offset_x),
-	         	h/2 + h*(sat1.Center_gal.Y - 0.5 + adD_offset_y))
-	         CASE sat1.INDEX == 0 
-	              || sat1.Name==Satellite_param.All_satellites[0].Name != "" 
-	              ?
-	              center_pt0 = center_pt.CLONE 
-	         ELSE
-	              b_size = Satellite_param.Box_width.Text.Real
-	         	  v_move = Pt((center_pt.X - center_pt0.X) * 100000 / box_size,
-	         	  	  	 	  (center_pt.Y - center_pt0.Y) * 100000 / box_size)
-	         	  	  	 	  
-                  //DEBUG: "v_move=" v_move.X " " v_move.Y #NL ;
-	         	  
-	         	  CASE Satellite_param.Transform_model.Visible 
-	         	       && Satellite_param.Transform_model.Active.Checked
-	         	       //&& Satellite_param.Transform_model.Rotation.Text != "" 
-	         	       ?
-	         	  	   a = Satellite_param.Transform_model.Rotation.Text.Real
-	         	  	   a = -_ / 180 * PI
-	         	  	   mul = 1
-	         	  	   CASE "" != Satellite_param.Transform_model.Scaleing.Text ? 
-	         	  	        mul = Satellite_param.Transform_model
-	         	  	        	.Scaleing.Text.Real / 100 ;
-	         	  	   v_move = Pt(Cos(a)*_.X*mul + Sin(a)*_.Y*mul,
-	         	  	   		  	  -Sin(a)*_.X*mul + Cos(a)*_.Y*mul)
-	         	  ;
-	         	  	  	 
-	         	  center_pt = center_pt0.Offset(v_move. X, .Y)
-	         	  
-	         	  
-	         ;
-		     --------------
+     	{point} v_move|vector_from_center_pt0_to_center_pt_of_current_sat
+     	REAL a|ngle_rotation_radians
+     	REAL len_v|ector
+     	REAL b_size|_set
+     	REAL mul|tiplier_dist
+		-------------- 'center__may__be__local', REUSED     
+        center_pt = Pt(ww/2 + ww1*(sat1.Center_gal.X - 0.5 + adD_offset_x),
+            h/2 + h*(sat1.Center_gal.Y - 0.5 + adD_offset_y))
+        CASE sat1.INDEX == 0 
+             || sat1.Name==Satellite_param.All_satellites[0].Name != "" 
+             ?
+             center_pt0 = center_pt.CLONE 
+        ELSE
+             b_size = Satellite_param.Box_width.Text.Real
+         	 v_move = Pt((center_pt.X - center_pt0.X) * 100000 / box_size,
+         	  	  	 	 (center_pt.Y - center_pt0.Y) * 100000 / box_size)
+         	  	  	 	 
+             //DEBUG: "v_move=" v_move.X " " v_move.Y #NL ;
+         	 
+         	 CASE Satellite_param.Transform_model.Visible 
+         	      && Satellite_param.Transform_model.Active.Checked
+         	      //&& Satellite_param.Transform_model.Rotation.Text != "" 
+         	      ?
+         	  	  a = Satellite_param.Transform_model.Rotation.Text.Real
+         	  	  a = -_ / 180 * PI
+         	  	  mul = 1
+         	  	  CASE "" != Satellite_param.Transform_model.Scaleing.Text ? 
+         	  	       mul = Satellite_param.Transform_model
+         	  	           .Scaleing.Text.Real / 100 ;
+         	  	  v_move = Pt(Cos(a)*_.X*mul + Sin(a)*_.Y*mul,
+         	  	   		  	 -Sin(a)*_.X*mul + Cos(a)*_.Y*mul)
+         	 ;
+         	  	  	
+         	 center_pt = center_pt0.Offset(v_move. X, .Y)
+         	 
+         	 
+        ;
+	    --------------
 		sat_index = sat1.INDEX   
 		CASE !Satellite_param.Same_max_dist ? max_dist = sat1.Max_dist ;   
 		sat = sat1.CLONE
@@ -898,6 +898,19 @@ METHOD Paint_to2(
 				      max_p = Pt(sp.X+radius+2, .Y+radius+2)
 				      sp = _.Offset(radius+c.Font.Size, -c.Font.Size/2)
 				      LIKE ................................. '#text'
+				  ["#image"]:
+				      STR fname|_image = Satellite_param.Images_path cmd[2]
+				      CASE Cache_small==NONE ?
+				           Cache_small = {Cache_small} ;
+				      {Bitmap} im|age_temp = Cache_small.Get(fname)
+				      REAL i_sc|ale_image = cmd[3].Real/200
+				      CASE i_sc <= 0 ? i_sc = 0.5 ;
+				      CASE cmd[3].[*] != "*" ? i_sc *= total_scale ;     
+				      im.Stretch_draw(c, 
+				      	{rect}(Loc= Pt(sp.X - im.Width.Pixels_to_points*i_sc,
+				      				sp.Y - im.Height.Pixels_to_points*i_sc),
+				      			W= im.Width.Pixels_to_points*i_sc*2,
+				      			H= im.Height.Pixels_to_points*i_sc*2))
 				  ;
 			 ;
 			 CASE Satellite_param.Satellite_num.Current==sat1.INDEX ? 
@@ -1067,20 +1080,6 @@ METHOD Paint_to2(
 	             ELSE fore1 = _.Mix(BLACK)
 	                  fore2 = _.Mix_percents(BLACK, 70) ;
 	        }
-	        	      
-            //CASE Satellite_param.Collection_gal.Visible
-            //     && .Last_sel > 0 
-            //     && .Always_base_gal.Checked
-            //     ? 
-            //     c.Reset_transform
-            //     LIKE ............ 'use__Transform_1'
-            //        REAL scale_2|nd = Satellite_param.Scale_image.Text.Real 
-            //        .. /= 100
-            //          c.Offset(View_size.X/2, .Y/2)
-            //          c.Scale(scale_2, scale_2)
-            //          c.Offset(-View_size.X/2, -.Y/2)
-            //     box_size = tv[4].Real 
-            //     ;
     		------------------------------------ 'select transformation matrix'
             use_M_transform = M_transform
             //DEBUG: "use_M_transform:"#NL use_M_transform.Str #NL ;
@@ -2670,6 +2669,8 @@ METHOD offset_r|otated({point} b|ase_point, REAL v_X|_offset, REAL v_Y|_offset)
     :
      RESULT = Pt(b.X + co * v_X + si * v_Y,
      			 b.Y - si * v_X + co * v_Y) .
+     			 
+{Cache_small} Cache_small|_images
 	
 END
 

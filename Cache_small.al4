@@ -1,0 +1,59 @@
+/*
+
+CLASS {Cache_small|_images}, UNTESTED:
+
+IMPORT: {{Standard}}, {{Files}}, {{Visual}} .
+
+{Bitmap} Images|_small[]
+STR Paths|_of_images[]
+{date_time} Last_usage|_times[]
+
+METHOD Get|_image(STR Path|_of_image) ==> {Bitmap} :
+    FOR p IN Paths[] :
+        CASE p == Path ? 
+             RESULT = Images[p.INDEX]
+        	 CASE p.INDEX > 0 ? 
+        	 	  ---------------------------- 'image --> 0'     
+        	      Images[].Delete(p.INDEX)
+        	      Images[].Insert(0, RESULT)
+        	      ---------------------------- 'path --> 0' 
+        	      Paths[].Delete(p.INDEX)
+        	      Paths[].Insert(0, p)
+        	      ---------------------------- 'date --> 0'
+        	      Last_usage[].Delete(p.INDEX)
+        	      Last_usage[].Insert(0, Now)
+        	 ;
+        	 ==>
+        ;
+    ;
+    -------------------------- 'load if not in list'
+    CASE Path.Exists ? 
+         {Bitmap} temp|_bitmap = Load_bitmap(Path) 
+         RESULT = temp   
+    ELSE temp = New_bitmap(32, 32, 32)
+         RESULT = temp
+    	 RESULT.Canvas...Erase
+    	 ...Foreground = RED
+    	 ...Rect({rect}(W=31, H=31))
+    	 ...Text(Pt(1,1), "?") 
+    ;
+	Images[].Insert(0, RESULT)
+	Paths[].Insert(0, Path)
+	Last_usage[].Insert(0, Now)
+	---------------------------------- 'remove too old, keep last 30'
+	FOR i IN [Images[].Count-1 DOWNTO 30] :
+	    CASE Last_usage[i].Seconds_diff(Now) > 10 ? 
+	         Images[].Delete(i)
+	         Paths[].Delete(i)
+	         Last_usage[].Delete(i)
+	    ELSE BREAK i ; 
+	; .
+    
+METHOD Clear|_cache :
+    Images[].Clear
+    Paths[].Clear
+    Last_usage[].Clear .
+
+END
+
+*/
