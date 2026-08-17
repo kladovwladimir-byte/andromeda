@@ -7,6 +7,8 @@ IMPORT: {{Standard}}, {{Files}}, {{Visual}} .
 {point} Dots|_stored[]
 INT Starts|_of_dots_sequences[] 
 
+{point} Cross|_end_points[]
+
 END
 
 */

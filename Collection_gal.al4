@@ -3,7 +3,7 @@
 CLASS {Collection_gal|axies}, UNTESTED:
 
 IMPORT: {Main_plasma_tides}, {Satellite_param}, {Form_common}, 
-	 	{Png}, {Bitmap_24}, {Bitmap_direct}, {Matrix} .
+	 	{Png}, {Bitmap_24}, {Bitmap_direct}, {Matrix}, {Scenario} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
 
 
@@ -268,13 +268,16 @@ OVERRIDE closing ==> {Form}.{action} :
 	
 INT Last_sel|ected_item = -1
 INT Over_from = 0
+
+METHOD Make_current_overlay_source :
+    Over_from = Last_sel
+	Reset_overlay
+	Main_.PBox.Invalidate_all .
 	
 
 OVERRIDE click :
     CASE sender_alias ?
-    ["MAKE_CURRENT"]: Over_from = Last_sel
-    	Reset_overlay
-    	Main_.PBox.Invalidate_all
+    ["MAKE_CURRENT"]: Make_current_overlay_source 
     ["UP_DOWN"]:
         PUSH Lock_select = TRUE :
         CASE Up_down.Current ? 
@@ -329,7 +332,35 @@ OVERRIDE click :
 
 	""	Item(	"SAME_CENTER",
 				"Use same center point"
-		))
+		)
+
+	""	Separator
+
+	""	Item(	"SHOW_SCENARIO",
+				"Show scenario control window"
+		).Hotkey(
+		"F11"
+		)
+
+	""	Item(	"",
+				"Scenario language"
+		)
+
+	""	Begin
+
+	""	Item(	"EN",
+				"en (English)"
+		).Checked(
+		Scenario.Language=="en"
+		)
+
+	""	Item(	"RU",
+				"ru (Russian)"
+		).Checked(
+		Scenario.Language=="ru"
+		)
+
+	""	End)
 
 
 
@@ -380,11 +411,13 @@ OVERRIDE click :
         ;
         ------------------
         CASE !Dialog_open_col.Select_file ? ==> ;
+        Dialog_save_col.Filename = Dialog_open_col.Filename     
         Load_collection(Dialog_open_col.Filename)     
     ; .
 
     
 METHOD Load_collection(STR Coll|ection_file) :
+	Dialog_save_col.Filename = Coll
 	LIKE click .................. 'check__changed'
     List.Clear
     Main_.Dots_1[].Clear
@@ -408,6 +441,9 @@ METHOD Load_collection(STR Coll|ection_file) :
     ---------------------- 'reset change flag'
     list_changed = FALSE
     Save_col.Set_ink(BLACK)
+    ---------------------- 'load scenario'
+    CASE Scenario != NONE ?
+         Scenario.Load(Coll.Change_ext(".scenario")) ;
     .
     
 METHOD Update_current|_item(STR Path|_to_gal_file) :
@@ -625,10 +661,24 @@ OVERRIDE selection_change :
     
 {Bitmap} Cache_img|_main[]
 {Bitmap} Cache_stamps[]
+
+{Scenario} Scenario|_control_window
+
+METHOD Show_scenario :
+    CASE Scenario==NONE ? 
+         Scenario = {Scenario}(Main_= Main_, Screen_= Screen_) ;
+    Scenario.Show
+    DEBUG: "showing scenario, save-filename = " Dialog_save_col.Filename 
+    	" load-filename=" Dialog_open_col.Filename #NL ;
+    CASE Dialog_save_col.Filename != "" ? 
+         Scenario.Load(Dialog_save_col.Filename.Change_ext(".scenario")) ; .
     
 
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["EN"]: Scenario.Language = "en"
+    ["RU"]: Scenario.Language = "ru"
+    ["SHOW_SCENARIO"]: Show_scenario
     ["SAT_REPL"]:
         CASE Last_sel < 0 ? 
              message("There is no galaxy model selected.") ==> ;
@@ -1019,6 +1069,7 @@ OVERRIDE key_down ==> {Form}.{action} :
 			 RESULT = 'DECLINE'
 		 [F_3]: Main_.Satellite_param.Copy_center
 	     [F_4]: Main_.Satellite_param.Use_center
+	     [F_11]: Show_scenario
 		 ELSE NONE ;
 	; .
 	

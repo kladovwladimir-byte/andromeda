@@ -5,7 +5,7 @@ CLASS {Main_plasma_tides}, UNTESTED, BITWISE .
 IMPORT {Form_common}, {Satellite_param}, {Elliptic_orbit}, {Localize_str} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}}, {HSV}, {Collection_gal} .
 IMPORT: {Vector}, {Matrix}, {Calculations_diff}, {Bitmap_direct}, {Spiral_dots}.
-IMPORT: {Transform_model}, {Cache_small} .
+IMPORT: {Transform_model}, {Cache_small}, {Scenario} .
 IMPORT, DEBUG: {Bmp}, {Png} .
 
 BASE CLASS: {Form_common} .
@@ -118,6 +118,11 @@ METHOD Clear_images :
     Update_caption("")
     -------------------- 'invalidate'
     PBox.Invalidate_all .
+    
+METHOD Select_image(INT new_current|image) :
+     Current_image = new_current
+     Satellite_param.Update_URL
+     Satellite_param.Go_to_another_image .
     
 REAL Offset_x = 0.5
 REAL Offset_y = 0.5
@@ -313,7 +318,15 @@ METHOD Paint_to(
 	          Cache_image = NONE
 	     ;
 	     
-	ELSE Paint_to2(C, To_bitmap) ; .
+	ELSE Paint_to2(C, To_bitmap) ; 
+	CASE Satellite_param.Collection_gal.Scenario.Visible
+	     && .Timer_video.Active
+	     ?
+	     CASE !Satellite_param.Collection_gal.Scenario.Recording && !To_bitmap 
+	          ? 
+	          Satellite_param.Collection_gal.Scenario.Draw_subtitles(C,
+	          	Pt(PBox.Width, .Height)) ;
+	; .
 	
 METHOD color_of_arm(INT Arm_c|olor) ==> INT :
 	INT arm_c|olor = Arm_c
@@ -669,6 +682,15 @@ METHOD Paint_to2(
 			                             Dots_1[cur].Dots[.Starts[
 			                             r] TO .Starts[r+1]-1], FALSE)
 			                     ;
+			                 ;
+			                 CASE Dots_1[cur].Cross[].Count==4 ? 
+			                      c.Dashed_line(10, 10, 
+			                      	P1=Dots_1[cur].Cross[0], 
+			                      	P2=Dots_1[cur].Cross[1])
+			                      	 
+			                      c.Dashed_line(5, 5, 
+			                      	P1=Dots_1[cur].Cross[2], 
+			                      	P2=Dots_1[cur].Cross[3]) 
 			                 ;
 			                 ;
 	               		;
@@ -1105,7 +1127,7 @@ METHOD Paint_to2(
 	    	 LIKE ................. 'start__dots'
 	    	 cur = Satellite_param.Satellite_num.Current
 		     CASE Satellite_param.Collection_gal.Visible 
-		          && Satellite_param.Collection_gal.Last_sel==0
+		          && Satellite_param.Collection_gal.Last_sel==0 // .Over_from
 		          && sat_index == cur
 		          ? 
 		          Dots_1[].Allocate(Satellite_param.All_satellites[].Count)
@@ -1256,17 +1278,19 @@ METHOD Paint_to2(
 				   		s = "+"
 				     		 
 				  [last_mouse_shift.X > 0 < .Y] ?
-				    CASE To_bitmap ? last_mouse_shift = Pt(0, 0) ;
-	 			    xx = center_pt.X
-	 			    yy = center_pt.Y
-	 			    c.Line(Pt(xx, yy), mp)
-	 			    ----------------- 'distance from center in light years'
-	 			    REAL dist1|_points = ((xx - mp.X).qq + (yy - mp.Y).qq).Sqrt
-	 			    CASE Image != NONE ? 
-	 			         dist = dist1 / D_o.Width * box_size
-	 			    ELSE dist = dist1 / scale_size * box_size ;
-	 			    s = dist.Int.S " L.Y." 
-	 			    BOOL text_anyway|_show = TRUE
+				  	CASE Satellite_param.Show_dist_to_center { 
+					     CASE To_bitmap ? last_mouse_shift = Pt(0, 0) ;
+		 			     xx = center_pt.X
+		 			     yy = center_pt.Y
+		 			     c.Line(Pt(xx, yy), mp)
+		 			     ----------------- 'distance from center in light years'
+		 			     REAL dist1|_points = ((xx - mp.X).qq + (yy - mp.Y).qq).Sqrt
+		 			     CASE Image != NONE ? 
+		 			          dist = dist1 / D_o.Width * box_size
+		 			     ELSE dist = dist1 / scale_size * box_size ;
+		 			     s = dist.Int.S " L.Y." 
+		 			     BOOL text_anyway|_show = TRUE
+				  	}
 				  ;
 				  CASE !text_anyway && !Bounds.Contains(Mouse_cur) ? 
 				       s = "" ;
@@ -1287,6 +1311,15 @@ METHOD Paint_to2(
 				 	   c.Dashed_line(10, 10,
 				 	   	P1=Pt(xx - v.[0], yy + v.[1]), 
 				 	   	P2=Pt(xx + v.[0], yy - v.[1]))
+				 	   	
+				 	   
+					    CASE Satellite_param.Collection_gal.Visible
+					         && Satellite_param.Collection_gal.Last_sel==0 {
+                             //DEBUG: "store cur=" cur #NL ;
+					         Dots_1[cur].Cross[].Allocate(4)
+					         Dots_1[cur].Cross[0] = Pt(xx - v.[0], yy + v.[1]) 
+					         Dots_1[cur].Cross[1] = Pt(xx + v.[0], yy - v.[1])
+					    }
 		 			   
 				 	   ---------------- 'small axis of the orbit'
 				 	   
@@ -1296,6 +1329,12 @@ METHOD Paint_to2(
 				 	   	P1=Pt(xx - v.[0], yy + v.[1]), 
 				 	   	P2=Pt(xx + v.[0], yy - v.[1]))
 
+					    CASE Satellite_param.Collection_gal.Visible
+					         && Satellite_param.Collection_gal.Last_sel==0 {
+					         Dots_1[cur].Cross[2] = Pt(xx - v.[0], yy + v.[1]) 
+					         Dots_1[cur].Cross[3] = Pt(xx + v.[0], yy - v.[1])
+					    }
+		 			   
 				  ;
 	     	 ;
 		;
@@ -1411,6 +1450,7 @@ BOOL crossing|_spiral_is_drawing_now
 
 {Spiral_dots} Dots_1|_cache[]
 {Matrix} use_M_transform
+//{point} Cross_1|_from_to[]
 
 ------------------------ 'DRAW ONE ARM'
     	
@@ -1420,10 +1460,7 @@ INT pass|_arm_number,
 {Canvas} c|anvas_destination), OPERATORS({Matrix})
     :
 	REAL scale_by_box_size = box_size
-    //CASE Satellite_param.Collection_gal.Last_sel > 0
-    //     && .Always_base_gal.Checked
-    //     ? 
-    //     scale_by_box_size = box_size_1 ;
+    BOOL use_poly|lines = Satellite_param.Each_10000_years == 0
     
     //DEBUG: "draw arm, pass=" pass " box_size=" scale_by_box_size #NL ;
     BOOL present_prev|ious = FALSE
@@ -1537,10 +1574,12 @@ INT pass|_arm_number,
              CASE 0 < max_dist < dist ? 
                   present_prev = FALSE
                   -------------------------- 'finish__fragment', REUSED
-                  CASE All_dots_count-1 > dots_start ?
-	                   c.Poly(All_dots[dots_start TO All_dots_count-1], FALSE)
-	                   dots_start = All_dots_count 
-                  ;
+                  CASE use_poly { 
+	                   CASE All_dots_count-1 > dots_start ?
+		                    c.Poly(All_dots[dots_start TO All_dots_count-1], FALSE)
+		                    dots_start = All_dots_count 
+	                   ;
+                  }
                   ---------------------------
                   LIKE ............... 'next__point'
                   LIKE .............. 'no__prev'
@@ -1596,13 +1635,13 @@ INT pass|_arm_number,
         CASE do_calc ?
              calculations_one_point(Pt(xx, yy), Pt(xx0, yy0), c)
         ;
-        //CASE Store_dots ?
+
              CASE All_dots[].Count <= All_dots_count ? 
                   All_dots[].Allocate(All_dots_count 
                   	+ (All_dots_count.Max(16_384)).Min(1000_000)) ;
              All_dots[All_dots_count] = Pt(xx, yy).CLONE
              All_dots_count += 1 
-        //;
+
         ------------------------- 'draw next or skip'
         PUSH xx :
         PUSH yy :
@@ -1741,6 +1780,8 @@ INT pass|_arm_number,
                       [(xx - prev.X).Abs < one_px > (yy - prev.Y).Abs] ? 
                       	   actual_draw = FALSE
                       ELSE actual_draw = TRUE ;
+                      CASE !use_poly ? 
+                           c.Line(Pt(xx, yy), prev) ;
                       -------------------------------
                  ;
              [c.Pen_width>=5 && glove < 4] ?
@@ -1767,7 +1808,7 @@ INT pass|_arm_number,
         CASE actual_draw ? prev = Pt(xx, yy) ;
         LIKE ................... 'next__point'
     -------------------------------------------------------->
-    CASE dots_start < All_dots_count ?  
+    CASE use_poly && dots_start < All_dots_count ?  
          c.Poly(All_dots[dots_start TO All_dots_count-1], FALSE) ;
     .
     
@@ -1775,7 +1816,7 @@ INT pass|_arm_number,
 INT is_dark|_porion
 INT last_offset_p|oint_to_draw_zigzag
 STR Last_transform
-STR Last_transform_1
+//STR Last_transform_1
     
 	
 METHOD finish_round(

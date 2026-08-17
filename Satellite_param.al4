@@ -102,13 +102,14 @@ BASE CLASS: {Form_common} .
 {Memo} Memo_param|eters_text
 {Label} LabelArmColors
 {Combo} Arm_colors
+{Paint_turtle} Turnaround
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://7D434522 Do not change manually (created by Form Designer)
+CONSTRUCT://185C58F5 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -270,15 +271,14 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS,
- "FINAL_PLASMA_SPEED",
- "#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", #LF
+"#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -439,6 +439,16 @@ PUSH in_construct = TRUE :
 	Rotate_image = New_text_edit(THIS, "ROTATE_IMAGE", "N")
 
 	...Set_text("0")
+	----------------------- 'TURNAROUND'
+	Turnaround = New_paint_turtle_button(THIS,
+ "TURNAROUND",
+ "20LLD20B20LL20B20BL40"
+  "(R20)5")
+
+
+	...Set_width(18)
+
+	...Set_height(18)
 	----------------- 'LABEL_SCALEIMAGE'
 	Label_ScaleImage = {Label}(Form_=THIS, Alias="LABEL_SCALEIMAGE")
 
@@ -707,7 +717,7 @@ METHOD after_CONSTRUCT:
     Grid_options.Select(0)
     Transparency_sel.Select(1) 
     ------------------------- 'restore saved options'
-    Screenshot_scale = conf.Int("SCREENSHOT_SCALE").Max(100)
+    Screenshot_scale = conf.Int("SCREENSHOT_SCALE")
     Transparency_sel.Select(conf.Int("TRANSPARENCY"))
     CASE conf.Present("LINE_WIDTH") ? 
          Edit_line_w.Set_text(conf.Real("LINE_WIDTH").S) ;
@@ -1178,6 +1188,11 @@ STR old_line_w|idth = "1"
 
 OVERRIDE click :
     CASE sender_alias ?
+    ["TURNAROUND"]:
+    	REAL ri|mage_scale_new = Rotate_image.Text.Real + 180
+    	CASE ri < -180 ? ri += 360 ;
+    	CASE ri >= 360 ? ri -= 360 ;
+        Rotate_image.Set_text(ri.S)
     ["COPY_URL"]:
         	Label_url.Text.Text_to_clipboard
     ["CHANGE_SCALE"]:
@@ -1226,18 +1241,30 @@ OVERRIDE click :
         ELSE Filter_sat.Set_text("*") ;
     	Enable_filtering = TRUE
     ["MAKE_SCREENSHOT"]:
-        CASE Screenshot_scale > 200 ?
+        INT b_width|_bitmap = 0
+        INT b_height|_bitmap = 0
+        CASE ?
+        [Screenshot_scale < 0] ?
+             b_height = -Screenshot_scale
+             CASE b_height ? 
+             [360, 480]: b_width = 640 
+             [720]: b_width = 1280
+             [1080]: b_width = 1920 ;
+        [Screenshot_scale > 200] ?
 	         REAL k|oeffitient_scale 
 	         k = Screenshot_scale.Pixels_to_points/Main_.PBox.Width
         ELSE k = Screenshot_scale / 100.0 ;
         CASE !Key.Control ? 
-	         {Bitmap} bmp|_temp = New_bitmap(
-	         	(Main_.PBox.Width * k).Points_to_pixels,
-	         	(Main_.PBox.Height * k).Points_to_pixels, 32)
+             CASE b_width==b_height==0 ?
+                  b_width = (Main_.PBox.Width * k).Points_to_pixels
+                  b_height = (Main_.PBox.Height * k).Points_to_pixels ;  
+	         {Bitmap} bmp|_temp = New_bitmap(b_width, b_height, 32)
+	         
+	         //k = Min(PBox.Width / b_width, PBox.Height / b_height)
 	        	 
 	         Main_.View_size = Pt(bmp.Width.Pixels_to_points,
 	          					 bmp.Height.Pixels_to_points)
-	         DEBUG: "created bitmap " bmp.Width " x " bmp.Height #NL ;
+             //DEBUG: "created bitmap " bmp.Width " x " bmp.Height #NL ;
 	        	 
     	     PUSH Main_.Paint_squares_NxN :
     	          CASE NxN_in_source ? 
@@ -1527,6 +1554,10 @@ OVERRIDE click :
         		 s.Name = ""
         		 Edit_name.Set_text("")
         		 All_satellites[*] = s.CLONE 
+        	;
+        	CASE All_satellites[].Count == 1 ? 
+        	     fill_combos
+        	     LIKE after_CONSTRUCT ............. 'initial__spiral'
         	;
 	        Main_.Rescale
 	        Main_.Invalidate
@@ -1921,6 +1952,12 @@ OVERRIDE click :
 
 	""	End
 
+	""	Item(	"DRAW_DIST",
+				"Show distance to center in L.Y."
+		).Checked(
+		Show_dist_to_center
+		)
+
 	""	Item(	"GRAB_ROT",
 				"Grab rotated 90 degrees CW"._Grab_rotated
 		).Checked(
@@ -1985,6 +2022,24 @@ OVERRIDE click :
 				"Fixed width 3800 pixels"
 		).Checked(
 		Screenshot_scale==3800
+		)
+
+	""	Separator
+
+	""	Item(	"FRAME_640x360",
+				"640x360"
+		)
+
+	""	Item(	"FRAME_640x480",
+				"640x480"
+		)
+
+	""	Item(	"FRAME_1280x720",
+				"128x720"
+		)
+
+	""	Item(	"FRAME_1920x1080",
+				"1920x1080"
 		)
 
 	""	End
@@ -2812,6 +2867,7 @@ METHOD Show_transform_model :
 BOOL Allow_JPEG_thumb = FALSE
 BOOL Image_mirrored
 BOOL Show_text = TRUE
+BOOL Show_dist_to_center = FALSE
 
 METHOD do_mirroring :
 	Main_.Image = _.Rotate_flip(0, TRUE, FALSE)
@@ -2837,6 +2893,7 @@ METHOD Provide_collection_gal :
 
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["DRAW_DIST"]: Show_dist_to_center = !_
     ["SHOW_TEXT"]: Show_text = !_
     ["LIMIT_4"]: Limit_image_size = 4
     ["LIMIT_5"]: .. = 5
@@ -2863,6 +2920,10 @@ OVERRIDE menu_item :
     		Main_.All_img_URLs[.Current_image] = url
     		Label_url.Set_text(url)
             //DEBUG: "urls: " Main_.All_img_URLs[].Merge(#NL "~!!!~ ") #NL ;
+    ["FRAME_640x360"]: Screenshot_scale = -360
+    ["FRAME_640x480"]: Screenshot_scale = -480
+    ["FRAME_1280x720"]: Screenshot_scale = -720
+    ["FRAME_1920x1080"]: Screenshot_scale = -1080
     ["SCREENSHOT_1024"]: Screenshot_scale = 1024
     ["SCREENSHOT_50"]: Screenshot_scale = 50
     ["SCREENSHOT_100"]: Screenshot_scale = 100
