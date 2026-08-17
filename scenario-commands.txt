@@ -1,0 +1,8 @@
+Goto g=galaxy-model i=image-index (0 - image, 1-stamp) s=satellite-name [ +delta-index ]
+Filter filter-value
+Transform r=rotation s=scale x=offsetX y=offsetY
+Change a=activity-value v1=velocity-1 v2=velocity-2-of-plasma p=pen-width d=yes/no(time-distortion)
+View a=show-arms-1-2-0 h=hide-each-0 -500 -1000 -4000 -5000 1000 2000 3000 5000 10000
+Over base show=yes/no invert=yes/no
+nn (exposure time) [ what to change dynamically to the next line: T C ]
+Subtitle ru=text en=text direction=left/up
