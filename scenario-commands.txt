@@ -1,8 +1,11 @@
-Goto g=galaxy-model i=image-index (0 - image, 1-stamp) s=satellite-name [ +delta-index ]
-Filter filter-value
-Transform r=rotation s=scale x=offsetX y=offsetY
-Change a=activity-value v1=velocity-1 v2=velocity-2-of-plasma p=pen-width d=yes/no(time-distortion)
-View a=show-arms-1-2-0 h=hide-each-0 -500 -1000 -4000 -5000 1000 2000 3000 5000 10000
-Over base show=yes/no invert=yes/no
+G Goto g=galaxy-model i=image-index (0 - image, 1-stamp) s=satellite-name [ +delta-index ]
+F Filter filter-value
+F filter1:filter2[:flush-period-ms]
+T Transform r=rotation s=scale x=offsetX y=offsetY
+C Change a=activity-value v1=velocity-1 v2=velocity-2-of-plasma cx= cy=
+V View a=show-arms-1-2-0 h=hide-each-0 -500 -1000 -4000 -5000 1000 2000 3000 5000 10000 d=yes/no(time-distortion) transparency=NN% p=pen-width 
+O Over base show=yes/no invert=yes/no
 nn (exposure time) [ what to change dynamically to the next line: T C ]
-Subtitle ru=text en=text direction=left/up
+S Subtitle ru=text en=text direction=left/up
+R russian subtitle
+E english subtitle

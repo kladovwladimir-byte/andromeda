@@ -1078,6 +1078,7 @@ OVERRIDE value_change :
 	s = All_satellites[Satellite_num.Current].CLONE
 	PUSH setting_spiral = TRUE :
     CASE sender_alias ?
+    ["LABEL_URL"]: NONE
     ["MEMO_PARAM"]: s.Text[].Split(Memo_param.Text, #NL)
     ["EDIT_LINE_W", "LABEL_FILE"]: NONE
     ["DRAW_BACKGROUND"]: Draw_background_image = Draw_background.Checked
@@ -1110,10 +1111,10 @@ OVERRIDE value_change :
     	;
     	Last_box_width = Box_width.Text
         Main_.Rescale
-        Main_.Invalidate ==>
+        need_invalidate = TRUE ==>
     ["ROTATE_IMAGE", "SCALE_IMAGE"]: 
         Main_.Rescale
-        Main_.Invalidate ==>
+        need_invalidate = TRUE ==>
     ["EDIT_TILT"]: s.Tilt = Edit_tilt.Text.Real
     ["PERIOD_ROT"]: s.Period = Period_rot.Text.Real
     	NONE = hint_a(Satellite_num.Current, TRUE)
@@ -2035,7 +2036,7 @@ OVERRIDE click :
 		)
 
 	""	Item(	"FRAME_1280x720",
-				"128x720"
+				"1280x720"
 		)
 
 	""	Item(	"FRAME_1920x1080",
@@ -3147,7 +3148,7 @@ METHOD Save_options :
     .
     
     
-
+BOOL Invalidates_locked
 
 OVERRIDE timer :
     CASE sender_alias ?
@@ -3155,7 +3156,7 @@ OVERRIDE timer :
     	 sender.{Timer}.Set_active(FALSE)
     	 Set_active(Filter_sat)
     ["TIMER_INVALIDATE"]:
-        CASE need_invalidate ?
+        CASE need_invalidate && !Invalidates_locked ?
              need_invalidate = FALSE
              Main_.Invalidate ;
     ELSE BASE ; .

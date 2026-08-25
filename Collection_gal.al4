@@ -3,7 +3,7 @@
 CLASS {Collection_gal|axies}, UNTESTED:
 
 IMPORT: {Main_plasma_tides}, {Satellite_param}, {Form_common}, 
-	 	{Png}, {Bitmap_24}, {Bitmap_direct}, {Matrix}, {Scenario} .
+	 	{Png}, {Bitmap_24}, {Bitmap_direct}, {Matrix}, {Scenario}, {Config} .
 IMPORT: {{Visual}}, {{Standard}}, {{Files}} .
 
 
@@ -398,10 +398,16 @@ OVERRIDE click :
     ["SAVE_COL"]: 
         CASE List.Count <= 0 ? message("Nothing to save yet!") ==> ;
         CASE !Dialog_save_col.Select_file ? ==> ;
+        STR save_p|ath_for_collection = Dialog_save_col.Filename     
         FOR i IN [0 TO List.Count-1] :
             STR col|lection_galaxies[] << List.Get_item(i, 0)
-            col[*] = _.[0 TO .Find(#TAB)-1] ;
-        col[].To_text_file(Dialog_save_col.Filename, 'UTF8')
+            col[*] = _.After(#TAB) 
+        	CASE !col[*].Starting(save_p.Extract_path) ? NONE
+        		 DEBUG: "[" col[*] "] is not starting from [" save_p "]"
+        		 	", saved as is"#NL ;
+        	ELSE col[*] = _.[save_p.Extract_path.Len TO *] ;
+        ;
+        col[].To_text_file(save_p, 'UTF8')
         list_changed = FALSE
         Save_col.Set_ink(BLACK)
     ["OPEN_COL"]:
@@ -432,7 +438,9 @@ METHOD Load_collection(STR Coll|ection_file) :
     STR col|lection_text[].From_text_file(Coll, 'UTF8')
     {Bitmap} temp_bmp
     FOR s IN col[] :
-        col[s.INDEX] = _ #TAB Coll.Extract_path _
+        CASE Path_sep !IN s ? 
+             col[s.INDEX] = _ #TAB Coll.Extract_path _
+        ELSE col[s.INDEX] = s.Extract_file_name #TAB Coll.Extract_path s ;
         Cache_img[] << temp_bmp 
         Cache_stamps[] << temp_bmp 
     ;
@@ -534,6 +542,7 @@ OVERRIDE selection_change :
 	         fname = List.Get_item(Last_sel, 0).After(#TAB)
 	         Main_.Satellite_param.Preserve_scale_rot = Preserve_scale_rot.Checked
 	         PUSH loading = TRUE :
+	              DEBUG: "loading gal: " fname #NL ;
 	              Main_.Satellite_param.Load_gal(fname, FALSE, TRUE,
 		         	Load_sat= TRUE,
 		         	Load_common = TRUE) 
@@ -677,7 +686,13 @@ METHOD Show_scenario :
 OVERRIDE menu_item :
     CASE menu_alias ?
     ["EN"]: Scenario.Language = "en"
+    	{Config} reg_c|onfig_temp
+    	---------------------------- 'save language', REUSED
+    	reg_c = New_write_config ("PlasmaTides", 'USER', "lang-film")
+    	reg_c.Set_s("Film-lang", Scenario.Language)
+    	----------------------------
     ["RU"]: Scenario.Language = "ru"
+    	LIKE ....................... 'save language'
     ["SHOW_SCENARIO"]: Show_scenario
     ["SAT_REPL"]:
         CASE Last_sel < 0 ? 

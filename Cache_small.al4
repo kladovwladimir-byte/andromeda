@@ -27,6 +27,7 @@ METHOD Get|_image(STR Path|_of_image) ==> {Bitmap} :
         ;
     ;
     -------------------------- 'load if not in list'
+    DEBUG: "get image [" Path "] " Path.Exists.S #NL ;
     CASE Path.Exists ? 
          {Bitmap} temp|_bitmap = Load_bitmap(Path) 
          RESULT = temp   

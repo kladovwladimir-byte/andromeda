@@ -326,7 +326,25 @@ METHOD Paint_to(
 	          ? 
 	          Satellite_param.Collection_gal.Scenario.Draw_subtitles(C,
 	          	Pt(PBox.Width, .Height)) ;
-	; .
+	; 
+	CASE Satellite_param.Collection_gal.Scenario.Visible && !To_bitmap ?
+	     STR size|_as_Str 
+	     .. = Satellite_param.Collection_gal.Scenario.Info_frame_size.Text
+	     REAL fw|idth_frame = size.Int
+	     REAL fh|eight_frame = size.After("x").Int
+	     C.Reset_transform
+	     PUSH C.Foreground = RED :
+	     PUSH C.Pen_width = 1 :
+		      CASE fw/fh > PBox.Width/.Height ? 
+		           REAL by|_bottom = (PBox.Width * fh/fw) 
+		           C.Line(Pt(0, by), Pt(PBox.Width, by))
+		      ELSE REAL rx|_right_border = (PBox.Height * fw/fh)
+		           C.Line(Pt(rx, 0), Pt(rx, PBox.Height))
+		      ;
+	     ;
+	     ;
+	;
+	.
 	
 METHOD color_of_arm(INT Arm_c|olor) ==> INT :
 	INT arm_c|olor = Arm_c
@@ -721,8 +739,8 @@ METHOD Paint_to2(
 	    	 CASE !Satellite_param.Show_text ? CONTINUE sat1 ;
              STR names|_depending_satellites_splitted[].Split(
                    	   sat1.Name, ":")
-             
-             names[].Split(names[1], ",")
+             CASE "," IN names[1] ? names[].Split(names[1], ",")
+             ELSE names[].Split(names[1], " ") ;      
              //DEBUG: "names[]: " names[].Merge(",") " filt[]=" filt[].Merge(",")
              //       #NL ;
              CASE names[].Count == 0 ? skip = FALSE ;
@@ -866,13 +884,23 @@ METHOD Paint_to2(
                   //DEBUG: "un-rotated by " total_rotate #NL ;
 	     	 ;
 		     PUSH c.Font.Size = 12 / total_scale * PBox.Width / 1000 :
+		          CASE cmd[2].Real > 0 ? 
+		               c.Font.Size *= cmd[2].Real/100 ;
 		          {point} sp|oint_start = center_pt.CLONE
 			  	  {point} min_p|oint = sp.CLONE
 			  	  {point} max_p|oint = min_p.CLONE
+			  	  STR text|_to_show[].Clear
+			  	  FOR line IN sat1.Text[] :
+			  	      CASE "#" !IN line ? 
+			  	           text[] << line
+			  	      ELSE text[] << line.Replace_all(
+                           	"#inclination",  
+                           	Satellite_param.Inclination.Text.Real.S_float(1)) ;
+			  	  ;
 				  CASE cmd[0].Lower ? 
 				  ["#text"]:
 				  	  -------------------------------- '#text', REUSED
-				      FOR line IN sat1.Text[] :
+				      FOR line IN text[] :
 				          c.Text(sp, line)
 				          min_p = Pt(_.X, _.Y.Min(sp.Y))
 				          sp.Y += c.Font.Size
@@ -896,7 +924,8 @@ METHOD Paint_to2(
                            REAL rot_a|rrow = -cmd[4].Real / 180 * PI ;
                       co = Cos(rot_a)
                       si = Sin(rot_a)
-				      {point} arr|ow_pts[] << sp.CLONE 
+				      {point} arr|ow_pts[].Clear
+				      arr[] << sp.CLONE 
 				      ..[] << offset_r(sp, a_w*4, -a_w*2)
 				      ..[] << offset_r(sp, a_w*4, -a_w/2)
 				      ..[] << offset_r(sp, a_l, -a_w/2)
@@ -921,7 +950,10 @@ METHOD Paint_to2(
 				      sp = _.Offset(radius+c.Font.Size, -c.Font.Size/2)
 				      LIKE ................................. '#text'
 				  ["#image"]:
-				      STR fname|_image = Satellite_param.Images_path cmd[2]
+				      STR fname|_image = cmd[2]
+				      CASE fname=="" ? fname = sat.Text[0] ;
+				      CASE !fname.Exists ? 
+				           fname = Satellite_param.Images_path _ ;
 				      CASE Cache_small==NONE ?
 				           Cache_small = {Cache_small} ;
 				      {Bitmap} im|age_temp = Cache_small.Get(fname)
@@ -1339,13 +1371,15 @@ METHOD Paint_to2(
 	     	 ;
 		;
 		;         
-		----------------------- 'text hint or distance to center'      
-			 c.Reset_transform
+		----------------------- 'text hint or distance to center' 
+		c.Reset_transform
+		CASE s != "" ?  
 			 PUSH c.Foreground = WHITE :
 			      c.Text(tp.Offset(1.Pixels_to_points, 1.Pixels_to_points), s) 
 			 ;
 			 c.Text(tp, s) 
 			 drawn_dist = TRUE
+		;
 		REAL a_max_v|elocity = orbit.Maximal_speed 
     	 .. /= (sat.Period / 100_000).Power(1/3.0)
     	 .. *= (Satellite_param.Mass_BH.Text.Real / 1000_000).Power(1/3.0)
@@ -2265,7 +2299,8 @@ BOOL drawn_dist|ance
 OVERRIDE timer :
     CASE sender_alias ?
     ["TIMER_CLEAR"]:
-        CASE drawn_dist ? PBox.Invalidate_all ;
+        CASE drawn_dist && !Lock_invalidations ? 
+             PBox.Invalidate_all ;
     ELSE BASE ; .
     
     
