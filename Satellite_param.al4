@@ -1094,12 +1094,12 @@ OVERRIDE value_change :
     		 .. = _.Power(2/3.0)
     		 
     		 FOR sat IN All_satellites[] :
-    		 	 DEBUG:
-    		 	 	CASE sat.INDEX==Satellite_num.Current ? 
-    		 	 	     << "old box=" Last_box_width " new_box=" Box_width.Text
-    		 	 	     " k=" change.S " sat.Period:" sat.Period.S 
-    		 	 	     "->" (sat.Period * change).S #NL ;
-    		 	 ;
+                 //DEBUG:
+                 //   CASE sat.INDEX==Satellite_num.Current ? 
+                 //        << "old box=" Last_box_width " new_box=" Box_width.Text
+                 //        " k=" change.S " sat.Period:" sat.Period.S 
+                 //        "->" (sat.Period * change).S #NL ;
+                 //;
     		     sat.Period *= change 
     		     sat.Activity *= change
     		 	 All_satellites[sat.INDEX] = sat.CLONE    
@@ -1498,7 +1498,7 @@ OVERRIDE click :
                       ?
 	                  STR fdel|ete_file= Main_.All_img_names[.Current_image] 
 	                  ..= Images_path _
-	                  DEBUG: "DELETING " fdel #NL ;
+                      //DEBUG: "DELETING " fdel #NL ;
 	                  Delete_file(fdel) ;
                  CASE Collection_gal.Visible ? 
                       Collection_gal.Cache_img[].Clear 
@@ -1530,7 +1530,7 @@ OVERRIDE click :
             //        " Ch2: " Main_.Checksums2_of_images[].Merge(",") #NL ;
             ==>
         ["Stamp"]:
-            Provide_stamp_param
+            Provide_stamp_param(TRUE)
         	Stamp_param.Show
             //DEBUG: "Holder[]:" Stamp_parameters.Holder.Count 
             //        " Checksums: " Main_.Checksums_of_images[].Merge(",")
@@ -1662,12 +1662,16 @@ OVERRIDE click :
                  	"them first or close Trasform model window.") ==> ;
     		----------------------- 'select & SAVE'   
     	    CASE !Dialog_file_save.Select_file ? ==> ;
-    	    Save_gal(Dialog_file_save.Filename, FALSE, FALSE,
+    	    Save_gal(Dialog_file_save.Filename, FALSE, 
+    	    	For_coll= Collection_gal.Visible,
     	    	Save_sat= TRUE,
     	    	Save_common= TRUE)
     	    	
     	    CASE Collection_gal != NONE ? 
-    	         Collection_gal.Update_current(Dialog_file_save.Filename) ;
+    	         Collection_gal.Update_current(Dialog_file_save.Filename) 
+    	    	 CASE Main_.All_images[].Count >= 2 ? 
+    	    	      Collection_gal.Save_stamp_file ;
+    	    ;
     	    ------------------ 'update__caption', REUSED
     	    Label_file.Set_text(Dialog_file_save.Filename.Extract_file_name
     	    	.Change_ext(""))
@@ -2349,10 +2353,13 @@ BOOL Auto_final_speed = FALSE
 BOOL Same_max_dist
 INT Show_speed
 
-METHOD Provide_stamp_param :
+METHOD Provide_stamp_param(BOOL Visible_f|orm) :
 	CASE Stamp_param==NONE ?
     	 Stamp_param = {Stamp_parameters}(Main_= Main_, Screen_=Screen_)
-	; .
+	; 
+	CASE Visible_f && !Stamp_param.Visible ? 
+	     Stamp_param.Show_no_activate ;
+	.
 
 METHOD Auto_stamp :
 	CASE Main_.All_images[].Count==1 
@@ -2372,16 +2379,15 @@ METHOD Do_commands_auto(BOOL Answer|_if_to_create_stamp) :
               do_mirroring ;
     ;
     CASE Commands_s[].Count > 0 ?
-	     DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
-	       " ~ " Main_.Checksums_of_images[0 TO *].Merge(",")  #NL ;
+         //DEBUG: "ch=" Checksum_img_loaded.Hex(8) "(" Checksum_img_loaded.S ")"
+         //  " ~ " Main_.Checksums_of_images[0 TO *].Merge(",")  #NL ;
 		 CASE Answer && !ask("The image loaded is single and it is the "
 		      "same as it was used to create the model loading. "
 		      "Create stamp now ?"._Image_detected_ask_create_stamp) 
 		      ? ==> ;
 		 Stamp_param.Close
 		 Stamp_param = NONE
-		 Provide_stamp_param
-		 Stamp_param.Show_no_activate
+		 Provide_stamp_param(TRUE)
 		 Stamp_param.Execute_commands(Commands_s[]) ; .
 	
 INT Checksum_img_loaded	
@@ -2441,8 +2447,8 @@ PUSH processing_mouse = TRUE :
 		 Start_program("explorer.exe", "/e,/n,"
 			 		"/select, "#QU save_scr #QU) ==> 
 	[sender_alias == "LOAD_UNDER_IMAGE" && mouse_button=='RMB'] ?
-		 DEBUG: "show explorer on [" Main_.All_img_names[.Current_image] 
-		 "]"#NL ;
+         //DEBUG: "show explorer on [" Main_.All_img_names[.Current_image] 
+         //"]"#NL ;
 		 Start_program("explorer.exe", "/e,/n,"
 			 		"/select, "#QU 
 			 		"" Images_path.Trailing_slash 
@@ -2454,7 +2460,7 @@ PUSH processing_mouse = TRUE :
 	     dragging = sender 
 		 mouse_pos0 = mouse
 		 is_0_360 = FALSE
-		 DEBUG: "####### mouse down on " sender_alias #NL ;
+         //DEBUG: "####### mouse down on " sender_alias #NL ;
 		 mouse_down_on = sender_alias
 		 CASE sender_alias ? 
 		 ["LABEL_LINE_W"]: editing = Edit_line_w
@@ -2542,9 +2548,9 @@ PUSH processing_mouse = TRUE :
 		 ELSE dragging = NONE ==> ;
 		 -------------------------------- 'save initial values'
 		 value_start = editing.Text.Real
-		 DEBUG: "editing starting(" sender_alias 
-		 	"): value_start=" value_start " mouse_pos0=" mouse_pos0.S
-		 	" fr=" range_fr " to=" range_to #NL ;
+         //DEBUG: "editing starting(" sender_alias 
+         //   "): value_start=" value_start " mouse_pos0=" mouse_pos0.S
+         //   " fr=" range_fr " to=" range_to #NL ;
 		 start_value_period = Period_rot.Text.Real
 		 start_value_plasma_speed = Plasma_speed.Text.Real
 		 start_value_activity = Activity_time.Text.Real
@@ -2628,9 +2634,9 @@ PUSH processing_mouse = TRUE :
 		 [new_val < range_fr] ? new_val = range_fr 
 		 [new_val > range_to] ? new_val = range_to ;
 	;
-	DEBUG: "vs=" vs " dX=" (mouse.X - mouse_pos0.X) 
-	 	   " w=" (dragging.Bounds.Right - mouse_pos0.X) 
-	 	   "new=" new_val #NL ;
+    //DEBUG: "vs=" vs " dX=" (mouse.X - mouse_pos0.X) 
+    //       " w=" (dragging.Bounds.Right - mouse_pos0.X) 
+    //       "new=" new_val #NL ;
 	PUSH sender_ = editing :
 		 CASE ?
 		 [!down_with_shift] ?
@@ -2984,14 +2990,7 @@ OVERRIDE menu_item :
         CASE !ask("All values will be set to default. Continue?"
              ""._Reset_continue) ?
              ==> ;
-        FOR sp_r IN All_satellites[* DOWNTO 1] :
-            All_satellites[].Delete(sp_r.INDEX) ;
-        Satellite_num.Set_items("1")
-        fill_combos
-        LIKE after_CONSTRUCT ............. 'initial__spiral'
-        Set_caption(caption_loc)
-        Main_.Rescale
-        Update_label_select_num
+        Reset
     ["EACH_10000_Y"]: Each_10000_years = 10000
     ["EACH_5000_Y"]:  Each_10000_years = 5000
     ["EACH_3000_Y"]:  Each_10000_years = 3000
@@ -3854,7 +3853,7 @@ STR Format|_actual) ==> {Bitmap}, NEW
 	             {Bitmap} re|load_temp = {Jpeg}.From_file(Filename, 'HALF')
 	         [32, 33, 34, 35, 36, 37, 38, 39]: re = {Jpeg}.From_file(Filename, 'QUAR') 
 	         ELSE re = {Jpeg}.From_file(Filename, 'EIGH') ;
-	         DEBUG: "re(" re.Width "x" re.Height ")"#NL ;
+             //DEBUG: "re(" re.Width "x" re.Height ")"#NL ;
 	    ;
 	    CASE re == NONE ? 
 	    	 re = New_bitmap((B.Width / k).Int, (B.Height / k).Int, 24) 
@@ -3908,12 +3907,14 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 			 Last_img_name = c.Str("Last_img_name")
 			 Last_frame = c.Int("Last_frame") ;
 		----------------------- 'common:'
-		CASE !Load_Control_pressed && (!Key.Shift || Box_width.Text.Real <= 0) ?
+		//CASE !Load_Control_pressed && (!Key.Shift || Box_width.Text.Real <= 0) ?
+		CASE (!Key.Shift || Box_width.Text.Real <= 0) ?
 		     Box_width.Set_text(c.Real("Box_width").S) 
 	         //DEBUG: "in box width: " c.Real("Box_width") 
 	         //       ", Text-->" Box_width.Text #NL ;
 		     ;
-		CASE !Load_Control_pressed && (!Key.Shift || Mass_BH.Text.Real <= 0) ?
+		//CASE !Load_Control_pressed && (!Key.Shift || Mass_BH.Text.Real <= 0) ?
+		CASE (!Key.Shift || Mass_BH.Text.Real <= 0) ?
 		     Mass_BH.Set_text(c.Real("Mass_BH").S) 
 	         //DEBUG: "in mass bh: " c.Real("Mass_BH") 
 	         //       ", Text-->" Mass_BH.Text #NL ;
@@ -3933,8 +3934,8 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 			    	   Rotate_image.Set_text(c.Real("Image_rotate_1").S_float(1))
 			    	   i_sc = c.Real("Image_scale_1")
 			    	   CASE !i_sc.Near(0) ? Scale_image.Set_text(i_sc.S_float(1)) ;
-			    	   DEBUG: "......... loaded Image_rotate_1:" Rotate_image.Text
-			    	   " Image_scale_1:" Scale_image.Text #NL ;
+                       //DEBUG: "......... loaded Image_rotate_1:" Rotate_image.Text
+                       //" Image_scale_1:" Scale_image.Text #NL ;
 		    	  ;
 		    	  -----------------------------
 			 ELSE LIKE .............. 'shift__scale__rotate', BUT(_1==>)*? ;
@@ -4029,13 +4030,14 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 			 CASE c.Present("Checksum2") ? 
 			      INT ch2|ecksum2 = c.Str("Checksum2").From_hex 
 			      Checksum2_img_loaded = ch2 ;
-			 Provide_stamp_param
+			 Provide_stamp_param(FALSE)
 			 Commands_s[].Clear
 			 FOR i IN [0 TO MAX_INT-1] :
 			 	 STR sc|ommand = c.Str("Command" i.S)
 			 	 CASE sc=="" ? BREAK i ;
 			     Commands_s[] << sc
 			 ;
+			 Stamp_param.Update_commands
 		;
 		Protected = c.Bool("Protected")
 	;
@@ -4063,10 +4065,10 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     STR f|ilename = Image_filename  
     INT ch|ecksum = Calculate_checksum(f)
     INT ch2|ecksum = Calculate_checksum2(f)
-    DEBUG:
-    	CASE ch==0 ? 
-    	     << "could not clalculate checksum!" #NL ;
-    ;
+    //DEBUG:
+    //    CASE ch==0 ? 
+    //         << "could not clalculate checksum!" #NL ;
+    //;
     STR format|_actual = Actual_format(f)
     CASE format ? 
     [".png"]: {Bitmap} temp_b|itmap = {Png}.From_file(f, 'FULL')
@@ -4129,14 +4131,14 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     Main_.Update_caption(f.Extract_file_name)
     Main_.Checksums_of_images[.Current_image] = ch
     Main_.Checksums2_of_images[.Current_image] = ch2
-    DEBUG:
-          FOR i IN [0 TO Main_.All_images[].Count-1] :
-              << i.S #TAB 
-              << Main_.All_img_names[i] #TAB 
-              << Main_.Checksums_of_images[i].Hex(8) #TAB 
-              << Main_.Checksums2_of_images[i].Hex(8) #NL 
-          ;
-          ;
+    //DEBUG:
+    //      FOR i IN [0 TO Main_.All_images[].Count-1] :
+    //          << i.S #TAB 
+    //          << Main_.All_img_names[i] #TAB 
+    //          << Main_.Checksums_of_images[i].Hex(8) #TAB 
+    //          << Main_.Checksums2_of_images[i].Hex(8) #NL 
+    //      ;
+    //      ;
     Main_.Invalidate
     button_colors
     Thumbnails.Invalidate_all
@@ -4154,12 +4156,20 @@ METHOD Save_gal|axy(STR Filename|_to_save_to,
 BOOL Preserve_stamp|_commands_OTHERWISE_ask,
 BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common) 
     :
-	DEBUG: "saving gal -- " Filename #NL ;
+    //DEBUG: "saving gal -- " Filename #NL ;
     {In_file_config} c|onfiguration_temp
     c = New_write_in_file_config(Filename, "")
     -----------------------
     PUSH c.No_write = TRUE :
-    	 CASE Save_common ? 
+	     CASE For_coll ?
+	          -------------------------------- 'shift__rotate__scale', REUSED
+		      c.Set_r("ShiftX_1", Main_.ShiftX)	
+		      c.Set_r("ShiftY_1", Main_.ShiftY)
+		      c.Set_r("Image_rotate_1", Rotate_image.Text.Real)
+		      c.Set_r("Image_scale_1", Scale_image.Text.Real)
+		      -----------------------
+	     ;
+    	 CASE Save_common || !c.Present("Box_width") ?
 		      ----------------------- 'common parameters'
 		      c.Set_r("Box_width", Box_width.Text.Real)
 		      c.Set_i("Count_spirals", Satellite_num.Count)
@@ -4170,14 +4180,6 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 		      c.Set_b("Mirrored", Image_mirrored)
 	          //DEBUG: "saving Offset_x=" Main_.Offset_x " Offset_y=" Main_.Offset_y 
 	          // #NL ;
-		      CASE For_coll ?
-		           -------------------------------- 'shift__rotate__scale', REUSED
-			       c.Set_r("ShiftX_1", Main_.ShiftX)	
-			       c.Set_r("ShiftY_1", Main_.ShiftY)
-			       c.Set_r("Image_rotate_1", Rotate_image.Text.Real)
-			       c.Set_r("Image_scale_1", Scale_image.Text.Real)
-			       -----------------------
-		      ;
 		      LIKE .......... 'shift__rotate__scale', BUT(_1==>)*4
 		      ----------------------- '+last transform'
 		      c.Set_s("Last_transform", Last_transform)
@@ -4227,7 +4229,7 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
               //           CASE old_cmd=="" ? BREAK i ;
               //       ;
               //;
-	     CASE Save_common ? 
+	     CASE Save_common || !c.Present("Checksum") && !c.Present("Checksum2") ? 
 		      Commands_changed = FALSE
 		      CASE Commands_s[].Count > 0 ?
 		           FOR i IN [0 TO Main_.All_images[].Count-1] :
@@ -4245,11 +4247,15 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 		           CASE ? 
 		           [Preserve_stamp] ? 
 		                BOOL preserve|_previous_commands = old_c[].Count > 1
-		           [!For_coll && Commands_changed && old_c[].Count > 1] ?
-		                CASE ask("Another 3D-stamp commands are stored in "
-		                "the replacing .gal model. Preserve it?") 
-		                ?
-		                preserve = TRUE  ;
+		           //[!For_coll && Commands_changed && old_c[].Count > 1] ?
+		           [Commands_changed && old_c[].Count > 1] ?
+		                CASE ?
+		                [ask("Another 3D-stamp commands are stored in "
+		                "the replacing .gal model. Preserve it?")]  ?
+		                	preserve = TRUE  
+		                [Collection_gal.Visible] ?
+		                    Collection_gal.Save_stamp_file
+		                ;
 		           ;
 		           FOR i IN [0 TO Commands_s[].Count] :
 		               CASE ch==0 && ch2==0 ? BREAK i ;
@@ -4266,7 +4272,7 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 		      FOR u IN Main_.All_img_URLs[] :
 		          CASE u=="" ? CONTINUE u ;
 		          url = u
-		     	  DEBUG: "i=" u.INDEX " u=" u " url=" url #NL ;
+                  //DEBUG: "i=" u.INDEX " u=" u " url=" url #NL ;
 		          BREAK u     
 		      ;
 		      c.Section = ""
@@ -4288,6 +4294,16 @@ METHOD Update_URL|_label :
 	Label_url.Set_text(Main_.All_img_URLs[Main_.Current_image]) .
     
 METHOD URL_loaded ==> STR := url .
+
+METHOD Reset|_all :
+    FOR sp_r IN All_satellites[* DOWNTO 1] :
+        All_satellites[].Delete(sp_r.INDEX) ;
+    Satellite_num.Set_items("1")
+    fill_combos
+    LIKE after_CONSTRUCT ............. 'initial__spiral'
+    Set_caption(caption_loc)
+    Main_.Rescale
+    Update_label_select_num .
 
 END
 

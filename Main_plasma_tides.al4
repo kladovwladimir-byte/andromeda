@@ -884,8 +884,7 @@ METHOD Paint_to2(
                   //DEBUG: "un-rotated by " total_rotate #NL ;
 	     	 ;
 		     PUSH c.Font.Size = 12 / total_scale * PBox.Width / 1000 :
-		          CASE cmd[2].Real > 0 ? 
-		               c.Font.Size *= cmd[2].Real/100 ;
+		          c.Font.Size *= font_scale(cmd[])/100
 		          {point} sp|oint_start = center_pt.CLONE
 			  	  {point} min_p|oint = sp.CLONE
 			  	  {point} max_p|oint = min_p.CLONE
@@ -895,12 +894,22 @@ METHOD Paint_to2(
 			  	           text[] << line
 			  	      ELSE text[] << line.Replace_all(
                            	"#inclination",  
-                           	Satellite_param.Inclination.Text.Real.S_float(1)) ;
+                           	Satellite_param.Inclination.Text.Real.S_float(1))
+                           	.Replace_all(
+                           	"#v1",
+                           	Satellite_param.Plasma_speed.Text.Real.S_f3)
+                           	.Replace_all(
+                           	"#v2",
+                           	Satellite_param.Final_plasma_speed.Text.Real.S_f3)
+			  	      ;
 			  	  ;
+			  	  REAL shadow|_width = c.Font.Size / 20
 				  CASE cmd[0].Lower ? 
 				  ["#text"]:
 				  	  -------------------------------- '#text', REUSED
 				      FOR line IN text[] :
+				      	  PUSH c.Foreground = BLACK :
+				      	       c.Text(sp.Offset(shadow, shadow), line) ;
 				          c.Text(sp, line)
 				          min_p = Pt(_.X, _.Y.Min(sp.Y))
 				          sp.Y += c.Font.Size
@@ -915,8 +924,8 @@ METHOD Paint_to2(
 				  	  ELSE a_l = 20 ;
 				  	  a_w /= total_scale
 				  	  a_l /= total_scale
-                    DEBUG: "a_w=" a_w " a_l="a_l " total_scale=" total_scale 
-                        " total_rotate=" total_rotate #NL ;
+                    //DEBUG: "a_w=" a_w " a_l="a_l " total_scale=" total_scale 
+                    //    " total_rotate=" total_rotate #NL ;
                       min_p = Pt(_.X, _.Y - a_w)
                       min_p = Pt(_.X, _.Y + a_w)
                       -------------------- 'rotate arrow ?'
@@ -951,8 +960,8 @@ METHOD Paint_to2(
 				      LIKE ................................. '#text'
 				  ["#image"]:
 				      STR fname|_image = cmd[2]
-				      CASE fname=="" ? fname = sat.Text[0] ;
-				      CASE !fname.Exists ? 
+				      CASE fname=="" ? fname = text[0] ;
+				      CASE fname.Extract_path == "" ? 
 				           fname = Satellite_param.Images_path _ ;
 				      CASE Cache_small==NONE ?
 				           Cache_small = {Cache_small} ;
@@ -2189,6 +2198,10 @@ PUSH processing_mouse = TRUE :
 		 	  REAL m|ultiplyer
 		      ------------------------------ 'drag__scaled', REUSED
 		      rA = Satellite_param.Rotate_image.Text.Real
+		      CASE Satellite_param.Collection_gal.Visible
+		           && .Last_sel > 0
+		           ? 
+		           rA += Satellite_param.Collection_gal.Rotation_1 ;
 		      cA = Cos(rA*PI/180)
 		      sA = Sin(rA*PI/180)
 		      dX = mouse.X - mouse_down0.X
@@ -2747,6 +2760,34 @@ METHOD offset_r|otated({point} b|ase_point, REAL v_X|_offset, REAL v_Y|_offset)
      			 b.Y - si * v_X + co * v_Y) .
      			 
 {Cache_small} Cache_small|_images
+
+FUN font_scale|_encoded(STR cmd|_strings[]) ==> REAL :
+    RESULT = 100 
+    FOR c IN cmd[* DOWNTO 2] :
+        CASE c.[0].Lower == "f" ? 
+             CASE "=" IN c ? RESULT = c.After("=").Trim.Real 
+             ELSE RESULT = c.[1 TO *].Trim.Real ;
+             ==>
+        ;
+    ;
+    CASE cmd[].Count >= 2 ? RESULT = cmd[2].Trim.Real ; .
+    
+METHOD Clear|_all :
+    Clear_images
+    Satellite_param.All_satellites[].Clear
+    Satellite_param.Reset .
+    
+FUN S_f3|_format_float_with_max_3_digits(
+REAL X|_value_to_max_3_decimals) ==> STR
+    :
+    RESULT = X.S_float(3)
+    FOR n IN [RESULT.Len-1 DOWNTO 1] :
+        CASE RESULT.[n] ? 
+        ["0"]: RESULT = _.[0 TO n-1] 
+        ["."]: RESULT = _.[0 TO n-1] ==>
+        ELSE ==> ;
+    ;
+    .
 	
 END
 

@@ -9,6 +9,7 @@ STR Paths|_of_images[]
 {date_time} Last_usage|_times[]
 
 METHOD Get|_image(STR Path|_of_image) ==> {Bitmap} :
+    //DEBUG: "get " Path #NL ;
     FOR p IN Paths[] :
         CASE p == Path ? 
              RESULT = Images[p.INDEX]
@@ -27,10 +28,10 @@ METHOD Get|_image(STR Path|_of_image) ==> {Bitmap} :
         ;
     ;
     -------------------------- 'load if not in list'
-    DEBUG: "get image [" Path "] " Path.Exists.S #NL ;
     CASE Path.Exists ? 
          {Bitmap} temp|_bitmap = Load_bitmap(Path) 
          RESULT = temp   
+         //DEBUG: "loading: " Path " --> " temp.Width " x " .Height #NL ;
     ELSE temp = New_bitmap(32, 32, 32)
          RESULT = temp
     	 RESULT.Canvas...Erase

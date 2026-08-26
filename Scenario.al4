@@ -28,10 +28,11 @@ BASE CLASS: {Form_common} .
 {Paint_turtle} Search_back
 {Timer} Timer_search
 {Combo} Tempo|_speed
+{Label} Info_total|_time
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://555D1A1C Do not change manually (created by Form Designer)
+CONSTRUCT://7E63CB19 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------- 'column COL_BUTTONS'
@@ -153,6 +154,12 @@ PUSH in_construct = TRUE :
 "x5 times faster"
 "x10 times faster")
 	...Set_anchor_bottom(TRUE)
+	----------------------- 'INFO_TOTAL'
+	Info_total = {Label}(Form_=THIS, Alias="INFO_TOTAL")
+
+	...Set_width(90)
+
+	...Set_text("Total: 0 sec")
 	------------------------------------------------------------- 'column COL_1'
 	new_column("COL_1", 'CENTER', DEFAULT_SIZES)
 
@@ -201,12 +208,15 @@ OVERRIDE closing ==> {Form}.{action} :
 	.
 	
 
-METHOD search_next :
+METHOD search_next(BOOL from_start|_of_selection) :
 	CASE Timer_video.Active || Recording ? ==> ;
 	STR text|_of_memo = Memo_commands.Text.Upper     
 	{from_to} sel|ext_range = Memo_commands.Get_range_sel
-	INT found|_pos = text.[sel.To TO *].Find(Search.Text.Upper)
-	CASE found >= 0 ? found += sel.To 
+	CASE from_start ? 
+	     INT found|_pos = text.[sel.From TO *].Find(Search.Text.Upper)
+	ELSE found = text.[sel.To TO *].Find(Search.Text.Upper) ;
+	CASE found >= 0 ?
+	     CASE from_start ? found += sel.From ELSE found += sel.To ;
 	ELSE found = text.Find(Search.Text.Upper) ;
 	CASE found < 0 ? ==> ;
 	------------------------- 'select found'
@@ -214,6 +224,7 @@ METHOD search_next :
 		{from_to}(From= found, To= found+Search.Text.Len))
 		
 	Memo_commands.Scroll_to_caret 
+	CASE from_start ? ==> ;
 	Set_active(Memo_commands) .
 	
 METHOD search_back :
@@ -244,7 +255,7 @@ METHOD stop_p|laying_recording :
 
 OVERRIDE click :
     CASE sender_alias ?
-    ["SEARCH_NEXT"]: search_next 
+    ["SEARCH_NEXT"]: search_next(FALSE)
     ["SEARCH_BACK"]: search_back
     ["STEP"]: One_step
     ["PLAY"]:
@@ -293,11 +304,12 @@ OVERRIDE click :
 		)
 
 	""	Item(	"ADD_VIEW",
-				"View-arms a=0/1/2 h=0 -500 -1000 -4000 -5000 1000 2000 3000 5000 10000"
+				"View-arms a=0...2 h=0...10000 marker=y/n orbits=y/n "
+				"distortion=y/n pen= transparency=y/n vtop= svtop=y/n"
 		)
 
 	""	Item(	"ADD_OVER",
-				"Over bas show=yes/no inverted=yes/no"
+				"Over base show=yes/no inverted=yes/no transparency="
 		)
 
 	""	Item(	"ADD_SUBTITLE",
@@ -374,10 +386,18 @@ OVERRIDE menu_item :
         c = _ " distortion=" if_else(Satell.Time_distortion.Checked, "yes", "no")
         c = _ " p=" Satell.Edit_line_w.Text
         c = _ " t=" Satell.Transparency_sel.Text
+        CASE Satell.Stamp_param.Visible
+             && Main_.Current_image > 0
+             ? 
+             c = _ " vtop=" Satell.Stamp_param.Transparency_percents.Text
+             c = _ " svtop=" if_else(
+             	Satell.Stamp_param.Scale_transparent.Checked, "yes", "no")
+        ;
     ["ADD_OVER"]:
         c = "Over " if(Coll.Last_sel==.Over_from, "base ")
         c = _ " show=" if_else(Coll.Draw_over.Checked, "yes", "no") 
         c = _ " invert=" if_else(Coll.Overlay_inverted.Checked, "yes", "no") 
+        c = _ " transparency=" Coll.Transparency.Text
     ["ADD_SUBTITLE"]:
     	c = "Subtitle ru= en= direction=left/up"
     ["ADD_EXPOSURE"]:
@@ -436,6 +456,7 @@ OVERRIDE paint :
 
 OVERRIDE value_change :
     CASE sender_alias ?
+    ["SEARCH"]: search_next(TRUE)
     ["MEMO_COMMANDS"]:
         STR filename = Coll.Dialog_save_col.Filename
         CASE filename=="" ? ==> ;
@@ -443,6 +464,7 @@ OVERRIDE value_change :
         STR lines|_to_save[].Split(Memo_commands.Text, #NL)
         CASE lines[].Count==0 ? ==> ;
         lines[].To_text_file(filename, 'UTF8')
+        Update_status
     ; .
     
 METHOD Load|_scenario(STR File_path) :
@@ -461,6 +483,8 @@ REAL start_v1|elocity
 REAL start_v2|elocity
 REAL start_inclin|ation
 {point} start_center
+REAL start_vtop
+REAL start_tr|ansparency_over
 
 REAL final_r|otation
 REAL final_s|cale
@@ -470,6 +494,8 @@ REAL final_v1|elocity
 REAL final_v2|elocity
 REAL final_inclin|ation
 {point} final_center
+REAL final_vtop
+REAL final_tr|ansparency_over
 
     
 METHOD One_step :
@@ -498,11 +524,24 @@ METHOD One_step :
 	CASE c.[0] IN "#!;/\" || c.Trim=="" ? ==> ; // skip comments
 	------------------------------------- 'execute'
 	keys[].Split(c.Trim, " ")
+	FOR k IN keys[* DOWNTO 0] :
+	    CASE k.[*]=="'" && "='" !IN k ?
+	         DEBUG: "desegmenting[" k.INDEX "]: [" k "]"#NL ;
+	         FOR kk IN [k.INDEX-1 DOWNTO 0] :
+	             keys[kk]= _ " " keys[kk+1]
+	             DEBUG: "kk[" kk "]-[" keys[kk] "]"#NL ;
+	             keys[].Delete(kk+1)
+	             CASE "='" IN keys[kk] ? 
+	                  BREAK kk ;
+	         ;
+	    ;
+	;
 	hint_c = ""
 	CASE keys[0].[0] IN "0123456789" ?
-	     Period = keys[0].Real
+	     //Period = keys[0].Real
+	     Period = 0
 	     CASE now.Milliseconds_diff(wait_for) > 0 ? wait_for = now ;
-	     wait_for = _.Add_milliseconds((Period * 1000 * tempo).Int)
+	     //wait_for = _.Add_milliseconds((Period * 1000 * tempo).Int)
 	     start_time = now
 	     ------------------------------- 'fix start values to change'
 	     start_r = Satell.Rotate_image.Text.Real
@@ -515,6 +554,12 @@ METHOD One_step :
 	     start_inclin = Satell.Inclination.Text.Real
 	     start_center = Satell.All_satellites[
 	     	.Satellite_num.Current].Center_gal.CLONE
+	     --------------------- 'view transparent over previous'
+	     start_vtop = 0
+	     CASE Satell.Stamp_param.Visible ? 
+	          start_vtop = Satell.Stamp_param.Transparency_percents.Text.Real
+	     ;
+	     start_tr = Coll.Transparency.Text.Real
 	     ------------------------------- 'same final values by default'
 	     final_r = start_r
 	     final_s = start_s
@@ -525,19 +570,38 @@ METHOD One_step :
 	     final_v2 = start_v2
 	     final_inclin = start_inclin
 	     final_center = start_center.CLONE
+	     final_vtop = start_vtop
+	     final_tr = start_tr
 	     ------------------------------- 'look forward and get final values'
-	     CASE "C" IN c || "T" IN c ? 
+	     CASE !("C" IN c || "T" IN c || "V" IN c || "O" IN c) ?
+	          Period = keys[0].Real
+	          wait_for = _.Add_milliseconds((Period * 1000 * tempo).Int)
+	     ELSE
+              //DEBUG: "command: [" c "]"#NL ;
+	          --------------------- 'which letters to wait for ?'
+	     	  STR wait_letters = ""
+	     	  CASE "C" IN c ? wait_letters = _ "C" ;
+	     	  CASE "T" IN c ? wait_letters = _ "T" ;
+	     	  CASE "V" IN c ? wait_letters = _ "V" ;
+	     	  CASE "O" IN c ? wait_letters = _ "O" ;
+	     	  ------------------------------------- 'look forward from where ?'     
 		      {from_to} fr|om_position = Memo_commands.Get_range_sel
               //DEBUG: "fr: " fr.Line_from "/" .From " -- " fr.Line_to "/" .To #NL ;
 		      STR s_text|_of_memo = Memo_commands.Text
               //DEBUG: "s_text=" s_text #NL ;
-		      .. = _.[fr.To+1 TO *]
+		      //.. = _.[fr.To+1 TO *]
+		      .. = _.[fr.From TO *]
 		      STR forward|_lines[].Split(s_text, #NL)
 		      FOR s IN forward[] :
 		          s = s.Lower.Trim
-                  //DEBUG: "look formward: [" s "]"#NL ;
+                  //DEBUG: "look formward: [" s 
+                  //       "] wait_letters=[" wait_letters "]"#NL ;
 		          CASE {
-		          ["T" IN c && s.[0]=="t"] ? 
+		          [s.[0] IN "0123456789"] ?
+		              Period += s.Real
+		              wait_for = _.Add_milliseconds((s.Real * 1000 * tempo).Int)
+		          ["T" IN wait_letters && s.[0]=="t"] ? 
+		          	  wait_letters = _.Replace("T", "").Trim
 		              keys[].Split(s, " ")
 		              CASE key_present("r/rotation") ? 
 		                   final_r = value.Real ;
@@ -547,7 +611,8 @@ METHOD One_step :
 		                   final_pos.X = value.Real ;
 		              CASE key_present("y") ? 
 		                   final_pos.Y = value.Real ;
-		          ["C" IN c && s.[0]=="c"] ? 
+		          ["C" IN wait_letters && s.[0]=="c"] ? 
+		          	  wait_letters = _.Replace("C", "").Trim
 		              keys[].Split(s, " ")
 		              CASE key_present("a/activity") ? 
 		                   final_a = value.Real ;
@@ -561,8 +626,28 @@ METHOD One_step :
 		                   final_center.X = value.Real ;
 		              CASE key_present("cy") ? 
 		                   final_center.Y = value.Real ;
-		          ELSE BREAK s
+		          ["V" IN wait_letters && s.[0]=="v"] ?
+		          	  wait_letters = _.Replace("V", "").Trim
+		          	  keys[].Split(s, " ")
+		              CASE key_present("vtop") { 
+		                   final_vtop = value.Real 
+		                   Satell.Provide_stamp_param(TRUE)
+		                   CASE key_present("svtop") ? 
+		                        Satell.Stamp_param.Scale_transparent.Set_checked(
+		                        value.[0].Lower=="y") ;
+                           //DEBUG: " start vtop=" start_vtop
+                           //       " final vtop=" final_vtop #NL ; 
+		              }
+		          ["O" IN wait_letters && s.[0]=="o"] ?
+		              wait_letters = _.Replace("O", "").Trim
+		          	  keys[].Split(s, " ")
+		              CASE key_present("t/transparency") ? 
+		                   final_tr = value.Real ; 
 		          }
+		          CASE wait_letters == "" ?
+                       //DEBUG: "--found: " s " Period=" Period
+                       //" wait=" wait_for.Milliseconds_diff(now) #NL ;
+		               BREAK s ;
 		      ;
 	     ;
 	     ==>
@@ -570,6 +655,7 @@ METHOD One_step :
 	CASE keys[0].Lower ? 
 	["goto", "g"]:
 	    CASE key_present("g/gal/galaxy") ?
+	    	 CASE value.[0]==value.[*]=="'" ? value = _.[1 TO *-1] ;
 	         FOR i IN [0 TO Coll.List.Count-1] :
 	         	 STR gal|axy_model = Coll.List.Get_item(i, 0)
 	         	 gal = _.[0 TO .Find(#TAB)-1] 
@@ -593,7 +679,6 @@ METHOD One_step :
 	    CASE key_present("s/satellite") ?
 	         CASE keys[*].Starting("+") ? 
 	              INT n|umber_of_satellite_with_selected_name = keys[*].Int
-	              DEBUG: "n=" n #NL ;
 	         ;
 	         FOR sat IN Satell.All_satellites[] :
 	             CASE sat.Name != value ? CONTINUE sat ;
@@ -724,37 +809,67 @@ METHOD One_step :
 	              BREAK i 
 	         ;
 	    ;
+	    CASE key_present("vtop") ?
+	         Satell.Provide_stamp_param(TRUE)
+	         CASE Satell.Stamp_param.Transparency_percents.Text != value ?
+	              changed_buf = TRUE
+	              Satell.Stamp_param.Transparency_percents.Set_text(value)
+                  //DEBUG: "set transparency%%=" value #NL ;
+	         ;
+	    ;
+	    CASE key_present("svtop") ?
+	         CASE Satell.Stamp_param.Scale_transparent.Checked 
+	              != (value.[0].Lower=="y") 
+	              ?
+	              changed_buf = TRUE
+	              Satell.Stamp_param.Scale_transparent.Set_checked(
+	              	value.[0].Lower=="y") ;
+	    ;
 	["over", "o"]:
 	    CASE key_present("d/draw") ?
 	         CASE Coll.Draw_over.Checked != (value.[0].Lower == "y") ? 
+	              BOOL do_checked = value.[0].Lower == "y"
+	              DEBUG: "set checked Draw_over: " do_checked.S #NL ;
 	              changed_buf = TRUE
 	              Coll.Draw_over.Set_checked(value.[0].Lower == "y") ;
 	    ;
 	    CASE key_present("i/invert/inverted") ?
 	         CASE Coll.Overlay_inverted.Checked != (value.[0].Lower == "y") ? 
+	              do_checked = value.[0].Lower == "y"
 	              changed_buf = TRUE
-	              Coll.Overlay_inverted.Set_checked(value.[0].Lower == "y") ;
+	              DEBUG: "set checked Overlay_inverted: " do_checked.S #NL ;
+	              Coll.Overlay_inverted.Set_checked(do_checked) ;
 	    ;
-	    CASE "base" IN c.Lower ?
+	    CASE key_present("b/base") ?
 	         CASE Coll.Over_from != Coll.Last_sel ?
 	              changed_buf = TRUE
 	              Coll.Make_current_overlay_source ;
+	    ;
+	    CASE key_present("t/transparency") ?
+	         CASE Coll.Transparency.Text != value ? 
+	              changed_buf = TRUE
+	              Coll.Transparency.Set_text(value) ;
 	    ;
 	["subtitle", "s"]:
         //DEBUG: "!!!subtitle "#NL ;
 	    CASE key_present("d/dir/direction") ? 
 	         Subtitles_up = value.Lower.[0]=="u" 
-	    ELSE BOOL no_dir|ection = TRUE ;
+	         CASE !Subtitles_up ? 
+	              Default_dir = value.Lower.[0].Trim 
+	              DEBUG: "Default_dir=[" Default_dir "]"#NL ;
+	         ;
+	    ;
 	    CASE key_present(Language) ?
 	         STR a_s|ubtitle_to_add = c.After(Language "=") 
+	         BOOL no_dir|ection
+	         -------------------------- 'subtitle', REUSED
+	         no_dir = !Subtitles_up && Default_dir == ""
 	         CASE ?
 	         [no_dir] ?
-	         	  -------------------------- 'ssubtitle', REUSED
 	         	  HSubtitle_pos[].Clear
 	         	  HSubtitles[].Clear
 	         	  SSubtitle = a_s
                   //DEBUG: "set ssub: " a_s #NL ;
-	         	  --------------------------
 	         [Subtitles_up] ?
 	              VSubtitles[] << a_s
 	              VSubtitle_pos[] << Pt(-1, 0)
@@ -763,17 +878,20 @@ METHOD One_step :
 	              HSubtitle_pos[] << Pt(0, -1)
 	              SSubtitle = ""
 	         ; 
+	         --------------------------
 	    ;
 	["r", "ru", "russian"]:
 		CASE Language=="ru" ?
 		     CASE c.Lower.Starting("ru") || c.[1]==" " ? a_s = c.After(" ") 
 		     ELSE a_s = c.[1 TO *] ;
-		     LIKE ......... 'ssubtitle' ;
+		     Subtitles_up = FALSE
+		     LIKE ......... 'subtitle' ;
 	["e", "en", "english"]:
 		CASE Language=="en" ? 
 		     CASE c.Lower.Starting("en") || c.[1]==" " ? a_s = c.After(" ") 
 		     ELSE a_s = c.[1 TO *] ;
-		     LIKE ......... 'ssubtitle' ;
+		     Subtitles_up = FALSE
+		     LIKE ......... 'subtitle' ;
 	ELSE hint_c = "Command not implemented: " c
 		 Hint_command.Invalidate_all
          //DEBUG: "not implemented: [" keys[].Merge( "]  [") "]" #NL ;
@@ -788,9 +906,14 @@ METHOD key_present(STR key_set|_to_check) ==> BOOL :
 	STR list|_of_keys[].Split(key_set, "/")
     FOR k IN keys[1 TO *] :
         FOR l IN list[] :
-	        CASE k.Lower.Starting(l "=") ?
+	        CASE ?
+	        [k.Lower.Starting(l "=")] ?
 	             value = k.After("=")
-	             RESULT = TRUE ==> ;
+	             RESULT = TRUE ==>
+	        [k.Lower==l] ?
+	             value = ""
+	             RESULT = TRUE ==>
+	        ;
         ;
     ; .
     
@@ -803,6 +926,7 @@ STR HSubtitles|_horizontal[]
 STR SSubtitle|_single
 {date_time} Subtitles_last_time|_drawn
 STR Language|_for_subtitles = "en"
+STR Default_dir|ection_Left_No
 
 {Date_time}.{date_time} wait_for|_time_moment
 {Date_time}.{date_time} wait_flash|_filter
@@ -811,7 +935,7 @@ OVERRIDE timer :
     CASE sender_alias ?
     ["TIMER_SEARCH"]:
         Timer_search.Set_active(FALSE)
-        search_next
+        search_next(FALSE)
     ["TIMER_START_RECORD"]: 
         Timer_start_record.Set_active(FALSE)
         record_video
@@ -843,7 +967,7 @@ METHOD Draw_subtitles({Canvas} C|anvas_pbox,
 	C.Font.Size = 12 * View.Y / 200
 	REAL dt|time_left_from_last_draw= now.Milliseconds_diff(Subtitles_last_time)
 	CASE dt > 1000 ? dt = 0 ;
-	REAL shadow|_offset = 1.Pixels_to_points
+	REAL shadow|_offset = C.Font.Size / 20
 	----------------------------------------- 'vertical subtitles'
 	REAL y|_destination = View.Y - C.Font.Size * 2
     //DEBUG: "y=" y " dt=" dt " VSubtitle_pos[0]=" VSubtitle_pos[0].S 
@@ -892,7 +1016,7 @@ METHOD Draw_subtitles({Canvas} C|anvas_pbox,
         	View.Y - C.Font.Size * 2)
         	
         PUSH C.Foreground = BLACK :
-    	     C.Text(ss_pos, SSubtitle)
+    	     C.Text(ss_pos.Offset(shadow, shadow), SSubtitle)
     	;
         //DEBUG: "show ssubtitle[" SSubtitle "] at " ss_pos.S #NL ;
     	C.Text(ss_pos, SSubtitle)
@@ -902,7 +1026,15 @@ METHOD Draw_subtitles({Canvas} C|anvas_pbox,
      && -.X + View.X + C.Measure(HSubtitles[0]).W < View.X]
          ?
          -------------------- 'first move up faster'
-         HSubtitle_pos[0].X = _ + dt * View.X / 1024 / 10 / tempo
+         HSubtitle_pos[0].X = _ + dt * View.X / 1024 / 1.5 / tempo
+         //DEBUG: "H.X=" HSubtitle_pos[0].X " V.X=" View.X " HS=" HSubtitles[0] 
+         //       #NL ;
+         //CASE HSubtitle_pos[0].X > View.X - C.Font.Size * 4 
+         //     && HSubtitles[0].Trim != ""
+         //     ?
+         //     HSubtitle_pos[0].X = View.X - C.Font.Size * 4 
+         //     DEBUG: "--> H.X=" HSubtitle_pos[0].X #NL ;
+         //;
     ELSE 
     	 FOR i IN [0 TO 1] :
     	     CASE i >= HSubtitles[].Count ? BREAK i ;
@@ -910,7 +1042,7 @@ METHOD Draw_subtitles({Canvas} C|anvas_pbox,
     	     CASE i==0 
     	          && View.X - HSubtitle_pos[0].X 
     	          + C.Measure(HSubtitles[0]).W 
-    	          > View.X - C.Font.Size 
+    	          > View.X + C.Font.Size 
     	          ?
     	          BREAK i  ;
     	 ;
@@ -989,6 +1121,18 @@ METHOD tick_video :
                    Satell.All_satellites[
                    	.Satellite_num.Current].Center_gal = new_c.CLONE
               ;
+              CASE !final_vtop.Near(start_vtop) ? changed_buf = TRUE
+                   Satell.Stamp_param.Transparency_percents.Set_text(
+                   	(start_vtop + (final_vtop - start_vtop)*pr).S) 
+                   	
+                   //DEBUG: "pr=" pr " vtop=" 
+                   //"" Satell.Stamp_param.Transparency_percents.Text #NL ;
+              ;
+              CASE !final_tr.Near(start_tr) ? 
+                   changed_buf = TRUE
+                   Coll.Transparency.Set_text(
+                   	(start_tr + (final_tr - start_tr) * pr).Int.S) ;
+              --------------------------- 'invalidate'
               Main_.PBox.Invalidate_all
          ;
          ==> 
@@ -1146,6 +1290,14 @@ METHOD Update_status :
          b_height = (Main_.PBox.Height * k).Points_to_pixels ;  
     Info_frame_size.Set_text(b_width.S "x" b_height.S) 
     Info_frame_rate.Set_text(Frame_rate.S " fr/sec")
+    -------------------------- 'calculate total time'
+    STR lines|_memo[].Split(Memo_commands.Text, #NL)
+    FOR line IN lines[] :
+        line = _.Trim
+        CASE line.[0] IN "0123456789" ? 
+             REAL sum|_total_seconds += line.Real ;
+    ;
+    Info_total.Set_text("Total: " sum.S " sec")
     .
     
 INT Frame_rate = 25    

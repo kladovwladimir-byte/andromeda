@@ -2224,6 +2224,10 @@ METHOD Commands_from_file :
 	     message("There are no stamp commands stored in the .gal file selected") 
 	     ==> ;
 	Main_.Satellite_param.Do_commands_auto(FALSE) .
+	
+METHOD Update_commands|_in_hint :
+	PUSH Executing = 0 :
+	     hint_from_commands ; .
     
     
 END

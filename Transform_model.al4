@@ -124,6 +124,10 @@ OVERRIDE paint :
         c.Erase
         c.Line(Pt(Bar.Width*X_offset, 0), Pt(.Width*X_offset, .Height))
         c.Line(Pt(0, Bar.Height*Y_offset), Pt(.Width, .Height*Y_offset))
+        -------------------------- 'couple of hints'
+        c.Foreground = SILVER
+        c.Text(Pt(1,1), "Shift to move gently.")
+        c.Text(Pt(1,15), "Ctrl to move directly.")
     ELSE BASE
     ; .
     
@@ -260,16 +264,20 @@ OVERRIDE mouse_move :
     //    " Lw=" Label_scale.Width " new_v=" new_v #NL ;
 	    Scaleing.Set_text(new_v.S)
 	[!Bar.Bounds.Contains(mouse)] ? ==>     	
-	[R_down] ?
+	[Key.Control] ?
 	     X_offset = (mouse.X - Bar.Bounds.Loc.X) * 1.0 / Bar.Width
 	     Y_offset = (mouse.Y - Bar.Bounds.Loc.Y) * 1.0 / Bar.Height
 	[L_down] ?
 		REAL dX|_delta_X = mouse.X - Down_pos.X
 		REAL dY|_delta_Y = mouse.Y - Down_pos.Y
 		REAL rA|ngle_rotate = Main_.Satellite_param.Rotate_image.Text.Real
+		CASE Main_.Satellite_param.Collection_gal.Visible
+		     && .Last_sel > 0
+		     ? 
+		     rA += Main_.Satellite_param.Collection_gal.Rotation_1 ;
 		REAL cA|ngle_correction = Cos(rA*PI/180)
 		REAL sA|ngle_correction = Sin(rA*PI/180)
-		CASE Key_pressed(CONTROL) ? m = 1 ;
+		//CASE Key_pressed(CONTROL) ? m = 1 ;
 		--------------------------------- 'calculate new offsets now'     
 	    X_offset = XY.X + (cA * dX + sA * dY) * m / Bar.Width 
 	    Y_offset = XY.Y + (-sA * dX + cA* dY) * m / Bar.Height
@@ -299,6 +307,14 @@ OVERRIDE key_down ==> {Form}.{action} :
 	[PAGE_DOWN]:
 	    CASE Main_.Satellite_param.Collection_gal.Visible ? 
 	         Main_.Satellite_param.Collection_gal.Next_line ;
+	[HOME]:
+	    CASE Main_.Satellite_param.Collection_gal.Visible ? 
+	         Main_.Satellite_param.Collection_gal.List.Select(0, TRUE) 
+	         RESULT = 'DECLINE';
+	[END_KEY]:
+	    CASE Main_.Satellite_param.Collection_gal.Visible ? 
+	         Main_.Satellite_param.Collection_gal.List.Select(.Count-1, TRUE) 
+	         RESULT = 'DECLINE';
 	;
 	.
 END
