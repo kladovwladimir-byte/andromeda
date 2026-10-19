@@ -103,17 +103,18 @@ BASE CLASS: {Form_common} .
 {Label} LabelArmColors
 {Combo} Arm_colors
 {Paint_turtle} Turnaround
+{Paintbox} Paintbox_2
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://185C58F5 Do not change manually (created by Form Designer)
+CONSTRUCT://3EA8DBDF Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
-	new_column("", 'CENTER', {Form}.{sizes_col}(Label=-95,Align_right=TRUE))
+	new_column("", 'CENTER', {Form}.{sizes_col}(Label=-95))
 
 	------------------ 'DIALOG_SAVE_SCR'
 	Dialog_save_scr = New_dialog_save(THIS, "DIALOG_SAVE_SCR")
@@ -160,10 +161,16 @@ PUSH in_construct = TRUE :
 	LabelName = {Label}(Form_=THIS, Alias="LABELNAME")
 
 	...Set_text("Name:"._Name)
+	----------------------- 'PAINTBOX_2'
+	Paintbox_2 = New_paintbox(THIS, "PAINTBOX_2", "")
+
+	...Set_width(15)
+
+	...Set_height(10)
 	------------------------ 'EDIT_NAME'
 	Edit_name = New_edit(THIS, "EDIT_NAME")
 	----------------------- 'MEMO_PARAM'
-	Memo_param = New_memo(THIS, "MEMO_PARAM", 0), >> can_hide[]  	
+	Memo_param = New_memo(THIS, "MEMO_PARAM", 0), >> can_hide[]
 
 	...Set_height(100)
 	------------------- 'LABELARMCOLORS'
@@ -271,14 +278,14 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", #LF
-"#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
+"#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -935,6 +942,18 @@ STRUCTURE {satellite_param|eters} :
     STR Text|_to_draw[]
     ------------------------ 'position on orbit'
     INT Last_i_pos
+    ------------------------ 'changes while moves - Start values'
+    {point} Start_pos
+    REAL Start_angle
+    REAL Start_w|idth
+    REAL Start_h|eight
+    REAL Start_len|gth
+    ------------------------ 'changes while moves - Final values'
+    {point} Final_pos
+    REAL Final_angle
+    REAL Final_w|idth
+    REAL Final_h|eight
+    REAL Final_len|gth
     .
     
 BOOL Protected|_satellites
@@ -1067,6 +1086,10 @@ OPERATORS({Vector}, {Matrix}), PUBLIC
     	 CASE set_hint ? LabelHint1.Set_text(r) ;
     	 RESULT = r
 	; .
+	
+METHOD Get_inclination ==> REAL :
+    STR h|int_calculated = hint_a(Satellite_num.Current, FALSE) 
+    RESULT = h.After("tilt:").Trim.Real.Abs .
 	
 BOOL Draw_background_image = TRUE
 STR Last_box_width
@@ -1213,11 +1236,13 @@ OVERRIDE click :
         Scale_image.Set_text(new_sc.S)
     ["SPEED_SWITCH"]:
     	REAL old_s|peed
+    	REAL delta_sp|eed
     	--------------------------------- 'speed__switch', REUSED 
     	old_s = Plasma_speed.Text.Real
+    	CASE Key.Shift ? delta_sp = 0.01 ELSE delta_sp = 0.001 ;
         CASE sender.{Paint_turtle}.Current ? 
-        ["Dec"]: Plasma_speed.Set_text((old_s - 0.001).Max(0.001).S) 
-        ["Inc"]: Plasma_speed.Set_text((old_s + 0.001).Min(1).S)
+        ["Dec"]: Plasma_speed.Set_text((old_s - delta_sp).Max(0.001).S) 
+        ["Inc"]: Plasma_speed.Set_text((old_s + delta_sp).Min(1).S)
         ELSE
          	CASE old_s >= 1 ? 
          	     Plasma_speed.Set_text("0.2")
@@ -1610,13 +1635,13 @@ OVERRIDE click :
 	""	Item(	"COPY_CENTER",
 				"Copy current satellite center"
 		).Hotkey(
-		"Control+Y, F3"
+		"Control+Y, F1"
 		)
 
 	""	Item(	"PASTE_CENTER",
 				"Use copied center as the spiral center"
 		).Hotkey(
-		"Control+U, F4"
+		"Control+U, F2"
 		))
 
 
@@ -1627,6 +1652,7 @@ OVERRIDE click :
 		REAL p|eriod_rotation = Period_rot.Text.Real.Abs
 		REAL mul|tiplayer = 1
 		CASE Key.Shift ? mul = 0.025 ;
+		CASE Key.Alt ? mul /= 25 ;
     	CASE Add_to_activity.Current ? 
     	["Inc"]:
     		Activity_time.Set_text((.Text.Real + p * mul).S)    
@@ -3172,10 +3198,12 @@ METHOD Use_center :
          All_satellites[Satellite_num.Current] = sp.CLONE
          Main_.Offset_x = sp.Center_gal.X
          Main_.Offset_y = sp.Center_gal.Y
+         Main_.PBox.Invalidate_all
     ; .
     
 
 OVERRIDE key_down ==> {Form}.{action} :
+         //DEBUG: "Key=" Key.Special " " if(Key.Control, "+Control") #NL ;
 	CASE Key.Control ?
 	     CASE Key.Special ?
 	     [LETTER_Z]: 
@@ -3211,8 +3239,8 @@ OVERRIDE key_down ==> {Form}.{action} :
 		          && Collection_gal.Visible ? 
 		          Collection_gal.List.Select(.Count-1, TRUE) 
 		          RESULT = 'DECLINE';
-		 [F_3]: Copy_center
-	     [F_4]: Use_center
+		 [F_1]: Copy_center
+	     [F_2]: Use_center
 		 ;
 	; .
 	     
@@ -3425,7 +3453,8 @@ OVERRIDE paint :
             	      c.Rect(dest.Inflate(2, 2)) ;
                  {Bitmap} b|itmap_thuming = Main_.Image 
             ELSE b = Main_.All_images[i] ;
-            b.Stretch_draw(c, dest)
+            PUSH c.Quality = 'LOW' :
+                 b.Stretch_draw(c, dest) ;
             ----------------- 'draw size'
             PUSH c.Foreground = BLACK :
             PUSH c.Quality = 'HIGH' :
@@ -3908,7 +3937,9 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 			 Last_frame = c.Int("Last_frame") ;
 		----------------------- 'common:'
 		//CASE !Load_Control_pressed && (!Key.Shift || Box_width.Text.Real <= 0) ?
-		CASE (!Key.Shift || Box_width.Text.Real <= 0) ?
+		CASE (!Key.Shift || Box_width.Text.Real <= 0) 
+		     && !Load_Control_pressed
+		     ?
 		     Box_width.Set_text(c.Real("Box_width").S) 
 	         //DEBUG: "in box width: " c.Real("Box_width") 
 	         //       ", Text-->" Box_width.Text #NL ;
@@ -3939,6 +3970,11 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 		    	  ;
 		    	  -----------------------------
 			 ELSE LIKE .............. 'shift__scale__rotate', BUT(_1==>)*? ;
+		;
+		CASE c.Present("Retrospective.X") ? 
+		      ----------------------- 'for retrospective'
+		     Main_.mouse_down_rmb = Pt(c.Real("Retrospective.X"),
+		     			c.Real("Retrospective.Y"))
 		;
 	;
 	CASE Load_sat ? 
@@ -4095,7 +4131,7 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     	LIKE .... 'halved', BUT (Png==>Jpeg)*3
     [".tif", ".tiff"]: .. = {Tiff}.From_file(f) 
     [".webp"]: .. = {WebP}.From_file(f) 
-    	CASE Main_.Image.Width==0 && Can_ask ? 
+    	CASE temp_b.Width==0 && Can_ask ? 
     	     message("To open WEBP images format properly the libwebp64.dll"
     	     " should be available either via the system Path environment "
     	     "variable or placed in the same directpry where the "
@@ -4174,7 +4210,7 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 		      c.Set_r("Box_width", Box_width.Text.Real)
 		      c.Set_i("Count_spirals", Satellite_num.Count)
 		      c.Set_r("Mass_BH", Mass_BH.Text.Real)
-		      c.Set_b("Protected", Protected)
+		      c.Set_b("Protected", Protected || Collection_gal.Protected.Checked)
 		      ----------------------- '+image'
 		      c.Set_b("Scale_rotate_spirals", Scale_rotate_spirals)
 		      c.Set_b("Mirrored", Image_mirrored)
@@ -4185,6 +4221,9 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 		      c.Set_s("Last_transform", Last_transform)
 		      c.Set_s("Last_img_name", Main_.All_img_names[0])
 		      c.Set_i("Last_frame", Last_frame)
+		      ----------------------- 'for retrospective'
+		      c.Set_r("Retrospective.X", Main_.mouse_down_rmb.X)
+		      c.Set_r("Retrospective.Y", Main_.mouse_down_rmb.Y)
     	 ;
 	     ----------------------- 'loop on all spirals'
 	     CASE Save_sat ? 

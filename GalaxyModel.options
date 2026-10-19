@@ -22,6 +22,10 @@ Main_plasma_tides.al4
 /ext cs
 #/v
 /dst .\_Compiled_C#
+#/dst .\_Compiled_C#2
+
+
+
 /prj GalaxyModel
 /run
 #/$REPORT_LEAKS=

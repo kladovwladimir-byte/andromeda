@@ -94,7 +94,7 @@ CONSTRUCT:
 	CASE TRUE ? 
 		 REAL delta_T|_to_correct = Points[n].T - Points[0].T
 		 REAL k_t|ime_koefficient = T0 / delta_T
-		 DEBUG: "k_t=" k_t " delta_T=" delta_T  #NL ;
+         //DEBUG: "k_t=" k_t " delta_T=" delta_T  #NL ;
 		 FOR i IN [0 TO n] :
 			 p = Points[i].CLONE
 		     p.T *= k_t 

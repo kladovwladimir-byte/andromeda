@@ -286,15 +286,34 @@ OVERRIDE closing ==> {Form}.{action} :
 	
 INT Last_sel|ected_item = -1
 INT Over_from = 0
+{Bitmap} Overlay_img
+BOOL Enable_overlay|ing = TRUE
 
 METHOD Make_current_overlay_source :
     Over_from = Last_sel
 	Reset_overlay
 	Main_.PBox.Invalidate_all
-	{Bitmap} temp|_bitmap = New_bitmap(Main_.PBox.Width.Points_to_pixels,
-		Main_.PBox.Height.Points_to_pixels, 24)
-	
-	Main_.Paint_to(temp.Canvas, FALSE) .
+	PUSH Enable_overlay = FALSE :
+		 CASE Scenario.buf != NONE ? 
+			  Overlay_img = New_bitmap(Scenario.buf.Width, .Height, 24)
+				  
+		 ELSE Overlay_img = New_bitmap(Main_.PBox.Width.Points_to_pixels,
+			 Main_.PBox.Height.Points_to_pixels, 24) ;
+		 
+		 PUSH Scenario.Enable_subtitles = FALSE :
+		      Main_.View_size = Pt(Overlay_img.Width.Pixels_to_points,
+		      		Overlay_img.Height.Pixels_to_points)
+		      		
+		      Main_.Paint_to(Overlay_img.Canvas, TRUE) ;
+	;
+    //DEBUG: count_over += 1
+    //      {Png}.To_file(Overlay_img, "Overlay_img" count_over.S ".png", 9)
+    //      {Png}.To_file(Scenario.buf, "buf" count_over.S ".png", 9)
+    //      << ".................................. count_over=" count_over
+    //;
+	 .
+	 
+//INT count_over|lay_base, DEBUG
 	
 
 OVERRIDE click :
@@ -487,6 +506,8 @@ METHOD Load_collection(STR Coll|ection_file) :
     ---------------------- 'load scenario'
     CASE Scenario != NONE ?
          Scenario.Load(Coll.Change_ext(".scenario")) ;
+    Set_caption((Caption ":").Before(":") 
+    	 ": " Coll.Extract_file_name.Change_ext(""))
     .
     
 METHOD Update_current|_item(STR Path|_to_gal_file) :
@@ -500,7 +521,6 @@ BOOL changing_sel|ection
 REAL Rotation_1
 REAL Scale_1|st_image_overlayed_defaulr_100
 {point} Shift_1|st_galaxy_in_collection
-{rect} Scaled_img_1|_size
 STR Transform_1|_before_draw_spiral_over
 
 --------------------------- 'SELECTION CHANGE'
@@ -515,11 +535,6 @@ OVERRIDE selection_change :
         CASE Last_sel == List.Current ? ==> ;
         PUSH Main_.Satellite_param.Stamp_param.Executing = 1 :
         PUSH Main_.Lock_invalidations = TRUE :
-             CASE Over_from==Last_sel && Main_.Image.Width * .Height > 1 ? 
-             	  Scaled_img_1 = Main_.D_o.CLONE
-             	  .. = _.Offset(-_.W*(Scale_1 - 100)/100/2, 
-             	  				-_.H*(Scale_1 - 100)/100/2)
-             ;
              CASE Last_sel==0 && Main_.Image.Width * .Height > 1 ?
              	  --------------------- 'store offsets, scale, rotation'
              	  Scale_1 = Main_.Satellite_param.Scale_image.Text.Real
@@ -643,7 +658,10 @@ OVERRIDE selection_change :
 	              ---------------------------------------------- 'stamp'
 	              STR stamp_file = img_file.Extract_path
 	              .. = _ "stamp" if(Main_.Satellite_param.Last_frame > 0, 
-	              	 "[" .Last_frame.S "]") "#" img_file.Extract_file_name 
+	              	 "[" .Last_frame.S "]") 
+	              	 "#" //img_file.Extract_file_name
+	              	 "" List.Get_item(Last_sel, 0).Before(#TAB).Trim
+	              	 .Change_ext(".png") 
 	              CASE !stamp_file.Exists ? 
 	                   stamp_file = _.Change_ext(".png") ;
 	              CASE ?
@@ -705,10 +723,12 @@ METHOD Save_stamp_file :
               .. = _ "stamp" 
               "" if(Main_.Satellite_param.Last_frame > 0, 
           	     "[" .Last_frame.S "]") 
-          	     "#" img_file.Extract_file_name 
+          	     "#" //img_file.Extract_file_name
+          	     "" List.Get_item(Last_sel, 0).Before(#TAB).Trim
+          	     .Change_ext(".png") 
           	     
 	          {Png}.To_file(
-	         	 Main_.All_images[1], stamp_file, 9) 
+	         	 Main_.All_images[1], stamp_file.Change_ext(".png"), 9) 
          ;
     ;.
 
@@ -729,7 +749,7 @@ OVERRIDE menu_item :
     ["EN"]: Scenario.Language = "en"
     	{Config} reg_c|onfig_temp
     	---------------------------- 'save language', REUSED
-    	reg_c = New_write_config ("PlasmaTides", 'USER', "lang-film")
+    	reg_c = New_write_config ("PlasmaTides", 'USER', "film")
     	reg_c.Set_s("Film-lang", Scenario.Language)
     	----------------------------
     ["RU"]: Scenario.Language = "ru"
@@ -1022,8 +1042,8 @@ METHOD Prepare_overlay(
 	CASE source_ != Source
 		 || last_transparency != Transparency.Text.Int     
 	     || w_source != Source.Width || h_source != Source.Height
-	     || ready_over[ind].Width != Main_.PBox.Width.Points_to_pixels
-	     || ready_over[ind].Width != Main_.PBox.Width.Points_to_pixels
+         //|| ready_over[ind].Width != Main_.PBox.Width.Points_to_pixels
+         //|| ready_over[ind].Width != Main_.PBox.Width.Points_to_pixels
 	     ?
 	     ready_over[0] = NONE 
 	     ready_over[1] = NONE 
@@ -1040,8 +1060,7 @@ METHOD Prepare_overlay(
 		 BOOL inverted = ind > 0
          //DEBUG: "__________prepare overlay invert=" inverted.S #NL ; 
 	     {Bitmap_direct} temp|_bitmap = New_bitmap_direct(
-	    	 Main_.PBox.Width.Points_to_pixels,
-	    	 Main_.PBox.Height.Points_to_pixels, 32)
+	     	Source.Width, .Height, 32)
 	     
 	   	 Source.Draw(temp.Canvas, Pt(0, 0))
 	   		 
@@ -1123,23 +1142,32 @@ OVERRIDE key_down ==> {Form}.{action} :
 			 RESULT = 'DECLINE'
 		 [PAGE_DOWN]: Next_line 
 			 RESULT = 'DECLINE'
-		 [F_3]: Main_.Satellite_param.Copy_center
-	     [F_4]: Main_.Satellite_param.Use_center
+		 [F_1]: Main_.Satellite_param.Copy_center
+	     [F_2]: Main_.Satellite_param.Use_center
 	     [F_11]: Show_scenario
 		 ELSE NONE ;
 	; .
 	
-METHOD Make_back_file(STR Filename) ==> STR :
+FUN Make_back_file(STR Filename) ==> STR :
+	REAL most_old|_time
+	STR name_most_old = ""
     FOR i IN [0 TO 9] :
         STR back|_filename = Filename ".bak"
         CASE i > 0 ? back = Filename ".bk" S0(i, 1) ;
-        CASE back.Exists ? INT next_i|ndex = (i+1)%10 ;
+        CASE !back.Exists ? 
+             STR use_back = back
+             BREAK i ;
+        REAL age|_of_file = Get_file_time_age_seconds(back)
+        //DEBUG: "age of " back " = " age ", most_old=" most_old #NL ;
+        CASE name_most_old=="" || age > most_old ? 
+             name_most_old = back 
+             most_old = age ;
     ;
-    back = Filename ".bak"
-    CASE next_i > 0 ? back = Filename ".bk" next_i.S0(1) ;
-    CASE back.Exists ? Delete_file(back) ;
-    Copy_file(Filename, back) 
-    RESULT = back .
+    CASE use_back=="" ? 
+         Delete_file(name_most_old)
+         use_back = name_most_old ;
+    Copy_file(Filename, use_back) 
+    RESULT = use_back .
     
 METHOD Check_backup(STR Filename|_of_back_file) :
 	STR lines_b|ackup[].From_text_file(Filename, 'UTF8')

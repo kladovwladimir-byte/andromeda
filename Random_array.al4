@@ -1,0 +1,19 @@
+/*
+
+CLASS {Random_array}, UNTESTED:
+
+IMPORT: {{Standard}}, {{Files}} .
+
+REAL Array|_random_numbers[], READ
+
+
+CONSTRUCT:
+	Array[].Allocate(1_000_000)
+	{Random_soft} r|andomizer_TEMP = {Random_soft}
+	FOR i IN [0 TO Array[].Count-1] :
+	    Array[i] = r.Probable ;
+	.
+
+END
+
+*/
