@@ -412,6 +412,27 @@ OVERRIDE click :
 
 
     ["ADD_GAL"]:
+        CASE Need_auto_save && Last_sel >= 0 ? 
+             CASE ask("Image was loaded. Save galaxy model?") ? 
+                  --------------------- 'auto_save'
+	              STR fname|_to_save = List.Get_item(Last_sel, 0).After(#TAB)
+	              CASE fname != "" ? 
+		               CASE Create_bak.Checked ? 
+		                    STR back|up_file = Make_back_file(fname) ;
+		        	   Main_.Satellite_param.Save_gal(fname, TRUE, TRUE,
+		        	   		Save_sat= !Protected.Checked,
+		        	   		Save_common= TRUE)
+		        	   		
+		        	   Check_backup(back)
+		        	   CASE Cache_images.Checked ? 
+		        	        Cache_img[Last_sel] = Main_.All_images[0] 
+		        	        Cache_stamps[Last_sel] = Main_.All_images[1] ;
+		        	   ----------------------------- 'save stamp file'
+		        	   Save_stamp_file
+	              ;
+	         ;
+	         Need_auto_save = FALSE
+        ;
     	------------- 'add existing gal file'
         CASE !Dialog_open_gal.Select_file ? ==> ;
         INT ii|tem_inserted = List.Insert_item(
@@ -523,6 +544,8 @@ REAL Scale_1|st_image_overlayed_defaulr_100
 {point} Shift_1|st_galaxy_in_collection
 STR Transform_1|_before_draw_spiral_over
 
+BOOL Need_auto_save
+
 --------------------------- 'SELECTION CHANGE'
 
 OVERRIDE selection_change :
@@ -544,7 +567,15 @@ OVERRIDE selection_change :
              ;
 	         INT was_sat|_current = Main_.Satellite_param.Satellite_num.Current
              //DEBUG: "was_sat=" was_sat#NL ;
-	         CASE !no_auto_save && Auto_save.Checked && Last_sel >= 0 ? 
+             CASE !no_auto_save && Need_auto_save && !Auto_save.Checked
+                  && Last_sel >= 0
+                  ?
+                  CASE ask("Image was loaded. Save current galactic?") ? 
+                       BOOL force_autosave = TRUE ;
+                  Need_auto_save = FALSE
+             ;
+	         CASE !no_auto_save && Last_sel >= 0 && (
+	              Auto_save.Checked || force_autosave ) ?
                             //DEBUG: Console_color('CYAN')
                             //    << "xxx <<<<<<<<<<< store sel=" Last_sel
                             //    " Scale_1=" Scale_1 " Shift_1=" Shift_1.S
@@ -568,9 +599,11 @@ OVERRIDE selection_change :
 		        	        Cache_img[Last_sel] = Main_.All_images[0] 
 		        	        Cache_stamps[Last_sel] = Main_.All_images[1] ;
 		        	   ----------------------------- 'save stamp file'
-		        	   Save_stamp_file
+		        	   BOOL need_save_stamp = TRUE
 	              ;
 	         ;
+	         CASE need_save_stamp || Save_stamps.Checked ? 
+	              Save_stamp_file ;
 	         CASE Last_sel != List.Current ? 
 	              Main_.Cache_small = NONE ;
 	         Last_sel = List.Current
@@ -610,7 +643,7 @@ OVERRIDE selection_change :
 	              STR ul|loaded = _ Main_.Satellite_param.Url_loaded
 	         	  INT last_slash = ul.Find_last("/")
 				  img_file = _ ul.[last_slash+1 TO *]	              
-	         ELSE .. = _ fname.Extract_file_name ;
+	         ELSE .. = _ fname.Extract_file_name.Change_ext(".jpg") ;
              //DEBUG: "image will be loaded: " img_file #NL ;
 	         CASE ?
 	         [Cache_images.Checked 
@@ -665,7 +698,7 @@ OVERRIDE selection_change :
 	              CASE !stamp_file.Exists ? 
 	                   stamp_file = _.Change_ext(".png") ;
 	              CASE ?
-	              [stamp_file.Exists] ?
+	              [stamp_file.Exists && File_size(stamp_file) > 120] ?
                        //DEBUG: "stamp from file (" stamp_file ")"#NL ;
 	             	   PUSH Main_.Satellite_param.Last_img_name :     
 	             	        Main_.Satellite_param.Load_image(stamp_file, FALSE) ;
@@ -679,7 +712,8 @@ OVERRIDE selection_change :
 	             	   Main_.Scaled_image = NONE
 	             	   Main_.Satellite_param.Stamp_param.Executing = 1
 	             	   Main_.Invalidate
-	              [Main_.Satellite_param.Commands_s[].Count > 0] ?
+	              [Main_.Satellite_param.Commands_s[].Count > 0
+	              && Main_.Image.Width > 1 < Main_.Image.Height] ?
 	                   Main_.Satellite_param.Do_commands_auto(FALSE)
 	                   {Png}.To_file(Main_.Image, stamp_file, 9)
 	              ;
@@ -706,6 +740,10 @@ OVERRIDE selection_change :
         ;
     ;
     ; .
+    
+FUN File_size(STR Path|_of_file) ==> REAL :
+    {file_detail} f_i|nformation = File_detail(Path) 
+    RESULT = f_i.Size .
     
 {Bitmap} Cache_img|_main[]
 {Bitmap} Cache_stamps[]

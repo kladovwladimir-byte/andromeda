@@ -683,6 +683,7 @@ OVERRIDE paint :
 
 OVERRIDE value_change :
     CASE sender_alias ?
+    ["NO_PAUSES"]: NONE
     ["SEARCH"]: search_next(TRUE)
     ["MEMO_COMMANDS"]:
         //DEBUG: " = "#NL ;
@@ -693,6 +694,8 @@ OVERRIDE value_change :
         STR lines|_to_save[].Split(Memo_commands.Text, #NL)
         CASE lines[].Count==0 ? ==> ;
         lines[].To_text_file(filename, 'UTF8')
+        ---------------------- 'recalculate time'
+        updated_status = FALSE
         Update_status       
     	---------------------- 'provide backup'
     	CASE Now.Seconds_diff(last_backup_time) >= 30 ? 
@@ -2251,10 +2254,18 @@ METHOD Update_status :
     FOR line IN lines[] :
         line = _.Trim
         CASE line.[0] IN "0123456789" ? 
-             REAL sum|_total_seconds += line.Real ;
+             REAL sum|_total_seconds += line.Real 
+             //DEBUG: 
+             //   CASE !updated_status ? 
+             //      << line.INDEX " " line.Real " -->" sum ": " line  #NL ;
+             //;
+        ;
     ;
     Info_total.Set_text("Total: " sum.S " sec")
+    updated_status = TRUE
     .
+    
+BOOL updated_status
     
 INT Frame_rate = 25    
 	
