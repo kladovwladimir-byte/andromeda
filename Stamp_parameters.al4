@@ -434,7 +434,7 @@ BOOL Back_24|_bitmap_is[]
 OVERRIDE click :
     CASE sender_alias ?
     ["BUTTON_CANCEL"]: Cancelling = TRUE
-    	DEBUG: "CANCELLING!!!"#NL ;
+        //DEBUG: "CANCELLING!!!"#NL ;
     ["SHIFT_COMMANDS"]:
         {Bitmap_direct} b|_temporary 
 	         b = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
@@ -479,8 +479,8 @@ OVERRIDE click :
              && Executing == 0
              
         INT i_pp|ost_processing_index_line = s_alias.[*].Int
-        DEBUG: "sender_alias:" sender_alias " r_current:" r_current 
-        	 " i_pp=" i_pp  #NL ;
+        //DEBUG: "sender_alias:" sender_alias " r_current:" r_current 
+        //     " i_pp=" i_pp  #NL ;
         CASE i_pp ? 
         [0]: 
         	 CASE Executing==0 ? 
@@ -542,7 +542,7 @@ OVERRIDE click :
              {Png}.To_file(Main_.Image, Back_file[i_pp], 100) 
              Back_24[i_pp] = Main_.Image.{Bitmap_24} != NONE
         ;
-        DEBUG: "s_alias=" s_alias " pp: " pp.Text #NL ;
+        //DEBUG: "s_alias=" s_alias " pp: " pp.Text #NL ;
         CASE ?
         [s_alias.Starting("RUN_POST_PROCESS") && r_current=="Grayscale"] ?
              r_current = "Processing"
@@ -552,14 +552,14 @@ OVERRIDE click :
              Main_.Satellite_param.Thumbnails.Invalidate_all
         [s_alias.Starting("RUN_POST_PROCESS") && r_current=="Undo"] ?
         	 CASE Back_file[i_pp].Exists ? 
-        	 	  DEBUG: "Undo from: " Back_file[i_pp] ", i_pp=" i_pp #NL ;
+                  //DEBUG: "Undo from: " Back_file[i_pp] ", i_pp=" i_pp #NL ;
         	 	  cur = Main_.Image
         	      Main_.All_images[.Current_image] = {Png}.From_file(
         	      		Back_file[i_pp], {reduce_size}.'FULL')
         	      		
         	      CASE Back_24[i_pp]{
-        	      	   DEBUG: "restore (" Main_.Current_image 
-        	      	   		  ") as {Bitmap_24}" #NL ;
+                       //DEBUG: "restore (" Main_.Current_image 
+                       //       ") as {Bitmap_24}" #NL ;
         	      	   fr = Main_.All_images[.Current_image]     
         	      	   temp_b = New_bitmap_24(
         	      	   		fr.Width, .Height, Holder)
@@ -568,8 +568,8 @@ OVERRIDE click :
         	      	   Erase_frac(temp_b)
         	      	   Main_.All_images[.Current_image] = temp_b
         	      }
-				  DEBUG: "re-save cur " if(cur.{Bitmap_24}!=NONE,
-				        " as {Bitmap_24}") #NL ;
+                  //DEBUG: "re-save cur " if(cur.{Bitmap_24}!=NONE,
+                  //      " as {Bitmap_24}") #NL ;
 				  CASE cur.{Bitmap_24} != NONE ?
 				       cur.{Bitmap_24}.To_png(Back_file[i_pp])
 				  ELSE {Png}.To_file(cur, Back_file[i_pp], 100) ;
@@ -624,8 +624,8 @@ METHOD hint_from_commands :
     
 METHOD Make_scaled_prev2 ==> {Bitmap_direct}, NEW :
 	INT alpha|_tran = Transparency_percents.Text.Int * 255 / 100
-    DEBUG: "making scaled_prev2 Alpha=" alpha
-    	" " Main_.Current_image #NL ;
+    //DEBUG: "making scaled_prev2 Alpha=" alpha
+    //    " " Main_.Current_image #NL ;
     RESULT = New_bitmap_direct(Main_.Image.Width, .Height, 32)
    	Main_.All_images[.Current_image-1].Draw(RESULT.Canvas, Pt(0, 0))
    	FOR y IN [0 TO RESULT.Height-1] :
@@ -764,7 +764,7 @@ BOOL create_new|_image)
     	
     -------------------- 'prepare__source'     
     CASE stamp.Bitmaps_24 || Main_.Image.{Bitmap_24} != NONE ? 
-         DEBUG: "already {Bitmap_24}"#NL ;
+         //DEBUG: "already {Bitmap_24}"#NL ;
          stamp.Source = New_bitmap_24(Main_.Image.Width, .Height, Holder) 
          CASE ?
          [Main_.Image.{Bitmap_direct}.Bpp < 24] ?     
@@ -773,13 +773,13 @@ BOOL create_new|_image)
               Main_.Image.{Bitmap_24}.Copy_to(stamp.Source.Canvas)
          ELSE 
           	   {Bitmap_direct} bd|irect_temp = Main_.Image.{Bitmap_direct}
-          	   DEBUG: {Png}.To_file(bd, "bd" bd.Bpp.S ".png", 9) ;
+               //DEBUG: {Png}.To_file(bd, "bd" bd.Bpp.S ".png", 9) ;
           	   CASE bd == NONE || bd.Bpp < 24 ? 
           		    bd = New_bitmap_direct(Main_.Image.Width, .Height, 24) 
           		    Main_.Image.Draw(bd.Canvas, Pt(0, 0))
           	   ;
           	   stamp.Source = grayscale(bd) 
-          	   DEBUG: {Png}.To_file(stamp.Source, "grayscaled_bd.png", 9) ;
+               //DEBUG: {Png}.To_file(stamp.Source, "grayscaled_bd.png", 9) ;
          ;
     ELSE stamp.Source = New_bitmap_direct(Main_.Image.Width, .Height, 24)
     	 Main_.Image.Draw(stamp.Source.Canvas, Pt(0,0))
@@ -802,19 +802,19 @@ BOOL create_new|_image)
     stamp.Center = Pt(Main_.Image.Width * Main_.Offset_x,
     				  Main_.Image.Height * Main_.Offset_y)
     ------------------------------ 'new stamp', REUSED
-    DEBUG: "making stamp, current= " Main_.Current_image #NL ;
+    //DEBUG: "making stamp, current= " Main_.Current_image #NL ;
     stamp.Progress = Progress_1
     		//! OPERATION
     Main_.Image = stamp.Create
-    DEBUG:
-          CASE ?
-          [stamp.Bitmaps_24 && Main_.Image.{Bitmap_24} == NONE] ?
-               message("stamp is created not {Bitmap_24}") 
-          [!stamp.Bitmaps_24 && Main_.Image.{Bitmap_24} != NONE] ?
-               message("stamp is created {Bitmap_24} "
-               "(though waiting for {Bitmap_direct})") 
-          ;
-    ;
+    //DEBUG:
+    //      CASE ?
+    //      [stamp.Bitmaps_24 && Main_.Image.{Bitmap_24} == NONE] ?
+    //           message("stamp is created not {Bitmap_24}") 
+    //      [!stamp.Bitmaps_24 && Main_.Image.{Bitmap_24} != NONE] ?
+    //           message("stamp is created {Bitmap_24} "
+    //           "(though waiting for {Bitmap_direct})") 
+    //      ;
+    //;
     ------------------------------ 'recentering'
     CASE !stamp.Radial && Recenter.Checked ?
          shift_horizontal(Main_.Image.{Bitmap_direct}, -X_offset.Text.Int/2)
@@ -1036,7 +1036,7 @@ METHOD Run_button(INT Operation) :
               //;
     	 ;
     	 CASE Downscale_first.Current > 0 ? 
-    	      DEBUG: "downscaling to " Downscale_first.Text #NL ;
+              //DEBUG: "downscaling to " Downscale_first.Text #NL ;
     	      CASE Main_.Image.{Bitmap_direct} != NONE ? 
     	           b = Main_.Image
     	      ELSE b = New_bitmap_direct(Main_.Image.Width, .Height, 24)
@@ -1086,7 +1086,7 @@ METHOD Run_button(INT Operation) :
 METHOD curves_rgb|_levels_for_values(
 {Bitmap_direct} b|itmap_current, INT rang|es_count)
     :
-	DEBUG: "operation CURVES " rang #NL ;
+    //DEBUG: "operation CURVES " rang #NL ;
     INT mult|iplier = Edit_multiplier.Text.Int
     FOR y IN [0 TO b.Height-1] :
         b.Lock_rows(y, 1, TRUE)
@@ -1115,9 +1115,9 @@ METHOD curves_rgb|_levels_for_values(
 METHOD grayscale({Bitmap_direct} b|itmap_handling) ==> {Bitmap_direct}, NEW :
 	CASE b.{Bitmap_24} != NONE ? 
 	     RESULT = b ==> ;
-	DEBUG: "operation GRAYSCALE"#NL ;
+    //DEBUG: "operation GRAYSCALE"#NL ;
 	CASE Main_.Satellite_param.Use_bitmaps_24 || b.{Bitmap_24} != NONE ? 
-	     DEBUG: " b is 24"#NL ;
+         //DEBUG: " b is 24"#NL ;
 	     RESULT = New_bitmap_24(b.Width, b.Height, Holder)
 	ELSE RESULT = New_bitmap_direct(b.Width, .Height, 24) ;
 	BOOL is_24|_bitmap = RESULT.{Bitmap_24} != NONE
@@ -1155,7 +1155,7 @@ METHOD grayscale({Bitmap_direct} b|itmap_handling) ==> {Bitmap_direct}, NEW :
     ; .
     
 METHOD Erase_frac|tionals_of_bitmap_24({Bitmap_24} b|itmap_handling) :
-	DEBUG: "operation Erase FRACTIONAL"#NL ;
+    //DEBUG: "operation Erase FRACTIONAL"#NL ;
     FOR y IN [0 TO b.Height-1] :
         b.Lock_rows(y, 1, TRUE)
         //Progress_1.Set_progress(y * 100.0 / RESULT.Height)
@@ -1170,7 +1170,7 @@ METHOD Erase_frac|tionals_of_bitmap_24({Bitmap_24} b|itmap_handling) :
     ; .
     
 METHOD shift_color({Bitmap_direct} b|itmap_handling) :
-	DEBUG: "operation Shift color"#NL ;
+    //DEBUG: "operation Shift color"#NL ;
 	INT sh|ift_value = Edit_multiplier.Text.Int
 	BOOL is_24|_bitmap = b.{Bitmap_24} != NONE
 	INT bpp|er_pixel_bytes = b.Bpp/ 8 
@@ -1194,11 +1194,11 @@ METHOD lighten_darken|_invert(
 {Bitmap_direct} r|esult_bitmap_image,
 INT percents|_plus_lighten_minus_darken_zero_invert)
     :
-	DEBUG: 
-	      CASE percents > 0 ? 
-	           << "operation LIGHTEN " percents 
-	      ELSE << "operation DARKEN " percents ;
-	;
+    //DEBUG: 
+    //      CASE percents > 0 ? 
+    //           << "operation LIGHTEN " percents 
+    //      ELSE << "operation DARKEN " percents ;
+    //;
     BOOL is_24|_bitmap = r.{Bitmap_24} != NONE
     INT bpp|_bitmap = r.Bpp / 8
     FOR y IN [0 TO r.Height-1] :
@@ -1262,7 +1262,7 @@ METHOD contrast_up_down(
 {Bitmap_direct} r|esult_bitmap_image,
 INT percents|_plus_up_minus_down)
     :
-	DEBUG: "operation CONTRAST " percents #NL ;
+    //DEBUG: "operation CONTRAST " percents #NL ;
     BOOL is_24|_bitmap = r.{Bitmap_24} != NONE
     INT bpp|_bytes_per_pixel = r.Bpp / 8
     FOR y IN [0 TO r.Height-1] :
@@ -1345,7 +1345,7 @@ METHOD blur|_on_base_of_around_pixels(
 BOOL dark_n|eighbors_only) ==> {Bitmap_direct}, NEW
     :
     INT max_d|istance = Edit_multiplier.Text.Int.Abs.Min(5).Max(1)
-	DEBUG: "operation blur " max_d #NL ;
+    //DEBUG: "operation blur " max_d #NL ;
 	BOOL is_24|_bitmap = b.{Bitmap_24} != NONE
 	CASE ?
 	[is_24] ? RESULT = New_bitmap_24(b.Width, b.Height, Holder)
@@ -1468,7 +1468,7 @@ BOOL dark_n|eighbors_only) ==> {Bitmap_direct}, NEW
 METHOD dynamic_contrast(
 {Bitmap_direct} b|itmap_image) ==> {Bitmap_direct}, NEW
     :
-	DEBUG: "operation Dynamic CONTRAST"#NL ;
+    //DEBUG: "operation Dynamic CONTRAST"#NL ;
 	BOOL is_24|_bitmap = b.{Bitmap_24} != NONE
 	CASE is_24 ? 
 	     RESULT = New_bitmap_24(b.Width, b.Height, Holder)
@@ -1814,8 +1814,8 @@ METHOD avg_of_next_stamps(
 	FOR i IN [Main_.Current_image TO Main_.All_images[].Count-1] :
 	    {Bitmap} b_i|mage_to_checj_size = Main_.All_images[i] 
 		CASE b_i.Width != b.Width || b_i.Height != b.Height ?
-		     DEBUG: "size of image " i " is different, stop on seq[]: "
-		     	"" seq[].Count #NL ;
+             //DEBUG: "size of image " i " is different, stop on seq[]: "
+             //   "" seq[].Count #NL ;
 		     BREAK i ;
 	    {Bitmap_24} img_i|_from_all_TEMP = need_bitmap_24(b_i) 
 		seq[] << img_i     
@@ -2104,10 +2104,10 @@ METHOD Execute_commands|_stored_earlier(STR Commands_s|equence[]) :
 		 Cancelling = FALSE     
 	     FOR i_c|ommand IN [0 TO Commands_s[].Count-1] :
 	     	 CASE Cancelling ?
-	     	      DEBUG: "cancelling -- break (i_c==" i_c ")"#NL ;
+                  //DEBUG: "cancelling -- break (i_c==" i_c ")"#NL ;
 	     	      BREAK i_c 
-	     	 ELSE
-	     	 	  DEBUG: "not cancelling"#NL ;
+	     	 ELSE NONE
+                  //DEBUG: "not cancelling"#NL ;
 	     	 ;
 	     	 Executing = i_c+1
 	         STR instr|uctions[].Split(Commands_s[i_c], ";") 

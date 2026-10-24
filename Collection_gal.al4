@@ -29,10 +29,6 @@ BASE CLASS: {Form_common} .
 {Label} Label_2 | _818457_726243
 {Checkbox} Draw_spiral_1
 {Checkbox} Auto_save|_galaxy_on_select
-{Checkbox} Create_bak|_files
-{Checkbox} Save_stamps
-{Checkbox} Cache_images
-{Checkbox} Preserve_scale_rot|ation
 {Paintbox} Paintbox_4
 {Checkbox} Only_overlay|ed_image
 {Memo} Memo_1|_hints
@@ -44,10 +40,15 @@ BASE CLASS: {Form_common} .
 {Edit} Transparency|_level
 {Checkbox} Show_text|_notes
 {Paint_turtle} Change_transp|arency
+{Checkbox} Create_bak|_files
+{Checkbox} Save_stamps
+{Checkbox} Cache_images
+{Checkbox} Preserve_scale_rot|ation
+{Paint_turtle} Delete_all
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://42A1C66D Do not change manually (created by Form Designer)
+CONSTRUCT://0A5BEB64 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -104,6 +105,18 @@ PUSH in_construct = TRUE :
 	...Set_height(18)
 	----------------------- 'DELETE_GAL'
 	Delete_gal = New_paint_turtle_button(THIS, "DELETE_GAL", "15D70B35LL35B70")
+
+	...Set_width(18)
+
+	...Set_height(18)
+
+	...Set_ink(RED)
+	----------------------- 'DELETE_ALL'
+	Delete_all = New_paint_turtle_button(THIS,
+ "DELETE_ALL",
+ "(15D65B35LL35B65 UB65"
+  "LL15LL)2")
+
 
 	...Set_width(18)
 
@@ -167,19 +180,6 @@ PUSH in_construct = TRUE :
 
 	------------------------ 'AUTO_SAVE'
 	Auto_save = New_checkbox(THIS, "AUTO_SAVE", "Auto-save galaxy on selection")
-	----------------------- 'CREATE_BAK'
-	Create_bak = New_checkbox(THIS, "CREATE_BAK", "Create bak-files on auto-save")
-	...Set_checked(TRUE)
-	---------------------- 'SAVE_STAMPS'
-	Save_stamps = New_checkbox(THIS, "SAVE_STAMPS", "Save stamp files created")
-	...Set_checked(TRUE)
-	--------------------- 'CACHE_IMAGES'
-	Cache_images = New_checkbox(THIS, "CACHE_IMAGES", "Cache images in memory")
-	...Set_checked(TRUE)
-	--------------- 'PRESERVE_SCALE_ROT'
-	Preserve_scale_rot = New_checkbox(THIS,
- "PRESERVE_SCALE_ROT",
- "Preserve scale && rotation")
 	--------------------- 'DOUBLE_PEN_1'
 	Double_pen_1 = New_checkbox(THIS,
  "DOUBLE_PEN_1",
@@ -236,6 +236,19 @@ PUSH in_construct = TRUE :
 	--------------------------- 'MEMO_1'
 	Memo_1 = New_memo(THIS, "MEMO_1", MEMO_NO_HSCROLL+MEMO_READ_ONLY)
 	...Set_anchor_bottom(TRUE)
+	----------------------- 'CREATE_BAK'
+	Create_bak = New_checkbox(THIS, "CREATE_BAK", "Create bak-files on auto-save")
+	...Set_checked(TRUE)
+	---------------------- 'SAVE_STAMPS'
+	Save_stamps = New_checkbox(THIS, "SAVE_STAMPS", "Save stamp files created")
+	...Set_checked(TRUE)
+	--------------------- 'CACHE_IMAGES'
+	Cache_images = New_checkbox(THIS, "CACHE_IMAGES", "Cache images in memory")
+	...Set_checked(TRUE)
+	--------------- 'PRESERVE_SCALE_ROT'
+	Preserve_scale_rot = New_checkbox(THIS,
+ "PRESERVE_SCALE_ROT",
+ "Preserve scale && rotation")
 	----------------------------------------'form size / position'
 	Set_size(370, 0, 'FIT_TO_DISPLAY')
 	-------------------------- 'TITLE of Form'
@@ -455,14 +468,19 @@ OVERRIDE click :
     	Last_sel = -1
     	CASE was_sel >= 0 ? 
     	     List.Delete_item(was_sel)
-    	     -------------------- 'delete in caches too'
+    	     -------------------- 'delete in caches too', REUSED
     	     Cache_img[].Delete(was_sel)
     	     Cache_stamps[].Delete(was_sel) 
     	     Changed_list
+    	     --------------------
     	     ;
         //CASE ?
         //[List.Count > was_sel] ? List.Select(was_sel, TRUE)
         //[List.Count > 0] ? List.Select(was_sel-1, TRUE) ;  
+    ["DELETE_ALL"]:
+        List.Clear
+        Last_sel = -1
+        LIKE ..................... 'delete in caches too'
     ["SAVE_COL"]: 
         CASE List.Count <= 0 ? message("Nothing to save yet!") ==> ;
         CASE !Dialog_save_col.Select_file ? ==> ;
@@ -485,12 +503,39 @@ OVERRIDE click :
         ;
         ------------------
         CASE !Dialog_open_col.Select_file ? ==> ;
-        //List.Clear
-        //Main_.Clear     
-        Dialog_save_col.Filename = Dialog_open_col.Filename     
+        CASE !no_auto_save && Last_sel >= 0 && Auto_save.Checked ?
+                       //DEBUG: Console_color('CYAN')
+                       //    << "xxx <<<<<<<<<<< store sel=" Last_sel
+                       //    " Scale_1=" Scale_1 " Shift_1=" Shift_1.S
+                       //    " Rot=" Main_.Satellite_param.Rotate_image.Text
+                       //    " Scale=" Main_.Satellite_param.Scale_image.Text
+                       //    " --> Shift: " Main_.ShiftX "," .ShiftY #NL
+                       //    "----------------------------" #NL 
+                       //    Console_color('SILVER')
+                       //    ;
+        	 --------------------- 'auto_save'
+             fname = List.Get_item(Last_sel, 0).After(#TAB)
+             CASE fname != "" ? 
+	              CASE Create_bak.Checked ? 
+	                   back = Make_back_file(fname) ;
+	        	  Main_.Satellite_param.Save_gal(fname, TRUE, TRUE,
+	        	   	   Save_sat= !Protected.Checked,
+	        	   	   Save_common= TRUE)
+	        	   	   
+	        	  Check_backup(back)
+	        	  CASE Cache_images.Checked ? 
+	        	       Cache_img[Last_sel] = Main_.All_images[0] 
+	        	       Cache_stamps[Last_sel] = Main_.All_images[1] ;
+	        	  ----------------------------- 'save stamp file'
+	        	  Save_stamp_file
+             ;
+        ;
+        Dialog_save_col.Filename = Dialog_open_col.Filename
         list_changed= FALSE
         PUSH no_auto_save = TRUE :
+        PUSH Main_.Satell.Saving_disabled = TRUE :
              Load_collection(Dialog_open_col.Filename) ;
+        ;
     ; .
 
 BOOL no_auto_save
@@ -506,8 +551,11 @@ METHOD Load_collection(STR Coll|ection_file) :
     Cache_stamps[].Clear
     source_ = NONE
     ready_over[].Clear
+    Main_.Satell.Once_Retrospective = FALSE
     -------------------- 'clear Main_'
     Main_.Clear
+    Main_.Satell.url = ""
+    Main_.Satell.Label_url.Set_text("")
     -------------------- 'load list from file selected'
     STR col|lection_text[].From_text_file(Coll, 'UTF8')
     {Bitmap} temp_bmp
@@ -644,7 +692,10 @@ OVERRIDE selection_change :
 	         	  INT last_slash = ul.Find_last("/")
 				  img_file = _ ul.[last_slash+1 TO *]	              
 	         ELSE .. = _ fname.Extract_file_name.Change_ext(".jpg") ;
-             //DEBUG: "image will be loaded: " img_file #NL ;
+             //DEBUG: "image will be loaded: " img_file
+             //   " (Url_loaded=" Main_.Satell.Url_loaded ")"
+             //   " (Last_img_name=" Main_.Satell.Last_img_name ")"
+             //   " (fname=" fname ")" #NL ;
 	         CASE ?
 	         [Cache_images.Checked 
 	         && Cache_img[Last_sel].Width > 1

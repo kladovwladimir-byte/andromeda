@@ -1753,8 +1753,8 @@ METHOD tick_video :
 		 Satell.Activity_time.Set_text(
 		   (Satell.Activity_time.Text.Real + v).S)
 		   
-         DEBUG: "+Delta_activity(" Delta_activity " v=" v
-         		"->" Satell.Activity_time.Text ")" #NL ;
+         //DEBUG: "+Delta_activity(" Delta_activity " v=" v
+         //       "->" Satell.Activity_time.Text ")" #NL ;
              
 		 FOR ss IN Satell.All_satellites[] :
 		     CASE ss.INDEX==Satell.Satellite_num.Current ?

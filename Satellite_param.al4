@@ -104,13 +104,14 @@ BASE CLASS: {Form_common} .
 {Combo} Arm_colors
 {Paint_turtle} Turnaround
 {Paintbox} Paintbox_2
+{Paint_turtle} Select_url
 
 METHOD before_CONSTRUCT: .
 
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://3EA8DBDF Do not change manually (created by Form Designer)
+CONSTRUCT://10F69450 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -278,14 +279,14 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF"#LF
-"#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -554,6 +555,16 @@ PUSH in_construct = TRUE :
 	...Set_text("")
 	------------------------- 'COPY_URL'
 	Copy_url = New_button(THIS, "COPY_URL", "Copy URL"), >> grayable[]
+	----------------------- 'SELECT_URL'
+	Select_url = New_paint_turtle_button(THIS,
+ "SELECT_URL",
+ "25R30LL (D5LL5LL5LL5L"
+  "LU25)3")
+, >> grayable[]
+
+	...Set_width(18)
+
+	...Set_height(18)
 	------------------------------------------------------------- 'column COL_3'
 	new_column("COL_3", 'BOTTOM', DEFAULT_SIZES)
 
@@ -1212,6 +1223,8 @@ STR old_line_w|idth = "1"
 
 OVERRIDE click :
     CASE sender_alias ?
+    ["SELECT_URL"]:
+        popup_menu(Menu_urls)
     ["TURNAROUND"]:
     	REAL ri|mage_scale_new = Rotate_image.Text.Real + 180
     	CASE ri < -180 ? ri += 360 ;
@@ -1689,6 +1702,17 @@ OVERRIDE click :
                  	"them first or close Trasform model window.") ==> ;
     		----------------------- 'select & SAVE'   
     	    CASE !Dialog_file_save.Select_file ? ==> ;
+    	    FOR i IN [0 TO Collection_gal.List.Count-1] :
+    	        CASE i==Collection_gal.Last_sel 
+    	             || Collection_gal.List.Count <= 1 && i==0 
+    	             ? CONTINUE i ;
+    	        STR path_i|_gal = Collection_gal.List.Get_item(i, 0).After(#TAB)
+    	        CASE path_i LIKE Dialog_file_save.Filename ? 
+    	             CASE !ask("You have selected file matching galaxy #" i.S
+    	             	  " Are you sure ?") 
+    	             	  ? ==> ;
+    	        ;
+    	    ;
     	    Save_gal(Dialog_file_save.Filename, FALSE, 
     	    	For_coll= Collection_gal.Visible,
     	    	Save_sat= TRUE,
@@ -2635,11 +2659,15 @@ PUSH processing_mouse = TRUE :
 	CASE !is_m180_180 ?
 		 CASE mouse.X < mouse_pos0.X ? 
 			  REAL new_val|ue = vs
-			  - (vs - range_fr) * (mouse_pos0.X - mouse.X) 
+			  - (vs - range_fr) * ((mouse_pos0.X - mouse.X)
 			 							 / (mouse_pos0.X - dragging.Bounds.Left)
+			  	+ (mouse_pos0.Y - mouse.Y)/10.0 
+			  		/ (mouse_pos0.Y - dragging.Bounds.Top))
 		 ELSE new_val = vs 
-			  + (range_to - vs) * (mouse.X - mouse_pos0.X)
+			  + (range_to - vs) * ((mouse.X - mouse_pos0.X)
 			 							 / (dragging.Bounds.Right - mouse_pos0.X)
+			  	+ (mouse.Y - mouse_pos0.Y)/10.0
+			  							/ (dragging.Bounds.Bottom - mouse_pos0.Y))
 		 ;
 		 CASE ?
 		 [new_val < range_fr] ? new_val = range_fr 
@@ -2650,13 +2678,17 @@ PUSH processing_mouse = TRUE :
 		 CASE mouse.X < mouse_pos0.X ? 
 		      CASE is_m180_180 && vs.Near(-180) ? vs = 180 ;
 			  new_val = vs
-			  - (vs - range_fr) * (mouse_pos0.X - mouse.X) 
+			  - (vs - range_fr) * ((mouse_pos0.X - mouse.X) 
 			  					/ (mouse_pos0.X - dragging.Bounds.Left)
+			  		+ (mouse_pos0.Y - mouse.Y)/10.0
+			  		 / (mouse_pos0.Y - dragging.Bounds.Top))
 		 ELSE 
 		      CASE is_m180_180 && vs.Near(180) ? vs = -180 ;
 		 	  new_val = vs 
-			  + (range_to - vs) * (mouse.X - mouse_pos0.X)
+			  + (range_to - vs) * ((mouse.X - mouse_pos0.X)
 			  					/ (dragging.Bounds.Right - mouse_pos0.X)
+			  	+ (mouse.Y - mouse_pos0.Y)/10.0
+			  		/ (dragging.Bounds.Bottom - mouse_pos0.Y))
 		 ;
 		 CASE ?
 		 [new_val < range_fr] ? new_val = range_fr 
@@ -3136,6 +3168,7 @@ OVERRIDE menu_item :
         All_satellites[].Delete(Satellite_num.Current)
         All_satellites[].Insert(Satellite_num.Current+1, msp)
         Satellite_num.Select(.Current+1)
+    ["OPEN_LNX"]: Open_links_file
     ELSE
     	CASE ?
     	[menu_alias.Starting("POS_")] ?
@@ -3159,6 +3192,9 @@ OVERRIDE menu_item :
     	     All_satellites[].Delete(Satellite_num.Current)
     	     All_satellites[].Insert(after, msp)
     	     Satellite_num.Select(after)
+    	[menu_alias.Starting("URL")] ?
+    	     STR link|_to_select = menu_urls[menu_alias.After("URL").Int]
+    	     Label_url.Set_text(link)
     	;
     ; 
     need_invalidate = TRUE
@@ -3312,6 +3348,12 @@ METHOD draw_to|_bitmap(
 
 OVERRIDE disabled ==> BOOL :
     CASE sender_alias ?
+    ["SELECT_URL"]:
+        BOOL e|nable_select_url = Collection_gal.Visible
+        	 && Collection_gal.Dialog_save_col.Filename != ""
+        	 //&& Collection_gal.Dialog_save_col.Filename.Change_ext(".lnx").Exists
+        	 
+        RESULT = !e
     ["COPY_URL"]: RESULT = Label_url.Text.Trim==""
     ["MAKE_SCREENSHOT", "LOAD_UNDER_IMAGE"]: RESULT = Locked_images
     //["DEL_IMAGE"]: RESULT = Main_.All_images[].Count <= 1
@@ -3928,8 +3970,10 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 	INT was_cur|rent_spiral = Satellite_num.Current
 	{In_file_config} c|onfiguration_temp
     c = New_read_in_file_config(Filename, "")
-	Dialog_file_save.Filename = Filename
 	c.Section = ""
+    //DEBUG: "Loading file [" Filename "], URL=" c.Str("URL") 
+    //        ", Load_common=" Load_common.S #NL ;
+    CASE !Load_Control_pressed ? Dialog_file_save.Filename = Filename ;
 	CASE Load_common ? 
 	    Url_loaded = ""
 	    CASE !Load_Control_pressed ? 
@@ -4044,6 +4088,7 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 		CASE !Load_Control_pressed ?
 			 Image_mirrored = c.Bool("Mirrored")
 			 url = c.Str("URL")
+             //DEBUG: "loaded url=" url #NL ;
 			 CASE url != "" ? 
 			      FOR u IN Main_.All_img_URLs[] :
 			          CASE u==url ? 
@@ -4161,8 +4206,8 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
          ;
     ;
     CASE temp_b.Width <= 1 >= temp_b.Height ? ==> ;
-	DEBUG: "loaded image: " Image_filename " [" temp_b.Width "x" .Height "]"
-	        #NL ;
+    //DEBUG: "loaded image: " Image_filename " [" temp_b.Width "x" .Height "]"
+    //        #NL ;
     Main_.Image = New_bitmap_direct(temp_b.Width, .Height, 24)
     temp_b.Draw(Main_.Image.Canvas, Pt(0,0))
     temp_b = NONE
@@ -4185,12 +4230,12 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     CASE Main_.Current_image > 1 
          && (Main_.All_images[.Current_image-1].Width <= 1 || .Height <= 1)
          ?
-         DEBUG: "delete empty image " Main_.All_images[.Current_image-1].Width 
-         		" x " .Height 
-                " name=" Main_.All_img_names[.Current_image-1] 
-                "......................................................."
-                " Count=" Main_.All_images[].Count 
-                " Current=" Main_.Current_image #NL ;
+         //DEBUG: "delete empty image " Main_.All_images[.Current_image-1].Width 
+         //       " x " .Height 
+         //       " name=" Main_.All_img_names[.Current_image-1] 
+         //       "......................................................."
+         //       " Count=" Main_.All_images[].Count 
+         //       " Current=" Main_.Current_image #NL ;
          Main_.All_images[].Delete(Main_.All_images[].Count-2)
          Main_.Current_image -= 1 ;
     Main_.Invalidate
@@ -4206,10 +4251,13 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     ;
     .
     
+BOOL Saving_disabled
+    
 METHOD Save_gal|axy(STR Filename|_to_save_to, 
 BOOL Preserve_stamp|_commands_OTHERWISE_ask,
 BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common) 
     :
+	CASE Saving_disabled ? ==> ;
     //DEBUG: "saving gal -- " Filename #NL ;
     {In_file_config} c|onfiguration_temp
     c = New_write_in_file_config(Filename, "")
@@ -4345,7 +4393,7 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
     
 BOOL Commands_changed|_detected_while_save
 BOOL url_saved  
-STR url|_last
+STR url|_last, PUBLIC
 
 METHOD Update_URL|_label :
 	url = Main_.All_img_URLs[Main_.Current_image]
@@ -4362,6 +4410,52 @@ METHOD Reset|_all :
     Set_caption(caption_loc)
     Main_.Rescale
     Update_label_select_num .
+    
+STR menu_urls|_active[]
+    
+METHOD Menu_urls ==> STR :
+	menu_urls[].Clear
+	------------------------ 'load_linx_file', REUSED
+	STR links_path = Collection_gal.Dialog_save_col.Filename.Change_ext(".lnx")
+	STR links|_text[].From_text_file(links_path, 'UTF8')
+	------------------------
+	FOR s IN links[] :
+	    CASE ?
+	    [s.[0] IN "#/:"] ? CONTINUE s
+	    [s.Trim==""] ? CONTINUE s
+	    [s.[0]=="["] ?
+	         BOOL in_curr|ent_gal_model 
+	         .. = s.[1 TO *].Before("]").Trim LIKE Collection_gal.List.Get_item(
+	         	Collection_gal.Last_sel, 0).Before(#TAB) 
+	         
+	         CONTINUE s
+	    ;
+		CASE !in_curr ? CONTINUE s ;
+		RESULT << Item("URL" menu_urls[].Count.S, s.Trim)
+		menu_urls[] << s.Trim     
+	;
+	CASE menu_urls[].Count > 0 ? RESULT << Separator ;
+	RESULT << Item("OPEN_LNX", "Open links file") .
+	
+METHOD Open_links_file :
+	LIKE Menu_urls ................ 'load_linx_file'
+	FOR i IN [0 TO Collection_gal.List.Count-1] :
+	    STR name|_of_gal_model = Collection_gal.List.Get_item(i, 0).Before(#TAB) 
+		FOR s IN links[] :
+		    CASE s.[0]=="[" && s.[1 TO *].Before("]").Trim LIKE name ? 
+		         BREAK s, CONTINUE i ;
+		;
+		links[] << "" << "[" name "]" << ""
+		BOOL added|_at_least_one_gal = TRUE
+	;
+	CASE added && links_path.Exists ? NONE = Make_back_file(links_path) ;
+	CASE added ? links[].To_text_file(links_path, 'UTF8') ;
+	Start_file(links_path)
+	
+	LabelHint1.Set_text("To provide opening .lnx file on menu click, "
+	"at least ones open it in the explorer and set the association "
+	"of the .lnx extension with a desired text editor (like Notepad).")
+    .
 
 END
 
