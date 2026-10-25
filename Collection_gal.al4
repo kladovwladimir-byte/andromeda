@@ -48,7 +48,7 @@ BASE CLASS: {Form_common} .
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://0A5BEB64 Do not change manually (created by Form Designer)
+CONSTRUCT://6B200BD2 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -184,7 +184,6 @@ PUSH in_construct = TRUE :
 	Double_pen_1 = New_checkbox(THIS,
  "DOUBLE_PEN_1",
  "Double pen on 1st galactic model")
-	...Set_checked(TRUE)
 	------------------------ 'SHOW_TEXT'
 	Show_text = New_checkbox(THIS, "SHOW_TEXT", "Show notes #TEXT #ARROW #CIRCLE")
 	...Set_checked(TRUE)
@@ -448,6 +447,11 @@ OVERRIDE click :
         ;
     	------------- 'add existing gal file'
         CASE !Dialog_open_gal.Select_file ? ==> ;
+        
+        Main_.Satell.Dialog_image.Filename = ""
+        Main_.Satell.Dialog_image.Initial_path = Dialog_open_gal
+        	.Filename.Extract_path
+
         INT ii|tem_inserted = List.Insert_item(
         	Last_sel+1, Dialog_open_gal.Filename.Extract_file_name
         	#TAB Dialog_open_gal.Filename) 
@@ -484,6 +488,10 @@ OVERRIDE click :
     ["SAVE_COL"]: 
         CASE List.Count <= 0 ? message("Nothing to save yet!") ==> ;
         CASE !Dialog_save_col.Select_file ? ==> ;
+        Main_.Satell.Dialog_image.Filename = ""     
+        Main_.Satell.Dialog_image.Initial_path = Dialog_save_col
+        	.Filename.Extract_path
+        	    
         STR save_p|ath_for_collection = Dialog_save_col.Filename     
         FOR i IN [0 TO List.Count-1] :
             STR col|lection_galaxies[] << List.Get_item(i, 0)
@@ -503,6 +511,10 @@ OVERRIDE click :
         ;
         ------------------
         CASE !Dialog_open_col.Select_file ? ==> ;
+        Main_.Satell.Dialog_image.Filename = ""
+        Main_.Satell.Dialog_image.Initial_path = Dialog_open_col
+        	.Filename.Extract_path
+
         CASE !no_auto_save && Last_sel >= 0 && Auto_save.Checked ?
                        //DEBUG: Console_color('CYAN')
                        //    << "xxx <<<<<<<<<<< store sel=" Last_sel
@@ -789,6 +801,7 @@ OVERRIDE selection_change :
 	         Main_.Satellite_param.Update_URL
         ;
         ;
+        Need_auto_save = FALSE
     ;
     ; .
     
@@ -805,9 +818,9 @@ METHOD Save_stamp_file :
          ..=Main_.Satellite_param.Images_path.Trailing_slash _
          //DEBUG: "??? save stamp " img_file " ("
          //" " if(img_file.Exists, "EXISTS") ")"  #NL ;
-         CASE !img_file.Exists 
-              || Main_.Satellite_param.Commands_changed 
-              ?
+         //CASE !img_file.Exists
+         //     || Main_.Satellite_param.Commands_changed
+         CASE TRUE ?
 	          STR stamp_file = img_file.Extract_path
               .. = _ "stamp" 
               "" if(Main_.Satellite_param.Last_frame > 0, 
@@ -816,8 +829,11 @@ METHOD Save_stamp_file :
           	     "" List.Get_item(Last_sel, 0).Before(#TAB).Trim
           	     .Change_ext(".png") 
           	     
-	          {Png}.To_file(
-	         	 Main_.All_images[1], stamp_file.Change_ext(".png"), 9) 
+              CASE !stamp_file.Exists && img_file.Exists
+                   && stamp_file.Extract_file_name <> "stamp#.png"
+                   ?
+		           {Png}.To_file(
+		         	  Main_.All_images[1], stamp_file, 9) ; 
          ;
     ;.
 

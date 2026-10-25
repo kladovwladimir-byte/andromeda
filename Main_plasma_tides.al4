@@ -2440,9 +2440,10 @@ PUSH processing_mouse = TRUE : down_time = Now
 	rmb_down = mouse_button == 'RMB'
     rotate_p0 = rotate_p
     rotate_s0 = rotate_s
-	//mouse_down0 = mouse
+	mouse_down0 = mouse
 	just_mouse_down = TRUE
-    //DEBUG: "down0=" mouse_down0.S #NL ;
+    DEBUG: "down0=(" mouse_down0.X "," .Y ")" #NL ;
+    ----------------------- 'prepare to drag'
 	drag_center = !rmb_down
 	CASE drag_center ?
 	     {rect} r_centr|al_square = PBox.Bounds.Inflate(-PBox.Width/3, -.Height/3)
@@ -2467,7 +2468,7 @@ PUSH processing_mouse = TRUE : down_time = Now
 	          rotate_s = 0 ;
 	CASE rmb_down ? 
 	     mouse_down_rmb = Pt(mouse.X/PBox.Width, mouse.Y/PBox.Height) ;
-	------------------------------- 'store initial value(s)'
+	------------------------------- 'store initial values', REUSED
 	proj0 = Satellite_param.Rotate_proj.Text.Real
 	incl0 = Satellite_param.Inclination.Text.Real
 	tilt_0 = Satellite_param.Edit_tilt.Text.Real
@@ -2583,7 +2584,11 @@ CASE processing_mouse ? ==> ;
 PUSH processing_mouse = TRUE :
      CASE just_mouse_down ? 
           just_mouse_down = FALSE
-          mouse_down0 = mouse ;
+          DEBUG: "mouse_down0=(" mouse_down0.X ", " .Y ") --> (" mouse.X
+          	", " .Y ")" #NL ;
+          mouse_down0 = mouse 
+     	  LIKE mouse_down .................. 'store initial values'     
+     ;
      CASE Calculations_diff.Visible ? pixel_under_mouse ;
 	PBox.Invalidate_all 
 	CASE Key.Shift || .Alt ? 

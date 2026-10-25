@@ -111,7 +111,7 @@ METHOD before_CONSTRUCT: .
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://10F69450 Do not change manually (created by Form Designer)
+CONSTRUCT://5AD2C61D Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -279,14 +279,16 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", "#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS,
+ "FINAL_PLASMA_SPEED",
+ "#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -560,7 +562,7 @@ PUSH in_construct = TRUE :
  "SELECT_URL",
  "25R30LL (D5LL5LL5LL5L"
   "LU25)3")
-, >> grayable[]
+
 
 	...Set_width(18)
 
@@ -1494,7 +1496,7 @@ OVERRIDE click :
         Period_rot.Set_text((-Period_rot.Text.Real).S)
     ["LOAD_UNDER_IMAGE"]:
         CASE Locked_images ? ==> ;
-    	CASE Images_path != "" ? 
+    	CASE Images_path != "" == Dialog_image.Initial_path ? 
     	     Dialog_image.Initial_path = Images_path ;
         CASE !Dialog_image.Select_file ? 
              CASE Main_.All_images[].Count==0 ? ==> ;
@@ -1721,6 +1723,7 @@ OVERRIDE click :
     	    CASE Collection_gal != NONE ? 
     	         Collection_gal.Update_current(Dialog_file_save.Filename) 
     	    	 CASE Main_.All_images[].Count >= 2 ? 
+    	    	      DEBUG: "saving stamp file ..."#NL ;
     	    	      Collection_gal.Save_stamp_file ;
     	    ;
     	    ------------------ 'update__caption', REUSED
@@ -3348,12 +3351,12 @@ METHOD draw_to|_bitmap(
 
 OVERRIDE disabled ==> BOOL :
     CASE sender_alias ?
-    ["SELECT_URL"]:
-        BOOL e|nable_select_url = Collection_gal.Visible
-        	 && Collection_gal.Dialog_save_col.Filename != ""
-        	 //&& Collection_gal.Dialog_save_col.Filename.Change_ext(".lnx").Exists
+    //["SELECT_URL"]:
+    //    BOOL e|nable_select_url = Collection_gal.Visible
+    //         && Collection_gal.Dialog_save_col.Filename != ""
+    //         //&& Collection_gal.Dialog_save_col.Filename.Change_ext(".lnx").Exists
         	 
-        RESULT = !e
+    //    RESULT = !e
     ["COPY_URL"]: RESULT = Label_url.Text.Trim==""
     ["MAKE_SCREENSHOT", "LOAD_UNDER_IMAGE"]: RESULT = Locked_images
     //["DEL_IMAGE"]: RESULT = Main_.All_images[].Count <= 1
@@ -4060,7 +4063,8 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 				ArmsColors = c.Int("Arms_colors"),
 				Center_gal = Pt(c.Real("CenterX"), c.Real("CenterY"))
 		    	)
-            //DEBUG: "LOADED SAT" i " Name=" All_satellites[*].Name #NL ;
+            DEBUG: "LOADED SAT" i " Name=" All_satellites[*].Name 
+            	" Center_gal=(" All_satellites[*].Center_gal.X ", " .Y ")"#NL ;
 		    CASE All_satellites[*].Center_gal.X.Near(0)
 		         && All_satellites[*].Center_gal.Y.Near(0)
 		         ? 
@@ -4188,7 +4192,8 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     	     "DOWNLOAD this file from arbitrary and unverified sources, "
     	     "malware is often distributed under the guise of this dll. ") ;
     ;
-    //DEBUG: "loaded: =" Main_.Image.Width " x " .Height #NL ;
+    DEBUG: "loaded: =" Main_.Image.Width " x " .Height 
+    		", count=" Main_.All_images[].Count #NL ;
     ------------------- 'fix bpp'
     CASE temp_b.Width * .Height > Limit_image_size * 1024 * 1024 > 0 ? 
          CASE !Can_ask || ask("Image size (" temp_b.Width.S 
@@ -4206,8 +4211,8 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
          ;
     ;
     CASE temp_b.Width <= 1 >= temp_b.Height ? ==> ;
-    //DEBUG: "loaded image: " Image_filename " [" temp_b.Width "x" .Height "]"
-    //        #NL ;
+    DEBUG: "loaded image: " Image_filename " [" temp_b.Width "x" .Height "]"
+           ", Count=" Main_.All_images[].Count #NL ;
     Main_.Image = New_bitmap_direct(temp_b.Width, .Height, 24)
     temp_b.Draw(Main_.Image.Canvas, Pt(0,0))
     temp_b = NONE
@@ -4227,7 +4232,7 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     //      ;
     //      ;
     ------------------- 'remove empty image ???'
-    CASE Main_.Current_image > 1 
+    CASE Main_.Current_image >= 1 
          && (Main_.All_images[.Current_image-1].Width <= 1 || .Height <= 1)
          ?
          //DEBUG: "delete empty image " Main_.All_images[.Current_image-1].Width 
@@ -4317,6 +4322,8 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 	    	            ...Set_r("CenterX", s.Center_gal.X)
 	    	            ...Set_r("CenterY", s.Center_gal.Y)
 	    	            ...Set_b("LAST", i == Satellite_num.Count-1)
+	    	           DEBUG: "SAVED #" i " " s.Name
+	    	           	" Center_gal=(" s.Center_gal.X ", " .Y ")"#NL ;
 	    	            CASE s.Name.[0]=="#" ? 
 		    	            ...Set_i("Text_count_lines", s.Text[].Count)
 		    	            FOR line IN s.Text[0 TO *] :
@@ -4342,7 +4349,8 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 		               INT ch2|ecksum = Main_.Checksums2_of_images[i]
 		               CASE ch != 0 || ch2 != 0 ? BREAK i ;
 		           ;
-	               //DEBUG: "checksums=" ch "," ch2 #NL ;
+	               DEBUG: "checksums=" ch "," ch2 ", Preserve=" Preserve_stamp.S
+	               		   #NL ;
 		           FOR i IN [0 TO 1000] :
 		               STR old_c|ommands[] << c.Str("Command" i.S) 
 		          	   CASE old_c[*] != Commands_s[i] ? 
