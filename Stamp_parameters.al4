@@ -47,17 +47,17 @@ BASE CLASS: {Form_common} .
 {Combo} Post_processing_1
 {Paint_turtle} Run_post_process_2
 {Combo} Downscale_first
-{Label} Label_1 | _86755_726243
 {Combo} Post_processing_2
 {Paint_turtle} Run_post_process_1
 {Dialog_file} Dialog_gal
 {Paintbox} P_Hints|_bottom
 {Label} Label_2 | _454756_726243
 {Button} Button_cancel
+{Label} Label_first_down|scale
 
 METHOD before_CONSTRUCT: .
 
-CONSTRUCT://750E6581 Do not change manually (created by Form Designer)
+CONSTRUCT://433495A7 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -75,7 +75,7 @@ Align_right=TRUE))
 	------------------- 'LABEL_X_OFFSET'
 	Label_x_offset = {Label}(Form_=THIS, Alias="LABEL_X_OFFSET")
 
-	...Set_text("X offset"._X_offset)
+	...Set_text("X offset")
 	------------------------- 'X_OFFSET'
 	X_offset = New_edit(THIS, "X_OFFSET")
 
@@ -83,7 +83,7 @@ Align_right=TRUE))
 	------------------- 'LABEL_Y_OFFSET'
 	Label_y_offset = {Label}(Form_=THIS, Alias="LABEL_Y_OFFSET")
 
-	...Set_text("Y offset"._Y_offset)
+	...Set_text("Y offset")
 	------------------------- 'Y_OFFSET'
 	Y_offset = New_edit(THIS, "Y_OFFSET")
 
@@ -91,7 +91,7 @@ Align_right=TRUE))
 	---------------------- 'LABEL_VALUE'
 	Label_value = {Label}(Form_=THIS, Alias="LABEL_VALUE")
 
-	...Set_text("Value (%):"._Value_percent)
+	...Set_text("Value (%):")
 	---------------------------- 'VALUE'
 	Value = New_edit(THIS, "VALUE")
 
@@ -99,7 +99,7 @@ Align_right=TRUE))
 	---------------------- 'LABEL_SHIFT'
 	Label_shift = {Label}(Form_=THIS, Alias="LABEL_SHIFT")
 
-	...Set_text("Shift final by modulo 255:"._Shift_final)
+	...Set_text("Shift final by modulo 255:")
 	---------------------- 'SHIFT_FINAL'
 	Shift_final = New_edit(THIS, "SHIFT_FINAL")
 
@@ -119,7 +119,7 @@ Align_right=TRUE))
 	----------------- 'LABEL_STAMP_TYPE'
 	Label_stamp_type = {Label}(Form_=THIS, Alias="LABEL_STAMP_TYPE")
 
-	...Set_text("Stamp type:"._Stamp_type)
+	...Set_text("Stamp type:")
 	----------------------- 'STAMP_TYPE'
 	Stamp_type = New_combo(THIS, "STAMP_TYPE", @
 "Flat stamp"
@@ -160,8 +160,8 @@ Align_right=TRUE))
 	------------------------- 'RECENTER'
 	Recenter = New_checkbox(THIS, "RECENTER", "Recenter (after flat samp)")
 	...Set_checked(TRUE)
-	-------------------------- 'LABEL_1'
-	Label_1 = {Label}(Form_=THIS, Alias="LABEL_1")
+	----------------- 'LABEL_FIRST_DOWN'
+	Label_first_down = {Label}(Form_=THIS, Alias="LABEL_FIRST_DOWN")
 
 	...Set_text("First downscale:")
 	------------------ 'DOWNSCALE_FIRST'
@@ -171,7 +171,7 @@ Align_right=TRUE))
 "1/3"
 "1/4")
 	--------------------- 'BUTTON_STAMP'
-	Button_stamp = New_button(THIS, "BUTTON_STAMP", "Create stamp"._Create_stamp)
+	Button_stamp = New_button(THIS, "BUTTON_STAMP", "Create stamp")
 	...Make_default
 	---------------------- 'COPY_BITMAP'
 	Copy_bitmap = New_paint_turtle_button(THIS,
@@ -206,8 +206,7 @@ Align_right=TRUE))
 	----------------- 'LABELPOSTPROCESS'
 	LabelPostProcess = {Label}(Form_=THIS, Alias="LABELPOSTPROCESS")
 
-	...Set_text(
-"Post processing operation (always replaces current image):"._Post_processing)
+	...Set_text("Post processing operation (always replaces current image):"#QU".")
 	---------------- 'POST_PROCESSING_1'
 	Post_processing_1 = New_combo(THIS, "POST_PROCESSING_1", @
 "1: Shift color by Multiplier"
@@ -367,7 +366,7 @@ Align_right=TRUE))
 	----------- 'LABEL_VIEW_TRANSPARENT'
 	Label_View_transparent = {Label}(Form_=THIS, Alias="LABEL_VIEW_TRANSPARENT")
 
-	...Set_text("View transparent over previous:"._Transparent_over_previous)
+	...Set_text("View transparent over previous:")
 	------------ 'TRANSPARENCY_PERCENTS'
 	Transparency_percents = New_edit(THIS, "TRANSPARENCY_PERCENTS")
 
@@ -385,7 +384,7 @@ Align_right=TRUE))
 	---------------- 'SCALE_TRANSPARENT'
 	Scale_transparent = New_checkbox(THIS,
  "SCALE_TRANSPARENT",
- "Scale transparent underlaying image too"._Scale_transp)
+ "Scale transparent underlaying image too")
 	----------------------- 'PROGRESS_1'
 	Progress_1 = New_progress(THIS, "PROGRESS_1")
 	-------------------------- 'P_HINTS'
@@ -400,6 +399,349 @@ Align_right=TRUE))
 
 	after_CONSTRUCT
 ; .
+
+//METHOD old_CONSTRUCT://19419477 Do not change manually (created by Form Designer)
+//    before_CONSTRUCT
+//PUSH in_construct = TRUE :
+//    ------------------------------------------------------------------ 'column '
+//    new_column("",
+// 'LEFT',
+// {Form}.{sizes_col}(Width=250,
+//Label=130,
+//Align_right=TRUE))
+//
+//    ---------------------- 'DIALOG_FILE'
+//    Dialog_file_save = New_dialog_save(THIS, "DIALOG_FILE")
+//
+//    ...Filter = "All images|*.png;*.jpg"
+//    ...Default_ext = "png"
+//    ------------------- 'LABEL_X_OFFSET'
+//    Label_x_offset = {Label}(Form_=THIS, Alias="LABEL_X_OFFSET")
+//
+//    ...Set_text("X offset")
+//    ------------------------- 'X_OFFSET'
+//    X_offset = New_edit(THIS, "X_OFFSET")
+//
+//    ...Set_text("4")
+//    ------------------- 'LABEL_Y_OFFSET'
+//    Label_y_offset = {Label}(Form_=THIS, Alias="LABEL_Y_OFFSET")
+//
+//    ...Set_text("Y offset")
+//    ------------------------- 'Y_OFFSET'
+//    Y_offset = New_edit(THIS, "Y_OFFSET")
+//
+//    ...Set_text("4")
+//    ---------------------- 'LABEL_VALUE'
+//    Label_value = {Label}(Form_=THIS, Alias="LABEL_VALUE")
+//
+//    ...Set_text("Value (%):")
+//    ---------------------------- 'VALUE'
+//    Value = New_edit(THIS, "VALUE")
+//
+//    ...Set_text("15000")
+//    ---------------------- 'LABEL_SHIFT'
+//    Label_shift = {Label}(Form_=THIS, Alias="LABEL_SHIFT")
+//
+//    ...Set_text("Shift final by modulo 255:")
+//    ---------------------- 'SHIFT_FINAL'
+//    Shift_final = New_edit(THIS, "SHIFT_FINAL")
+//
+//    ...Set_text("0")
+//    -------------------- 'INC_DEC_SHIFT'
+//    Inc_dec_shift = New_paint_turtle_button(THIS,
+// "INC_DEC_SHIFT",
+// "20R30DLL60B30RR"
+//  "30B60 B30RR30 U45 D60")
+//, >> grayable[]
+//
+//    ...Set_width(36)
+//
+//    ...Set_height(18)
+//
+//    ...Set_multi_button("Incr,Decr")
+//    ----------------- 'LABEL_STAMP_TYPE'
+//    Label_stamp_type = {Label}(Form_=THIS, Alias="LABEL_STAMP_TYPE")
+//
+//    ...Set_text("Stamp type:")
+//    ----------------------- 'STAMP_TYPE'
+//    Stamp_type = New_combo(THIS, "STAMP_TYPE", @
+//"Flat stamp"
+//"Radial stamp"
+//"Serie of flat stamps"
+//"Serie of radial stamps"
+//"Square border stamp"
+//"Square fill stamp"
+//"Circle border stamp"
+//"Star rays stamp"
+//"Avg square border stamp")
+//    ------------------- 'CONVERT_COLORS'
+//    Convert_colors = New_combo(THIS, "CONVERT_COLORS", @
+//"0:Not convert"
+//"1:Distance from shift"
+//"2:Below shift only"
+//"3:Above shift only"
+//"4:Anti-distance from shift"
+//"5:Inverted anti-distance"
+//"6:Anti-qudratic distance"
+//"7:Inverted anti-quadratic distance"
+//"8:Anti-squared distance"
+//"9:Inverted anti-squared distance"
+//"10:Distance from shift sin"
+//"11:Distance from shift sin-powered-2"
+//"12:Distance from shift sin-squared^1/2"
+//"13:Gradiental")
+//    ------------------------- 'USE_FILE'
+//    Use_file = New_checkbox(THIS,
+// "USE_FILE",
+// "Use external file (to handle large images)"),
+// >> grayable[]
+//    ----------------- 'REMOVE_OLD_STAMP'
+//    Remove_old_stamp = New_checkbox(THIS,
+// "REMOVE_OLD_STAMP",
+// "Replace previous stamp")
+//    ...Set_checked(TRUE)
+//    ------------------------- 'RECENTER'
+//    Recenter = New_checkbox(THIS, "RECENTER", "Recenter (after flat samp)")
+//    ...Set_checked(TRUE)
+//    ----------------- 'LABEL_FIRST_DOWN'
+//    Label_first_down = {Label}(Form_=THIS, Alias="LABEL_FIRST_DOWN")
+//
+//    ...Set_text("First downscale:")
+//    ------------------ 'DOWNSCALE_FIRST'
+//    Downscale_first = New_combo(THIS, "DOWNSCALE_FIRST", @
+//"No"
+//"1/2"
+//"1/3"
+//"1/4")
+//    --------------------- 'BUTTON_STAMP'
+//    Button_stamp = New_button(THIS, "BUTTON_STAMP", "Create stamp")
+//    ...Make_default
+//    ---------------------- 'COPY_BITMAP'
+//    Copy_bitmap = New_paint_turtle_button(THIS,
+// "COPY_BITMAP",
+// "25R30LL (D5LL5LL5LL"
+//  "5LLU25)3")
+//, >> grayable[]
+//
+//    ...Set_width(18)
+//
+//    ...Set_height(16)
+//    ----------------------- 'DIALOG_GAL'
+//    Dialog_gal = New_dialog_open(THIS, "DIALOG_GAL")
+//    ...Title = "Select .gal file with commands"
+//
+//    ...Filter = "Galaxy model files|*.gal;*.gal2"
+//    ...Default_ext = ".gal"
+//    ----------------------- 'PAINTBOX_1'
+//    Paintbox_1 = New_paintbox(THIS, "PAINTBOX_1", "")
+//
+//    ...Set_height(10)
+//    -------------------------- 'LABEL_2'
+//    Label_2 = {Label}(Form_=THIS, Alias="LABEL_2")
+//
+//    ...Set_text("")
+//    -------------------- 'BUTTON_CANCEL'
+//    Button_cancel = New_button(THIS, "BUTTON_CANCEL", "Cancel"), >> grayable[]
+//    ...Make_cancel
+//    ------------------------------------------------------------- 'column COL_1'
+//    new_column("COL_1", 'CENTER', {Form}.{sizes_col}(Label=70))
+//
+//    ----------------- 'LABELPOSTPROCESS'
+//    LabelPostProcess = {Label}(Form_=THIS, Alias="LABELPOSTPROCESS")
+//
+//    ...Set_text("Post processing operation (always replaces current image):"#QU".")
+//    ---------------- 'POST_PROCESSING_1'
+//    Post_processing_1 = New_combo(THIS, "POST_PROCESSING_1", @
+//"1: Shift color by Multiplier"
+//"2: Grayscale"
+//"3: Darken 25%"
+//"4: Darken 50% high part only"
+//"5: Lighten 25%"
+//"6: Lighten 50%"
+//"7: Contrast up 25%"
+//"8: Contrast up 50%"
+//"9: Contrast down 25%"
+//"10: Contrast down 50%"
+//"11: Union two images 50/50 (second inverted)"
+//"12: curves r,g,b #iterations"
+//"13: Downscale 1/2"
+//"14: Downscale 1/3"
+//"15: Downscale 1/5"
+//"16: Blur (d=|Multiplier|)"
+//"17: To most dark neighbour"
+//"18. Contrast dynamic (d=|Multiplier|)"
+//"19: Retouch"
+//"20. Average all next from current"
+//"21. To least different from average of 4 neightbors"
+//"22. To least different from average of 8 neightbors"
+//"23. To least different from average of 9 neightbors"
+//"24. To least different from average of 12 neightbors"
+//"25. To least different from average of 17 neightbors")
+//    --------------- 'RUN_POST_PROCESS_1'
+//    Run_post_process_1 = New_paint_turtle_button(THIS,
+// "RUN_POST_PROCESS_1",
+// "10L30"
+//  "DFR40RR40BL80NRRU70R15LD50RR50NRRF50RR50 NURR110D DFL15BL30NB15RR30(RR50)2")
+//
+//
+//    ...Set_width(54)
+//
+//    ...Set_height(18)
+//
+//    ...Set_multi_button("Processing,Grayscale,Undo")
+//
+//    ...Set_fill(BLACK)
+//    ---------------- 'POST_PROCESSING_2'
+//    Post_processing_2 = New_combo(THIS, "POST_PROCESSING_2", @
+//"1: Shift color by Multiplier"
+//"2: Grayscale"
+//"3: Darken 25%"
+//"4: Darken 50% high part only"
+//"5: Lighten 25%"
+//"6: Lighten 50%"
+//"7: Contrast up 25%"
+//"8: Contrast up 50%"
+//"9: Contrast down 25%"
+//"10: Contrast down 50%"
+//"11: Union two images 50/50 (second inverted)"
+//"12: curves r,g,b #iterations"
+//"13: Downscale 1/2"
+//"14: Downscale 1/3"
+//"15: Downscale 1/5"
+//"16: Blur (d=|Multiplier|)"
+//"17: To most dark neighbour"
+//"18. Contrast dynamic (d=|Multiplier|)"
+//"19: Retouch"
+//"20. Average all next from current"
+//"21. To least different from average of 4 neightbors"
+//"22. To least different from average of 8 neightbors"
+//"23. To least different from average of 9 neightbors"
+//"24. To least different from average of 12 neightbors"
+//"25. To least different from average of 17 neightbors")
+//    --------------- 'RUN_POST_PROCESS_2'
+//    Run_post_process_2 = New_paint_turtle_button(THIS,
+// "RUN_POST_PROCESS_2",
+// "10L30"
+//  "DFR40RR40BL80NRRU70R15LD50RR50NRRF50RR50 NURR110D DFL15BL30NB15RR30(RR50)2")
+//
+//
+//    ...Set_width(54)
+//
+//    ...Set_height(18)
+//
+//    ...Set_multi_button("Processing,Grayscale,Undo")
+//
+//    ...Set_fill(BLACK)
+//    ---------------- 'POST_PROCESSING_3'
+//    Post_processing_3 = New_combo(THIS, "POST_PROCESSING_3", @
+//"1: Shift color by Multiplier"
+//"2: Grayscale"
+//"3: Darken 25%"
+//"4: Darken 50% high part only"
+//"5: Lighten 25%"
+//"6: Lighten 50%"
+//"7: Contrast up 25%"
+//"8: Contrast up 50%"
+//"9: Contrast down 25%"
+//"10: Contrast down 50%"
+//"11: Union two images 50/50 (second inverted)"
+//"12: curves r,g,b #iterations"
+//"13: Downscale 1/2"
+//"14: Downscale 1/3"
+//"15: Downscale 1/5"
+//"16: Blur (d=|Multiplier|)"
+//"17: To most dark neighbor"
+//"18. Contrast dynamic (d=|Multiplier|)"
+//"19: Retouch"
+//"20. Average all next from current"
+//"21. To least different from average of 4 neightbors"
+//"22. To least different from average of 8 neightbors"
+//"23. To least different from average of 9 neightbors"
+//"24. To least different from average of 12 neightbors"
+//"25. To least different from average of 17 neightbors")
+//    --------------- 'RUN_POST_PROCESS_3'
+//    Run_post_process_3 = New_paint_turtle_button(THIS,
+// "RUN_POST_PROCESS_3",
+// "10L30"
+//  "DFR40RR40BL80NRRU70R15LD50RR50NRRF50RR50 NURR110D DFL15BL30NB15RR30(RR50)2")
+//
+//
+//    ...Set_width(54)
+//
+//    ...Set_height(18)
+//
+//    ...Set_multi_button("Processing,Grayscale,Undo")
+//
+//    ...Set_fill(BLACK)
+//    ----------------- 'LABEL_MULTIPLIER'
+//    Label_multiplier = {Label}(Form_=THIS, Alias="LABEL_MULTIPLIER")
+//
+//    ...Set_text("Multiplier:")
+//    ------------------ 'EDIT_MULTIPLIER'
+//    Edit_multiplier = New_edit(THIS, "EDIT_MULTIPLIER")
+//
+//    ...Set_text("2")
+//    ------------------- 'SHIFT_COMMANDS'
+//    Shift_commands = New_paint_turtle_button(THIS,
+// "SHIFT_COMMANDS",
+// "10L60BLD40LL4"
+//  "0 UL60D L40LL40BU80 L1LL30DR40RR40 UL20 LL20DBL40LL40")
+//
+//
+//    ...Set_width(80)
+//
+//    ...Set_height(20)
+//
+//    ...Set_multi_button("Left,Right,Up,Down")
+//    ----------------------- 'PAINTBOX_2'
+//    Paintbox_2 = New_paintbox(THIS, "PAINTBOX_2", "")
+//
+//    ...Set_height(10)
+//    ----------------- 'LABEL_ITERATIONS'
+//    Label_iterations = {Label}(Form_=THIS, Alias="LABEL_ITERATIONS")
+//
+//    ...Set_text(
+//"Iterations count, offset step, circle radius/final value:"._Iterations_count)
+//    ---------------- 'ITERATIONS_COUNT1'
+//    Iterations_count1 = New_edit(THIS, "ITERATIONS_COUNT1")
+//
+//    ...Set_text("26 1 1 ^2 3 2 3 8 *2.5 13")
+//    ----------- 'LABEL_VIEW_TRANSPARENT'
+//    Label_View_transparent = {Label}(Form_=THIS, Alias="LABEL_VIEW_TRANSPARENT")
+//
+//    ...Set_text("View transparent over previous:")
+//    ------------ 'TRANSPARENCY_PERCENTS'
+//    Transparency_percents = New_edit(THIS, "TRANSPARENCY_PERCENTS")
+//
+//    ...Set_text("0")
+//    -------------- 'TRANSPARENCY_ON_OFF'
+//    Transparency_on_off = New_paint_turtle_button(THIS,
+// "TRANSPARENCY_ON_OFF",
+// "20L"
+//  "D40B20LL40R30B80BLU60D (20R5R8)4")
+//
+//
+//    ...Set_width(18)
+//
+//    ...Set_height(18)
+//    ---------------- 'SCALE_TRANSPARENT'
+//    Scale_transparent = New_checkbox(THIS,
+// "SCALE_TRANSPARENT",
+// "Scale transparent underlaying image too")
+//    ----------------------- 'PROGRESS_1'
+//    Progress_1 = New_progress(THIS, "PROGRESS_1")
+//    -------------------------- 'P_HINTS'
+//    P_Hints = New_paintbox(THIS, "P_HINTS", "")
+//    ...Set_anchor_bottom(TRUE)
+//
+//    ...Set_height(38)
+//    ----------------------------------------'form size / position'
+//    Set_size(300, 0, 'FIT_TO_DISPLAY')
+//    -------------------------- 'TITLE of Form'
+//    Set_caption("3D-stamp parameters"._3D_stamp)
+//
+//    after_CONSTRUCT
+//; .
 
 
 
@@ -419,6 +761,8 @@ METHOD after_CONSTRUCT:
 	Post_processing_2.Select(7-1)
 	Post_processing_3.Select(23-1)
 	Holder = {Holder_bitmaps}
+	------------------------------
+	Fill_language
 	.
 
 OVERRIDE moved :
@@ -2153,7 +2497,7 @@ METHOD Execute_commands|_stored_earlier(STR Commands_s|equence[]) :
 	    	 ;
 	    	 ---------------------- 're-paint'
 	    	 Main_.Satellite_param.Thumbnails.Invalidate_all
-	    	 Main_.Satellite_param.Process
+	    	 //Main_.Satellite_param.Process
 	    	 Main_.PBox.Invalidate_all
 	    	 //Main_.Process
 	     ;
@@ -2228,8 +2572,104 @@ METHOD Commands_from_file :
 METHOD Update_commands|_in_hint :
 	PUSH Executing = 0 :
 	     hint_from_commands ; .
-    
-    
+
+
+METHOD Fill_language :
+	-------------------- 'X, Y offset'
+	Label_x_offset.Set_text("X offset"._X_offset)	
+	Label_y_offset.Set_text("Y offset"._Y_offset)	
+	-------------------- 'Value, Shift'
+	Label_value.Set_text("Value (%):"._Value_percent)
+	Label_shift.Set_text("Shift final by modulo 255:"._Shift_final)
+	-------------------- 'Stamp type'
+	Label_stamp_type.Set_text("Stamp type:"._Stamp_type)
+	INT w|as_selected = Stamp_type.Current
+	Stamp_type.Set_items("Flat stamp"._Flat #NL
+	"" ("Radial stamp"._Radial) #NL
+	"" ("Serie of flat stamps"._Serie_flat) #NL
+	"" ("Serie of radial stamps"._Serie_radial) #NL
+	"" ("Square border stamp"._Square_border) #NL
+	"" ("Square fill stamp"._Square_fill) #NL
+	"" ("Circle border stamp"._Circle_border) #NL
+	"" ("Star rays stamp"._Star_rays) #NL
+	"" ("Avg square border stamp"._Avg_square_border))
+	
+	Stamp_type.Select(w)
+	-------------------- 'Convert colors'
+	w = Convert_colors.Current
+	Convert_colors.Set_items(
+	"0:Not convert"._0Not_convert #NL
+	"" ("1:Distance from shift"._1Distance) #NL
+	"" ("2:Below shift only"._2Below) #NL
+	"" ("3:Above shift only"._3Above) #NL
+	"" ("4:Anti-distance from shift"._4Anti) #NL
+	"" ("5:Inverted anti-distance"._5InvAnti) #NL
+	"" ("6:Anti-qudratic distance"._6Anti_q) #NL
+	"" ("7:Inverted anti-quadratic distance"._7InvAnti_q) #NL
+	"" ("8:Anti-squared distance"._8Anti_sq) #NL
+	"" ("9:Inverted anti-squared distance"._9InvAnti_sq) #NL
+	"" ("10:Distance from shift sin"._10Dist_sin) #NL
+	"" ("11:Distance from shift sin-powered-2"._11Dist_sin_pow) #NL
+	"" ("12:Distance from shift sin-squared^1/2"._12Dist_sin_sq) #NL
+	"" ("13:Gradiental"._13Grad)	
+	)
+	
+	Convert_colors.Select(w)
+	-------------------- '3 flags'
+	Use_file.Set_text("Use external file (to handle large images)"._Ext_file)
+	Remove_old_stamp.Set_text("Replace previous stamp"._Replace_stamp)
+	Recenter.Set_text("Recenter (after flat samp)"._Recenter)
+	Label_first_down.Set_text("First downscale:"._1st_downscale)
+	-------------------- 'Post processing'
+	LabelPostProcess.Set_text("Post processing operation (always replaces "
+		"current image):"._Post_processing)
+	-------------------- 'Multiplyer'
+	Label_multiplier.Set_text("Multiplier:"._Multiplyer)
+	-------------------- 'View transparent'
+	Label_View_transparent.Set_text("View transparent over previous:"
+		""._Transparent_over_previous)
+		
+	Scale_transparent.Set_text("Scale transparent underlaying image too"
+		""._Scale_transp)
+	--------------------- 'buttons'
+	Button_stamp.Set_text("Create stamp"._Create_stamp)
+	Button_cancel.Set_text("Cancel"._Cancel)
+	--------------------- 'post processings'
+	STR pp|ost_processing_items[]
+	pp[] << "1: Shift color by Multiplier"._1_Shift_by_Multiplyer
+	..[] << "2: Grayscale"._2_Grayscale
+	..[] << "3: Darken 25%"._3_Darken_25
+	..[] << "4: Darken 50% high part only"._4_Darken_50
+	..[] << "5: Lighten 25%"._5_Lighten_25
+	..[] << "6: Lighten 50%"._6_Lighten_50
+	..[] << "7: Contrast up 25%"._7_Contrast_25
+	..[] << "8: Contrast up 50%"._8_Contrast_25
+	..[] << "9: Contrast down 25%"._9_Contrast_down_25
+	..[] << "10: Contrast down 50%"._10_Contrast_down_50
+	..[] << "11: Union two images 50/50 (second inverted)"._11_Union_50_50
+	..[] << "12: curves r,g,b #iterations"._12_Curves
+	..[] << "13: Downscale 1/2"._13_Downscale_1_2
+	..[] << "14: Downscale 1/3"._14_Downscale_1_3
+	..[] << "15: Downscale 1/5"._15_Downscale_1_5
+	..[] << "16: Blur (d=|Multiplier|)"._16_Blur
+	..[] << "17: To most dark neighbour"._17_Most_dark
+	..[] << "18. Contrast dynamic (d=|Multiplier|)"._18_Contrast_dyn
+	..[] << "19: Retouch"._19_Retouch
+	..[] << "20. Average all next from current"._20_Average_next_all
+	..[] << "21. To least different from average of 4 neightbors"._21_Least_4
+	..[] << "22. To least different from average of 8 neightbors"._22_Least_8
+	..[] << "23. To least different from average of 9 neightbors"._23_Least_9
+	..[] << "24. To least different from average of 12 neightbors"._24_Least_12
+	..[] << "25. To least different from average of 17 neightbors"._25_Least_17
+	-------------------------------- 'pp_1', REUSED
+	w = Post_processing_1.Current
+	Post_processing_1.Set_items(pp[0 TO *].Merge(#NL))
+	Post_processing_1.Select(w)
+	--------------------------------
+	LIKE ........................... 'pp_1', BUT(_1==>_2)*3
+	LIKE ........................... 'pp_1', BUT(_1==>_3)*3
+	.
+
 END
 
 */

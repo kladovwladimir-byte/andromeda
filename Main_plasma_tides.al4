@@ -870,6 +870,10 @@ METHOD Paint_to2(
 		-------------- 'center__may__be__local', REUSED     
         center_pt = Pt(ww/2 + ww1*(sat1.Center_gal.X - 0.5 + adD_offset_x),
             h/2 + h*(sat1.Center_gal.Y - 0.5 + adD_offset_y))
+            
+        //DEBUG: "sat1=" sat1.Name " ww=" ww " h=" h " center_pt=" center_pt.S 
+        //        #NL ;
+        		
         CASE sat1.INDEX == 0 
              || sat1.Name==Satellite_param.All_satellites[0].Name != "" 
              ?
@@ -1949,6 +1953,7 @@ INT pass|_arm_number,
     //    ", xy_mul=" xy_mul ", z_mul=" z_mul 
     //    ", use_M_transform=" use_M_transform.Str #NL ;
     FOR j IN [0 TO end_year.Int] <------------------------
+    	//DEBUG: " " j " ";
         {e_point} ep|oint_ellipse = orbit.Points[i_point].CLONE
         REAL dT|ime_passed = end_year - (ep.T + start_time) * abs_per_scale
         CASE dT < 0 ?
@@ -2027,28 +2032,49 @@ INT pass|_arm_number,
         v = Vector_3(xx, yy, zz) * use_M_transform
         xx = +v.[0]
         yy = -v.[1]
-        ------------------------- 'time distortion'
-        CASE time_distortion || max_dist > 0 {
-             dist = (v.[0].qq+v.[1].qq+v.[2].qq).Sqrt
-             CASE 0 < max_dist < dist ? 
-                  present_prev = FALSE
-                  -------------------------- 'finish__fragment', REUSED
-                  CASE use_poly { 
-	                   CASE All_dots_count-1 > dots_start ?
-		                    c.Poly(All_dots[dots_start TO All_dots_count-1], FALSE)
-		                    dots_start = All_dots_count 
-	                   ;
-                  }
-                  ---------------------------
-                  LIKE ............... 'next__point'
-                  LIKE .............. 'no__prev'
-                  CONTINUE j ;
-             CASE time_distortion ? 
-	              REAL sin_b|etha = -v.[2] / dist
-	              REAL k_distort|tion = (1 / speed_i) / (1 / speed_i + sin_b)
-	              xx = _ * k_distort
-	              yy = _ * k_distort ;
-        }
+        REAL xxx|_to_check
+        REAL yyy|_to_check
+        CASE Satell.Show_reflections ? 
+             INT nn_steps = 20
+             {point} vv|ector_from_center = Pt(xx - center_pt.X, yy - .Y)
+             REAL dd|istance = Sqrt(vv.X*.X + vv.Y*.Y) / nn_steps
+             REAL ba|ngle_base = atan2(vv.Y, vv.X)
+             FOR nn IN [1 TO nn_steps-1] <---------------------------------
+                 xxx = center_pt.X + vv.X/nn_steps * nn
+                 yyy = center_pt.Y + vv.Y/nn_steps * nn
+                 FOR aa IN [0 TO 5] :
+                     REAL aaa|ngle_reflection = 60 * aa / 180 * PI + ba 
+                 	 xx = xxx + Cos(aaa) * dd * (nn_steps - nn * 0.5)    
+                 	 yy = yyy + Sin(aaa) * dd * (nn_steps - nn * 0.5)   
+                 	 c.Rect({rect}(Loc = Pt(xx, yy), W=0.1, H=0.1))  
+                 ;
+             ------------------------------------------------------------>
+             LIKE ............... 'next__point'
+             CONTINUE j
+        ELSE
+	        ------------------------- 'time distortion'
+	        CASE time_distortion || max_dist > 0 {
+	             dist = (v.[0].qq+v.[1].qq+v.[2].qq).Sqrt
+	             CASE 0 < max_dist < dist ? 
+	                  present_prev = FALSE
+	                  -------------------------- 'finish__fragment', REUSED
+	                  CASE use_poly { 
+		                   CASE All_dots_count-1 > dots_start ?
+			                    c.Poly(All_dots[dots_start TO All_dots_count-1], FALSE)
+			                    dots_start = All_dots_count 
+		                   ;
+	                  }
+	                  ---------------------------
+	                  LIKE ............... 'next__point'
+	                  LIKE .............. 'no__prev'
+	                  CONTINUE j ;
+	             CASE time_distortion ? 
+		              REAL sin_b|etha = -v.[2] / dist
+		              REAL k_distort|tion = (1 / speed_i) / (1 / speed_i + sin_b)
+		              xx = _ * k_distort
+		              yy = _ * k_distort ;
+	        }
+        ;
         ------------------------- 'final point coords'
         REAL xx_light_y = xx
         REAL yy_light_y = yy
@@ -2069,8 +2095,8 @@ INT pass|_arm_number,
                   CONTINUE j ;
         }
         ------------------------- 'skip points far from bounds'
-        REAL xxx|_to_check = xx
-        REAL yyy|_to_check = yy
+        xxx = xx
+        yyy = yy
         CASE Satellite_param.Scale_up_shift ? 
              xxx = 0
              yyy = 0
@@ -2442,7 +2468,7 @@ PUSH processing_mouse = TRUE : down_time = Now
     rotate_s0 = rotate_s
 	mouse_down0 = mouse
 	just_mouse_down = TRUE
-    DEBUG: "down0=(" mouse_down0.X "," .Y ")" #NL ;
+    //DEBUG: "down0=(" mouse_down0.X "," .Y ")" #NL ;
     ----------------------- 'prepare to drag'
 	drag_center = !rmb_down
 	CASE drag_center ?
@@ -2584,8 +2610,8 @@ CASE processing_mouse ? ==> ;
 PUSH processing_mouse = TRUE :
      CASE just_mouse_down ? 
           just_mouse_down = FALSE
-          DEBUG: "mouse_down0=(" mouse_down0.X ", " .Y ") --> (" mouse.X
-          	", " .Y ")" #NL ;
+          //DEBUG: "mouse_down0=(" mouse_down0.X ", " .Y ") --> (" mouse.X
+          //  ", " .Y ")" #NL ;
           mouse_down0 = mouse 
      	  LIKE mouse_down .................. 'store initial values'     
      ;

@@ -111,7 +111,7 @@ METHOD before_CONSTRUCT: .
 {Main_plasma_tides} Main_|form_, INIT, READ
 STR Url_loaded
 
-CONSTRUCT://5AD2C61D Do not change manually (created by Form Designer)
+CONSTRUCT://5CFAA465 Do not change manually (created by Form Designer)
 	before_CONSTRUCT
 PUSH in_construct = TRUE :
 	------------------------------------------------------------------ 'column '
@@ -253,7 +253,7 @@ PUSH in_construct = TRUE :
 	--------------- 'LABEL_PLASMA_SPEED'
 	Label_plasma_speed = {Label}(Form_=THIS, Alias="LABEL_PLASMA_SPEED")
 
-	...Set_text("Plasma speed kc (k=0...1):")
+	...Set_text("Plasma speed kc (k=0...1):"#QU)
 	--------------------- 'PLASMA_SPEED'
 	Plasma_speed = New_edit(THIS, "PLASMA_SPEED")
 
@@ -279,16 +279,15 @@ PUSH in_construct = TRUE :
 
 	...Set_text("Final plasma speed:")
 	--------------- 'FINAL_PLASMA_SPEED'
-	Final_plasma_speed = New_text_edit(THIS,
- "FINAL_PLASMA_SPEED",
- "#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
-"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+	Final_plasma_speed = New_text_edit(THIS, "FINAL_PLASMA_SPEED", #LF
+"#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
+"#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF#LF"#LF
 "N")
 
 
@@ -898,6 +897,8 @@ PUSH in_construct = TRUE :
 	""("Grid in source, 200x200"._Grid_in_source200x200)
 	""("Grid in source, 300x300"._Grid_in_source300x300)
 	""("Grid in source, 400x400"._Grid_in_source400x400))
+	Stamp_param.Fill_language
+	Collection_gal.Fill_language
 ; 
 	Fill_scale_rotate .
 	
@@ -1010,6 +1011,7 @@ OVERRIDE selection_change :
     	STR name_l|anguage = List_lang.Text
     	Localize(name_l.After("_"), "", FALSE)
     	fill_combos
+
     	--------------------------- 'store in registry'
     	{Config} conf|_temp = New_write_config("Multi-spiral-model", 'USER', "")
     	conf.Set_s("current_lang", name_l)
@@ -1505,6 +1507,8 @@ OVERRIDE click :
              Thumbnails.Invalidate_all
              Main_.Invalidate ==> ;
         Load_image(Dialog_image.Filename, TRUE)
+        DEBUG: "befffore Auto_stamp, count images=" Main_.All_images[].Count 
+        		#NL ;
         Auto_stamp
         Collection_gal.Need_auto_save = TRUE
     ["OP_IMAGE"]:
@@ -1723,7 +1727,7 @@ OVERRIDE click :
     	    CASE Collection_gal != NONE ? 
     	         Collection_gal.Update_current(Dialog_file_save.Filename) 
     	    	 CASE Main_.All_images[].Count >= 2 ? 
-    	    	      DEBUG: "saving stamp file ..."#NL ;
+                      //DEBUG: "saving stamp file ..."#NL ;
     	    	      Collection_gal.Save_stamp_file ;
     	    ;
     	    ------------------ 'update__caption', REUSED
@@ -1749,6 +1753,9 @@ OVERRIDE click :
         		Load_sat= TRUE,
         		Load_common= TRUE)
         		
+        	DEBUG: "callllling Auto_stamp, images count=" Main_.All_images[].Count 
+        		" (" Main_.All_img_names[].Merge(", ") ")"
+        		#NL ;
         	Auto_stamp
         	Update_URL
         ["Additionally"]:
@@ -1973,7 +1980,7 @@ OVERRIDE click :
 	""	End
 
 	""	Item(	"SHOW_TEXT",
-				"Show text markers"
+				"Show text markers"._Show_text_marks
 		).Checked(
 		Show_text
 		)
@@ -2013,7 +2020,7 @@ OVERRIDE click :
 	""	End
 
 	""	Item(	"DRAW_DIST",
-				"Show distance to center in L.Y."
+				"Show distance to center in L.Y."._Show_dist_to_center_LY
 		).Checked(
 		Show_dist_to_center
 		)
@@ -2025,13 +2032,13 @@ OVERRIDE click :
 		)
 
 	""	Item(	"",
-				"Screenshot resolution..."
+				"Screenshot resolution..."._Screenshot_resolution
 		)
 
 	""	Begin
 
 	""	Item(	"SCREENSHOT_100",
-				"100 % (as is on screen)"
+				"100 % (as is on screen)"._SS_res_100
 		).Checked(
 		Screenshot_scale==100
 		)
@@ -2055,31 +2062,31 @@ OVERRIDE click :
 		)
 
 	""	Item(	"SCREENSHOT_1024",
-				"Fixed width 1024 pixels"
+				"Fixed width 1024 pixels"._SS_Fixed_1024
 		).Checked(
 		Screenshot_scale==1024
 		)
 
 	""	Item(	"SCREENSHOT_750",
-				"Fixed width 750 pixels"
+				"Fixed width 750 pixels"._SS_Fixed_750
 		).Checked(
 		Screenshot_scale==750
 		)
 
 	""	Item(	"SCREENSHOT_1500",
-				"Fixed width 1500 pixels"
+				"Fixed width 1500 pixels"._SS_fixed_1500
 		).Checked(
 		Screenshot_scale==1500
 		)
 
 	""	Item(	"SCREENSHOT_3000",
-				"Fixed width 3000 pixels"
+				"Fixed width 3000 pixels"._SS_Fixed_3000
 		).Checked(
 		Screenshot_scale==3000
 		)
 
 	""	Item(	"SCREENSHOT_3800",
-				"Fixed width 3800 pixels"
+				"Fixed width 3800 pixels"._SS_Fixed_3800
 		).Checked(
 		Screenshot_scale==3800
 		)
@@ -2203,19 +2210,19 @@ OVERRIDE click :
 		)
 
 	""	Item(	"CROSSED_TOO",
-				"Show crossing spirals too (1/2 width)"
+				"Show crossing spirals too (1/2 width)"._Show_crossing_too_1of2
 		).Checked(
 		Show_crossing<1
 		)
 
 	""	Item(	"CROSSED_TOO_X2",
-				"Show crossing spirals too (x2 width)"
+				"Show crossing spirals too (x2 width)"._Show_crossing_x2
 		).Checked(
 		Show_crossing>1
 		)
 
 	""	Item(	"CROSSED_TOO_1_1",
-				"Show crossing spirals too (same width)"
+				"Show crossing spirals too (same width)"._Show_crossing_same_w
 		).Checked(
 		Show_crossing.Near(1)
 		)
@@ -2258,8 +2265,14 @@ OVERRIDE click :
 		Calc_bright_diff
 		)
 
+	""	Item(	"REFLECTIONS",
+				"Show reflections in 1/2 of speed"
+		).Checked(
+		Show_reflections
+		)
+
 	""	Item(	"TRANSORM_MODEL",
-				"Transform model form"
+				"Transform model form"._Transform_model_form_show
 		).Hotkey(
 		"Ctrl+T"
 		)
@@ -2267,7 +2280,7 @@ OVERRIDE click :
 	""	Separator
 
 	""	Item(	"COLLECTION",
-				"Collection of galaxies"
+				"Collection of galaxies"._Collection_of_galaxies_show_form
 		).Hotkey(
 		"F12"
 		)
@@ -2285,55 +2298,55 @@ OVERRIDE click :
 		)
 
 	""	Item(	"",
-				"Limit image size..."
+				"Limit image size..."._Limit_image_size
 		)
 
 	""	Begin
 
 	""	Item(	"LIMIT_4",
-				"4 Mpixels"
+				"4 Mpixels"._4_Mpixels
 		).Checked(
 		Limit_image_size==4
 		)
 
 	""	Item(	"LIMIT_5",
-				"5 Mpixels"
+				"5 Mpixels"._5_MPixels
 		).Checked(
 		Limit_image_size==5
 		)
 
 	""	Item(	"LIMIT_6",
-				"6 Mpixels"
+				"6 Mpixels"._6_MPixels
 		).Checked(
 		Limit_image_size==6
 		)
 
 	""	Item(	"LIMIT_7",
-				"7 Mpixels"
+				"7 Mpixels"._7_MPixels
 		).Checked(
 		Limit_image_size==7
 		)
 
 	""	Item(	"LIMIT_8",
-				"8 Mpixels"
+				"8 Mpixels"._8_MPixels
 		).Checked(
 		Limit_image_size==8
 		)
 
 	""	Item(	"LIMIT_9",
-				"9 Mpixels"
+				"9 Mpixels"._9_MPixels
 		).Checked(
 		Limit_image_size==9
 		)
 
 	""	Item(	"LIMIT_10",
-				"10 Mpixels"
+				"10 Mpixels"._10_MPixels
 		).Checked(
 		Limit_image_size==10
 		)
 
 	""	Item(	"LIMIT_NO",
-				"No limit"
+				"No limit"._No_limit_image_size
 		).Checked(
 		Limit_image_size<=0
 		)
@@ -2341,7 +2354,7 @@ OVERRIDE click :
 	""	Separator
 
 	""	Item(	"ALLOW_JPEG_THUMB",
-				"Allow loading JPEG thumbnails while reduce size on load"
+				"Allow loading JPEG thumbnails while reduce size on load"._Allow_loading
 		).Checked(
 		Allow_JPEG_thumb
 		)
@@ -2938,6 +2951,7 @@ BOOL Allow_JPEG_thumb = FALSE
 BOOL Image_mirrored
 BOOL Show_text = TRUE
 BOOL Show_dist_to_center = FALSE
+BOOL Show_reflections = FALSE
 
 METHOD do_mirroring :
 	Main_.Image = _.Rotate_flip(0, TRUE, FALSE)
@@ -2963,6 +2977,7 @@ METHOD Provide_collection_gal :
 
 OVERRIDE menu_item :
     CASE menu_alias ?
+    ["REFLECTIONS"]: Show_reflections = !_
     ["DRAW_DIST"]: Show_dist_to_center = !_
     ["SHOW_TEXT"]: Show_text = !_
     ["LIMIT_4"]: Limit_image_size = 4
@@ -3984,6 +3999,7 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 			 Last_transform = c.Str("Last_transform")
 			 Last_img_name = c.Str("Last_img_name")
 			 Last_frame = c.Int("Last_frame") ;
+             //DEBUG: "LOAD Last_img_name=" Last_img_name #NL ;
 		----------------------- 'common:'
 		//CASE !Load_Control_pressed && (!Key.Shift || Box_width.Text.Real <= 0) ?
 		CASE (!Key.Shift || Box_width.Text.Real <= 0) 
@@ -4063,8 +4079,8 @@ BOOL Load_sat|ellites, BOOL Load_common|_parameters)
 				ArmsColors = c.Int("Arms_colors"),
 				Center_gal = Pt(c.Real("CenterX"), c.Real("CenterY"))
 		    	)
-            DEBUG: "LOADED SAT" i " Name=" All_satellites[*].Name 
-            	" Center_gal=(" All_satellites[*].Center_gal.X ", " .Y ")"#NL ;
+            //DEBUG: "LOADED SAT" i " Name=" All_satellites[*].Name 
+            //    " Center_gal=(" All_satellites[*].Center_gal.X ", " .Y ")"#NL ;
 		    CASE All_satellites[*].Center_gal.X.Near(0)
 		         && All_satellites[*].Center_gal.Y.Near(0)
 		         ? 
@@ -4192,8 +4208,8 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
     	     "DOWNLOAD this file from arbitrary and unverified sources, "
     	     "malware is often distributed under the guise of this dll. ") ;
     ;
-    DEBUG: "loaded: =" Main_.Image.Width " x " .Height 
-    		", count=" Main_.All_images[].Count #NL ;
+    //DEBUG: "loaded: =" Main_.Image.Width " x " .Height 
+    //        ", count=" Main_.All_images[].Count #NL ;
     ------------------- 'fix bpp'
     CASE temp_b.Width * .Height > Limit_image_size * 1024 * 1024 > 0 ? 
          CASE !Can_ask || ask("Image size (" temp_b.Width.S 
@@ -4211,8 +4227,8 @@ METHOD Load_image(STR Image_filename, BOOL Can_ask|_questions) :
          ;
     ;
     CASE temp_b.Width <= 1 >= temp_b.Height ? ==> ;
-    DEBUG: "loaded image: " Image_filename " [" temp_b.Width "x" .Height "]"
-           ", Count=" Main_.All_images[].Count #NL ;
+    //DEBUG: "loaded image: " Image_filename " [" temp_b.Width "x" .Height "]"
+    //       ", Count=" Main_.All_images[].Count #NL ;
     Main_.Image = New_bitmap_direct(temp_b.Width, .Height, 24)
     temp_b.Draw(Main_.Image.Canvas, Pt(0,0))
     temp_b = NONE
@@ -4322,8 +4338,8 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 	    	            ...Set_r("CenterX", s.Center_gal.X)
 	    	            ...Set_r("CenterY", s.Center_gal.Y)
 	    	            ...Set_b("LAST", i == Satellite_num.Count-1)
-	    	           DEBUG: "SAVED #" i " " s.Name
-	    	           	" Center_gal=(" s.Center_gal.X ", " .Y ")"#NL ;
+                       //DEBUG: "SAVED #" i " " s.Name
+                       // " Center_gal=(" s.Center_gal.X ", " .Y ")"#NL ;
 	    	            CASE s.Name.[0]=="#" ? 
 		    	            ...Set_i("Text_count_lines", s.Text[].Count)
 		    	            FOR line IN s.Text[0 TO *] :
@@ -4349,8 +4365,8 @@ BOOL For_coll|ection, BOOL Save_sat|ellites, BOOL Save_common)
 		               INT ch2|ecksum = Main_.Checksums2_of_images[i]
 		               CASE ch != 0 || ch2 != 0 ? BREAK i ;
 		           ;
-	               DEBUG: "checksums=" ch "," ch2 ", Preserve=" Preserve_stamp.S
-	               		   #NL ;
+                   //DEBUG: "checksums=" ch "," ch2 ", Preserve=" Preserve_stamp.S
+                   //        #NL ;
 		           FOR i IN [0 TO 1000] :
 		               STR old_c|ommands[] << c.Str("Command" i.S) 
 		          	   CASE old_c[*] != Commands_s[i] ? 
