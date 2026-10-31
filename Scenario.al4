@@ -310,6 +310,7 @@ METHOD stop_p|laying_recording :
 BOOL Paused|_until_play_or_stop
 {date_time} paused_at
 {date_time} started_at
+BOOL Play_shifted
 
 
 OVERRIDE click :
@@ -348,6 +349,7 @@ OVERRIDE click :
     ["STEP"]:
         One_step
     ["PLAY"]:
+        Play_shifted = Key.Shift
         INT paused_time
         //DEBUG: "start play, Paused=" Paused.S #NL ;
         ----------------------------------- 'check__no__auto__save', REUSED
@@ -395,6 +397,7 @@ OVERRIDE click :
     ["STOP"]: stop_p
         //DEBUG: "STOP PRESSEDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"#NL ;
     ["RECORD"]:
+        Play_shifted = FALSE
         PUSH Recording = TRUE :
              elapsed = Now
 	    	 LIKE .............................. 'check__no__auto__save'
@@ -840,7 +843,8 @@ METHOD One_step :
 	CASE keys[0].[0] IN "0123456789" ?
 	     Hint_command.Invalidate_all
 	     //CASE now.Milliseconds_diff(wait_for) > 0 ? wait_for = now ;
-	     wait_for = _.Add_milliseconds((keys[0].Real * 1000 * tempo).Int)
+	     CASE !Play_shifted ? 
+	          wait_for = _.Add_milliseconds((keys[0].Real * 1000 * tempo).Int) ;
 	     ------------------------------- 'look forward and get final values'
 	     CASE !("C" IN c || "M" IN c || "T" IN c || "V" IN c || "O" IN c) ?
 	          same_image = VSubtitles[].Count + HSubtitles[].Count ==0
@@ -949,6 +953,7 @@ METHOD One_step :
                   //       "] wait_letters=[" wait_letters "]"#NL ;
 		          CASE {
 		          [s.[0] IN "0123456789"] ?
+		          CASE !Play_shifted {
 		          	  CASE "C" IN wait_letters ? 
 		              	wait_for_c= _.Add_milliseconds((s.Real * 1000 * tempo).Int)
 		          	  ;
@@ -964,6 +969,7 @@ METHOD One_step :
 		          	  CASE "T" IN wait_letters ? 
 		              	wait_for_t= _.Add_milliseconds((s.Real * 1000 * tempo).Int)
 		          	  ;
+		          }
 		          ["T" IN wait_letters && s.[0]=="t"] ? 
 		          	  wait_letters = _.Replace("T", "").Trim
 		              keys[].Split(s, " ")
